@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "analyze-response",
+  "title": "AnalyzeResponse",
+  "type": "object",
+  "required": ["slug", "parsed", "decoded_layers", "lolbas_match"],
+  "additionalProperties": false,
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[A-Z2-7]{12}$",
+      "description": "12-char base32 truncated SHA256 of normalized command"
+    },
+    "parsed": {
+      "type": ["object", "null"],
+      "description": "bashlex AST as JSON, null if parsing failed"
+    },
+    "parsed_error": {
+      "type": ["string", "null"],
+      "description": "Parse error message when parsed is null"
+    },
+    "decoded_layers": {
+      "type": "array",
+      "description": "Each base64/encoding decode layer, innermost last",
+      "items": {
+        "type": "object",
+        "required": ["layer", "encoding", "value"],
+        "properties": {
+          "layer": { "type": "integer", "minimum": 1 },
+          "encoding": {
+            "type": "string",
+            "enum": ["base64", "base64-utf16le", "base64-gzip", "base64-utf16le-gzip"]
+          },
+          "value": { "type": "string" }
+        }
+      }
+    },
+    "lolbas_match": {
+      "type": ["object", "null"],
+      "description": "Matching LOLBAS entry if a known-abusable binary was found, else null",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "url": { "type": "string" },
+        "techniques": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "commands": { "type": "array" },
+        "similarity": { "type": "number" }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Dark mode is always on — analysts use dark mode. */
+:root {
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --surface: #161b22;
+  --border: #30363d;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --danger: #f85149;
+  --success: #3fb950;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "analyze-request",
+  "title": "AnalyzeRequest",
+  "type": "object",
+  "required": ["command"],
+  "additionalProperties": false,
+  "properties": {
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "description": "Raw command-line string submitted for analysis"
+    }
+  }
+}
