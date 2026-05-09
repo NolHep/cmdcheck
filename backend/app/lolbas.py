@@ -40,15 +40,31 @@ def load_catalog() -> None:
 
 
 def _extract_techniques(entry: dict[str, Any]) -> list[str]:
+    """Return unique MITRE technique IDs from all Commands in a LOLBAS entry.
+
+    MitreID in the YAML is always a plain string (e.g. "T1059.001"), never a
+    list — iterating a string yields characters, which is the bug this fixes.
+    """
     techniques: list[str] = []
     for cmd in entry.get("Commands", []) or []:
-        for attr in cmd.get("MitreID", []) or []:
-            if isinstance(attr, str) and attr not in techniques:
-                techniques.append(attr)
         mitre = cmd.get("MitreID")
-        if isinstance(mitre, str) and mitre not in techniques:
+        if isinstance(mitre, str) and mitre and mitre not in techniques:
             techniques.append(mitre)
+        elif isinstance(mitre, list):
+            for t in mitre:
+                if isinstance(t, str) and t and t not in techniques:
+                    techniques.append(t)
     return techniques
+
+
+def _extract_functions(entry: dict[str, Any]) -> list[str]:
+    """Return unique abuse categories (Execute, Download, …) from Commands."""
+    seen: list[str] = []
+    for cmd in entry.get("Commands", []) or []:
+        cat = cmd.get("Category")
+        if isinstance(cat, str) and cat and cat not in seen:
+            seen.append(cat)
+    return seen
 
 
 def match(binary_name: str) -> dict[str, Any] | None:
@@ -74,6 +90,6 @@ def match(binary_name: str) -> dict[str, Any] | None:
         "description": best_entry.get("Description"),
         "url": best_entry.get("URL"),
         "techniques": _extract_techniques(best_entry),
-        "commands": best_entry.get("Commands", []),
+        "functions": _extract_functions(best_entry),
         "similarity": round(best_score, 4),
     }

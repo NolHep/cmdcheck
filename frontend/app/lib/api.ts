@@ -12,7 +12,7 @@ const LolbasMatchSchema = z
     description: z.string().nullable().optional(),
     url: z.string().nullable().optional(),
     techniques: z.array(z.string()),
-    commands: z.array(z.unknown()).optional(),
+    functions: z.array(z.string()).optional(),
     similarity: z.number().optional(),
   })
   .nullable();
