@@ -46,14 +46,37 @@ _WIN_BINARY_RE = re.compile(
 
 _UNIX_BINARY_RE = re.compile(r"(?:^|[;&|`\s])(/usr/bin/|/bin/|/sbin/)?([a-z][a-z0-9_\-]+)")
 
+# Known Windows system binaries commonly invoked without a .exe extension in command chains.
+# This supplements _WIN_BINARY_RE which requires an explicit extension.
+_WIN_EXTENSIONLESS_BINARIES = frozenset({
+    "wbadmin", "net", "net1", "sc", "reg", "netsh", "bcdedit", "vssadmin",
+    "wmic", "schtasks", "taskkill", "tasklist", "whoami", "systeminfo",
+    "ipconfig", "arp", "route", "nslookup", "nltest", "dsquery",
+    "icacls", "attrib", "at", "forfiles",
+    # Common shells/interpreters also invoked without extension
+    "cmd", "powershell", "mshta", "wscript", "cscript", "rundll32", "regsvr32",
+})
+
 
 def extract_binaries(command: str) -> list[str]:
     """Return candidate binary names (without path, lowercase) from a command string."""
     found: list[str] = []
     for m in _WIN_BINARY_RE.finditer(command):
         name = (m.group(1) or m.group(2) or "").split("\\")[-1].lower()
-        if name and name not in found:
+        # A name with spaces is a quoted argument string, not a binary path.
+        # This happens when a command like `"sekurlsa::pth ... /run:cmd.exe"` is
+        # matched by the quoted-path alternative — the greedy [^"]+ consumes the
+        # whole argument body because it ends in .exe.
+        if name and " " not in name and name not in found:
             found.append(name)
+
+    # Also pick up known Windows system binaries used without .exe extension
+    found_bases = {f.removesuffix(".exe") for f in found}
+    for token in re.split(r'[\s;&|`"]+', command):
+        base = token.lower().split("\\")[-1].split("/")[-1]
+        if base in _WIN_EXTENSIONLESS_BINARIES and base not in found_bases:
+            found.append(base + ".exe")
+            found_bases.add(base)
 
     if not found:
         for m in _UNIX_BINARY_RE.finditer(command):

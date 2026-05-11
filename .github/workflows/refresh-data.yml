@@ -1,0 +1,90 @@
+name: Refresh threat data
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"           # Weekly Mon 02:00 UTC — submodules + LOLDrivers
+    - cron: "0 3 1 1,4,7,10 *"    # Quarterly (1 Jan/Apr/Jul/Oct) — MITRE ATT&CK
+  workflow_dispatch:
+    inputs:
+      refresh_mitre:
+        description: "Refresh MITRE ATT&CK catalog (downloads ~10 MB STIX bundle)"
+        type: boolean
+        default: false
+
+jobs:
+  refresh:
+    name: Refresh threat intelligence data
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Submodules: LOLBAS + GTFOBins (weekly) ───────────────────────────────
+      - name: Update git submodules (LOLBAS + GTFOBins)
+        run: git submodule update --remote --merge
+
+      # ── LOLDrivers (weekly) ───────────────────────────────────────────────────
+      - name: Refresh LOLDrivers
+        run: python backend/scripts/fetch_loldrivers.py
+
+      # ── MITRE ATT&CK (quarterly OR manual) ───────────────────────────────────
+      - name: Install httpx (required by fetch_attack_stix.py)
+        if: >
+          github.event.schedule == '0 3 1 1,4,7,10 *' ||
+          (github.event_name == 'workflow_dispatch' && inputs.refresh_mitre == 'true')
+        run: pip install httpx
+
+      - name: Refresh MITRE ATT&CK catalog
+        if: >
+          github.event.schedule == '0 3 1 1,4,7,10 *' ||
+          (github.event_name == 'workflow_dispatch' && inputs.refresh_mitre == 'true')
+        run: python backend/scripts/fetch_attack_stix.py
+
+      # ── Sanity checks before committing ──────────────────────────────────────
+      # Abort if any catalog is suspiciously small (catches failed/truncated fetches).
+      - name: Sanity-check refreshed data
+        run: |
+          set -e
+
+          LOLBAS_COUNT=$(find backend/data/LOLBAS/yml -name "*.yml" | wc -l)
+          GTFO_COUNT=$(find backend/data/GTFOBins/_gtfobins -name "*.md" 2>/dev/null | wc -l || echo 0)
+          echo "LOLBAS entries  : $LOLBAS_COUNT"
+          echo "GTFOBins entries: $GTFO_COUNT"
+          [ "$LOLBAS_COUNT" -ge 50 ]  || { echo "FAIL: LOLBAS too small ($LOLBAS_COUNT)";  exit 1; }
+          [ "$GTFO_COUNT"   -ge 100 ] || { echo "FAIL: GTFOBins too small ($GTFO_COUNT)"; exit 1; }
+
+          python3 - <<'EOF'
+          import json, sys
+          from pathlib import Path
+
+          drivers = json.loads(Path("backend/data/loldrivers.json").read_text())
+          if len(drivers) < 100:
+              print(f"FAIL: LOLDrivers too small ({len(drivers)} entries)")
+              sys.exit(1)
+          print(f"LOLDrivers      : {len(drivers)} entries")
+
+          mitre = json.loads(Path("backend/data/attack_techniques.json").read_text())
+          if len(mitre) < 500:
+              print(f"FAIL: MITRE ATT&CK too small ({len(mitre)} entries)")
+              sys.exit(1)
+          print(f"MITRE ATT&CK    : {len(mitre)} techniques")
+          EOF
+
+      # ── Commit and push if anything changed ───────────────────────────────────
+      - name: Commit and push if anything changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Nothing changed — no commit needed."
+          else
+            git status --short
+            git commit -m "chore: threat data refresh $(date -u '+%Y-%m-%d') [automated]"
+            git push
+          fi

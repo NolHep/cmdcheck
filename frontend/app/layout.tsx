@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { auth } from "@/auth";
+import SiteBanner from "@/app/components/SiteBanner";
+import UserMenu from "@/app/components/UserMenu";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,19 +11,73 @@ export const metadata: Metadata = {
     "Paste a suspicious command line and get structured analysis: deobfuscation, LOLBAS match, MITRE ATT&CK techniques, and a shareable permalink.",
 };
 
-export default function RootLayout({
+const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
+
+async function getBanner() {
+  try {
+    const res = await fetch(`${backendUrl}/settings/banner`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const [session, banner] = await Promise.all([auth(), getBanner()]);
+
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
-        <header className="border-b border-[var(--border)] px-6 py-3 flex items-center gap-3">
-          <a href="/" className="text-[var(--accent)] font-mono font-bold text-lg tracking-tight">
+        <SiteBanner banner={banner} />
+        <header className="border-b border-[var(--border)] px-6 py-3 flex items-center gap-4">
+          <Link href="/" className="text-[var(--accent)] font-mono font-bold text-lg tracking-tight">
             cmdcheck
-          </a>
-          <span className="text-[var(--muted)] text-sm">command-line analyzer</span>
+          </Link>
+          <span className="text-[var(--muted)] text-sm hidden sm:inline">command-line analyzer</span>
+          <nav className="ml-auto flex items-center gap-4">
+            <Link href="/search" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+              Search
+            </Link>
+            <Link href="/recent" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+              Recent
+            </Link>
+            <Link href="/docs" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+              Docs
+            </Link>
+            <Link href="/pricing" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+              Pricing
+            </Link>
+            {session?.user && (
+              <Link href="/workspaces" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Workspaces
+              </Link>
+            )}
+            {session?.user ? (
+              <UserMenu email={session.user.email!} role={session.user.role} />
+            ) : (
+              <Link href="/login" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Sign in
+              </Link>
+            )}
+          </nav>
         </header>
         <main className="flex-1 flex flex-col">{children}</main>
+        <footer className="border-t border-[var(--border)] px-6 py-3 flex items-center justify-between">
+          <span className="text-[var(--muted)] text-xs">cmdcheck</span>
+          <div className="flex items-center gap-4">
+            <Link href="/pricing" className="text-[var(--muted)] text-xs hover:text-[var(--foreground)] transition-colors">
+              Pricing
+            </Link>
+            <Link href="/feedback" className="text-[var(--muted)] text-xs hover:text-[var(--foreground)] transition-colors">
+              Report a bug
+            </Link>
+          </div>
+        </footer>
       </body>
     </html>
   );

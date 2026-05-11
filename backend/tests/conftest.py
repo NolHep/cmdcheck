@@ -28,8 +28,15 @@ async def _mock_run_migrations() -> None:
     pass
 
 
-async def _mock_upsert(slug: str, command: str, result: dict[str, Any]) -> None:
-    _store[slug] = {"slug": slug, "command": command, **result}
+async def _mock_upsert(
+    slug: str,
+    command: str,
+    result: dict[str, Any],
+    is_private: bool = False,
+    user_id: str | None = None,
+    workspace_id: str | None = None,
+) -> None:
+    _store[slug] = {"slug": slug, "command": command, "is_private": is_private, **result}
 
 
 async def _mock_fetch(slug: str) -> dict[str, Any] | None:

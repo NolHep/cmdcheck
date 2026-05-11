@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from . import mitre
+
 logger = logging.getLogger(__name__)
 
 # Loaded once at startup
@@ -20,6 +22,7 @@ LOLBAS_DIR = Path(__file__).parent.parent / "data" / "LOLBAS" / "yml"
 
 def load_catalog() -> None:
     """Walk LOLBAS/yml/, parse every YAML file, index by lowercase binary name."""
+
     if not LOLBAS_DIR.exists():
         logger.warning("LOLBAS submodule not found at %s — LOLBAS matching disabled", LOLBAS_DIR)
         return
@@ -77,7 +80,9 @@ def match(binary_name: str) -> dict[str, Any] | None:
     best_entry: dict[str, Any] | None = None
 
     for catalog_name, entry in _catalog.items():
-        score = difflib.SequenceMatcher(None, needle, catalog_name).ratio()
+        # Strip .exe from the catalog key before comparing so short names like
+        # "cmd" (score 0.6 vs "cmd.exe") don't fall below the 0.7 threshold.
+        score = difflib.SequenceMatcher(None, needle, catalog_name.removesuffix(".exe")).ratio()
         if score > best_score:
             best_score = score
             best_entry = entry
@@ -85,11 +90,15 @@ def match(binary_name: str) -> dict[str, Any] | None:
     if best_entry is None or best_score < SIMILARITY_THRESHOLD:
         return None
 
+    raw_techniques = _extract_techniques(best_entry)
+    technique_details = mitre.enrich(raw_techniques)
+
     return {
         "name": best_entry.get("Name"),
         "description": best_entry.get("Description"),
         "url": best_entry.get("URL"),
-        "techniques": _extract_techniques(best_entry),
+        "techniques": raw_techniques,
+        "technique_details": technique_details,
         "functions": _extract_functions(best_entry),
         "similarity": round(best_score, 4),
     }

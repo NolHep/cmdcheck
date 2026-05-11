@@ -1,0 +1,5018 @@
+[
+  {
+    "filename": "amp.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "amp.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/k4nfr3/af970e7facb09195e56f2112e1c9549c"
+    ]
+  },
+  {
+    "filename": "1.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "1.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "0x3440_blacklotus_v2_driver.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "0x3040_blacklotus_beta_driver.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "blacklotus_beta_driver.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "blacklotus_beta_driver_2.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "blacklotus_beta_driver_3.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "blacklotus_beta_driver_4.sys",
+    "category": "malicious",
+    "tags": [
+      "blacklotus_driver.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/"
+    ]
+  },
+  {
+    "filename": "EIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "EIO.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Air_SYSTEM10.sys",
+    "category": "malicious",
+    "tags": [
+      "Air_SYSTEM10.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "iOCdrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "iOCdrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "wantd.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "directio64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "directio64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "t7.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "t7.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrRapidStartDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrRapidStartDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "Windows_CPU_Temperature_Component.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Windows_CPU_Temperature_Component.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WinIo64C.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIo64C.sys"
+    ],
+    "resources": [
+      " https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules",
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "ene.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ene.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "daxin_blank1.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank1.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "NetProxyDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NetProxyDriver.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "LHA.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "LHA.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "vmdrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "vmdrv.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "ElbyCDIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ElbyCDIO.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "cpuz.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "cpuz.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "driver7-x86-withoutdbg.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "driver7-x86-withoutdbg.sys"
+    ],
+    "resources": [
+      "https://github.com/Chigusa0w0/AsusDriversPrivEscala"
+    ]
+  },
+  {
+    "filename": "HwRwDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HwRwDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "AsrAutoChkUpdDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrAutoChkUpdDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "HWAuidoOs2Ec.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HWAuidoOs2Ec.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "BiosToolCommonDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BiosToolCommonDriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/321"
+    ]
+  },
+  {
+    "filename": "driver7-x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "driver7-x64.sys"
+    ],
+    "resources": [
+      "https://github.com/Chigusa0w0/AsusDriversPrivEscala"
+    ]
+  },
+  {
+    "filename": "NCHGBIOS2x64.SYS",
+    "category": "vulnerable driver",
+    "tags": [
+      "NCHGBIOS2x64.SYS"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "gmer64.sys",
+    "category": "malicious",
+    "tags": [
+      "gmer64.sys",
+      "superman.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/55#issuecomment-1537161951",
+      "http://www.gmer.net/",
+      "https://github.com/gtworek/PSBits/blob/master/Misc/KillWithLolDriver.ps1"
+    ]
+  },
+  {
+    "filename": "ACE-BASE.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ACE-BASE.sys"
+    ],
+    "resources": [
+      ""
+    ]
+  },
+  {
+    "filename": "WinRing0.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinRing0.sys",
+      "WinRing0x64",
+      "OpenHardwareMonitorLib.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "WinRing0x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinRing0.sys",
+      "WinRing0x64",
+      "OpenHardwareMonitorLib.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "fidpcidrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fidpcidrv64.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "evga_kernel_driver-x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "evga_kernel_driver-x64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "tm_filter.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "tm_filter.sys",
+      "tmfsdrv2.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/243"
+    ]
+  },
+  {
+    "filename": "tmfsdrv2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "tm_filter.sys",
+      "tmfsdrv2.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/243"
+    ]
+  },
+  {
+    "filename": "hp64vision.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "hp64vision.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "VBoxDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "VBoxDrv.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "HardwareMon-x86.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HardwareMon-x86.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "Lv561av.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Lv561av.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "wfshbr64.sys",
+    "category": "malicious",
+    "tags": [
+      "wfshbr64.sys",
+      "wfshbr32.sys"
+    ],
+    "resources": [
+      "https://github.com/kkent030315/CVE-2022-42046"
+    ]
+  },
+  {
+    "filename": "PCHunter.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PCHunter.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "DsArk64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DsArk64.sys",
+      "DsArk.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/308"
+    ]
+  },
+  {
+    "filename": "DsArk64_win10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DsArk64.sys",
+      "DsArk.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/308"
+    ]
+  },
+  {
+    "filename": "DsArk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DsArk64.sys",
+      "DsArk.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/308"
+    ]
+  },
+  {
+    "filename": "DsArk_win10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DsArk64.sys",
+      "DsArk.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/308"
+    ]
+  },
+  {
+    "filename": "iqvw64e.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "iqvw64e.sys",
+      "iQVW64.SYS",
+      "IQVW32.sys",
+      "NalDrv.sys"
+    ],
+    "resources": [
+      "https://www.crowdstrike.com/blog/scattered-spider-attempts-to-avoid-detection-with-bring-your-own-vulnerable-driver-tactic/",
+      "https://expel.com/blog/well-that-escalated-quickly-how-a-red-team-went-from-domain-user-to-kernel-memory/",
+      "https://github.com/Exploitables/CVE-2015-2291"
+    ]
+  },
+  {
+    "filename": "devhost.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "devhost.sys"
+    ],
+    "resources": [
+      "https://x.com/nextaboratory/status/1914729845602783262"
+    ]
+  },
+  {
+    "filename": "Lallamon.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Lallamon.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "NQrmq.sys",
+    "category": "malicious",
+    "tags": [
+      "NQrmq.sys"
+    ],
+    "resources": [
+      ""
+    ]
+  },
+  {
+    "filename": "mhyprot.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Mhyprot2.sys",
+      "mhyprot.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "mhyprot2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Mhyprot2.sys",
+      "mhyprot.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "psmounterex.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "psmounterex.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/exploiting-enterprise-backup-software-for-privilege-escalation-part-one"
+    ]
+  },
+  {
+    "filename": "POORTRY2.sys",
+    "category": "malicious",
+    "tags": [
+      "POORTRY2.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "iobios64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "iobios64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "bwrs.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bwrs.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "nscm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nscm.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "libnicm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "libnicm.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "IOMap64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "IOMap64.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver",
+      "https://www.asus.com/content/asus-product-security-advisory/"
+    ]
+  },
+  {
+    "filename": "STProcessMonitor.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "STProcessMonitor.sys"
+    ],
+    "resources": [
+      "https://www.cve.org/CVERecord?id=CVE-2025-70795",
+      "https://github.com/magicsword-io/LOLDrivers/issues/268"
+    ]
+  },
+  {
+    "filename": "WinIO32B.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIO32B.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "2.sys",
+    "category": "malicious",
+    "tags": [
+      "2.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "SIVX64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SIVX64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/287",
+      "https://www.virustotal.com/gui/file/33903e8fa9f0a2acaa4784d645e309b0bd780693824b6c2c5fef257238c77478"
+    ]
+  },
+  {
+    "filename": "SONiXDDRx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SONiXDDRx64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "changsha.sys",
+    "category": "malicious",
+    "tags": [
+      "changsha"
+    ],
+    "resources": [
+      "https://www.virustotal.com/gui/file/06eccd102c9105957773b32538943531d9c39d0a504ceb3b9b155e97e3b0b134"
+    ]
+  },
+  {
+    "filename": "speedfan.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "speedfan.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "NTIOLib.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NTIOLib.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "wantd_6.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd_6.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "ktes.sys",
+    "category": "malicious",
+    "tags": [
+      "ktes.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "amifldrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "amifldrv64.sys",
+      "amifldrv.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "amifldrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "amifldrv64.sys",
+      "amifldrv.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "goad.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "goad.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "watabe.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "watabe.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "BS_RVSIO64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_RVSIO64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "BS_I2c64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_I2c64.sys",
+      "BS_I2cIo.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "segwindrvx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "segwindrvx64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "GlobalVistaVentures_v3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "GlobalVistaVentures_v3.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "MsIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "MsIo64.sys"
+    ],
+    "resources": [
+      "https://www.matteomalvica.com/blog/2020/09/24/weaponizing-cve-2020-17382/",
+      "https://packetstormsecurity.com/files/159315/MSI-Ambient-Link-Driver-1.0.0.8-Privilege-Escalation.html",
+      "https://www.coresecurity.com/core-labs/advisories/msi-ambient-link-multiple-vulnerabilities"
+    ]
+  },
+  {
+    "filename": "bw.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bw.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrDrv106.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrDrv106.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "driver7-x86.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "driver7-x86.sys"
+    ],
+    "resources": [
+      "https://github.com/Chigusa0w0/AsusDriversPrivEscala"
+    ]
+  },
+  {
+    "filename": "mhyprot3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mhyprot3.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Chaos-Rootkit.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Chaos-Rootkit.sys"
+    ],
+    "resources": [
+      "https://github.com/ZeroMemoryEx/Chaos-Rootkit"
+    ]
+  },
+  {
+    "filename": "PMAD.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PMAD.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "nvflash.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nvflash.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "devMemDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "devMemDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "cpqsysio64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "cpqsysio64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/311",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "b4.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "b4.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "wsdkd.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "wsdkd.sys"
+    ],
+    "resources": [
+      "https://github.com/zeze-zeze/WindowsKernelVuln/tree/master/CVE-2023-1453",
+      "https://nvd.nist.gov/vuln/detail/CVE-2023-1453",
+      "https://avd.aquasec.com/nvd/2023/cve-2023-1453/"
+    ]
+  },
+  {
+    "filename": "phymem64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "phymem64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "krpocesshacker.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "kprocesshacker.sys"
+    ],
+    "resources": [
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/334557-vulnerable-driver-megathread.html",
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/312791-bypaph-process-hackers-bypass-read-write-process-virtual-memory-kernel-mem.html#post2315763",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "kprocesshacker.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "kprocesshacker.sys"
+    ],
+    "resources": [
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/334557-vulnerable-driver-megathread.html",
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/312791-bypaph-process-hackers-bypass-read-write-process-virtual-memory-kernel-mem.html#post2315763",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "nt5.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nt5.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "NetFlt.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NetFlt.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "SysInfoX64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SysInfoX64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "UCOREW64.SYS",
+    "category": "vulnerable driver",
+    "tags": [
+      "UCOREW64.SYS"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "physmem.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "physmem.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/",
+      "https://github.com/magicsword-io/LOLDrivers/issues/55"
+    ]
+  },
+  {
+    "filename": "kt2.sys",
+    "category": "malicious",
+    "tags": [
+      "kt2.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "ATSZIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ATSZIO.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "t8.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "t8.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "nt4.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nt4.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Proxy64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Proxy64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AppVkgr.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AppVkgr.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "mst.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mst.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "amsdk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "amsdk.sys"
+    ],
+    "resources": [
+      "https://research.checkpoint.com/2025/silver-fox-apt-vulnerable-drivers/"
+    ]
+  },
+  {
+    "filename": "windbg.sys",
+    "category": "malicious",
+    "tags": [
+      "windbg.sys"
+    ],
+    "resources": [
+      "https://www.proofpoint.com/us/blog/threat-insight/now-you-see-it-now-you-dont-copperstealer-performs-widespread-theft",
+      "https://twitter.com/jaydinbas/status/1642898531445886978?s=20",
+      "https://twitter.com/jaydinbas/status/1646475092006785027?s=20"
+    ]
+  },
+  {
+    "filename": "dcr.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dcr.sys"
+    ],
+    "resources": [
+      "https://github.com/wjcsharp/DriveCrypt"
+    ]
+  },
+  {
+    "filename": "GGProtect64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "GGProtect64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "etdsupp.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "etdsupp.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "DirectIo32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DirectIo32.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "daxin_blank5.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank5.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "TRIXX.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TRIXX.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/291",
+      "https://github.com/magicsword-io/LOLDrivers/issues/320"
+    ]
+  },
+  {
+    "filename": "dtr_ec.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dtr_ec.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/293"
+    ]
+  },
+  {
+    "filename": "nvflsh64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nvflsh64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "wantd_4.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd_4.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "DriversCloud_amd64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DriversCloud_amd64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/284",
+      "https://www.virustotal.com/gui/file/2bc72d11fa0beda25dc1dbc372967db49bd3c3a3903913f0877bff6792724dfe"
+    ]
+  },
+  {
+    "filename": "EneIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "EneIo64.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/k4nfr3/af970e7facb09195e56f2112e1c9549c"
+    ]
+  },
+  {
+    "filename": "lsigetwin_SliffDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "lsigetwin_SliffDriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "CupFixerx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CupFixerx64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "ampa.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ampa.sys"
+    ],
+    "resources": []
+  },
+  {
+    "filename": "telephonuAfY.sys",
+    "category": "malicious",
+    "tags": [
+      "telephonuAfY.sys"
+    ],
+    "resources": [
+      "https://blog.talosintelligence.com/undocumented-reddriver/"
+    ]
+  },
+  {
+    "filename": "TGSafe.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TGSafe.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "dXIw8eZ9aYxQYzgm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dXIw8eZ9aYxQYzgm.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WinIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIo64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/222",
+      "https://github.com/hfiref0x/KDU"
+    ]
+  },
+  {
+    "filename": "msrhook.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "msrhook.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "HwOs2Ec7x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HwOs2Ec7x64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "whql.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "whql.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "Astra64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Astra64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/294",
+      "https://eclypsium.com/research/screwed-drivers-signed-sealed-delivered/"
+    ]
+  },
+  {
+    "filename": "magdrvamd64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "magdrvamd64.sys"
+    ],
+    "resources": [
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/334557-vulnerable-driver-megathread.html",
+      ""
+    ]
+  },
+  {
+    "filename": "BdApiUtil.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BdApiUtil.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/204",
+      "https://github.com/magicsword-io/LOLDrivers/issues/231",
+      "https://github.com/RainbowDynamix/GoodBaiii"
+    ]
+  },
+  {
+    "filename": "AsrSmartConnectDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrSmartConnectDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "ProtectS.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ProtectS.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Sense5Ext.sys",
+    "category": "malicious",
+    "tags": [
+      "Sense5Ext.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware"
+    ]
+  },
+  {
+    "filename": "srswdrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "srswdrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "daxin_blank6.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank6.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "amigendrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "amigendrv64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "OAToolx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "OAToolx64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "d591004.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "d591004.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "nstr.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nstr.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "portwell.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "portwell.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/314",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "SIOCTL.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SIOCTL.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "gftkyj64.sys",
+    "category": "malicious",
+    "tags": [
+      "gftkyj64.sys",
+      "deame.sys"
+    ],
+    "resources": [
+      "https://www.sentinelone.com/labs/driving-through-defenses-targeted-attacks-leverage-signed-malicious-microsoft-drivers/",
+      ""
+    ]
+  },
+  {
+    "filename": "AccelLid.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AccelLid.sys"
+    ],
+    "resources": []
+  },
+  {
+    "filename": "RTCore64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "RTCore64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "Windows-Memory-Informer.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Windows-Memory-Informer.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WinFlash64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinFlash64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "7.sys",
+    "category": "malicious",
+    "tags": [
+      "7.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "VProEventMonitor.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "VProEventMonitor.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "aswVmm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "aswVmm.sys"
+    ],
+    "resources": [
+      "https://github.com/tanduRE/AvastHV",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "Dh_Kernel_10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Dh_Kernel_10.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "SSPORT.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SSPORT.sys"
+    ],
+    "resources": [
+      "https://github.com/VoidSec/Exploit-Development/tree/b82b6d3ac1cce66221101d3e0f4634aa64cb4ca7/windows/x64/kernel/ssport_v1.0"
+    ]
+  },
+  {
+    "filename": "Kinkajou.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Kinkajou.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "CSAgent.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CSAgent.sys"
+    ],
+    "resources": [
+      "https://news.sophos.com/en-us/2025/08/06/shared-secret-edr-killer-in-the-kill-chain/"
+    ]
+  },
+  {
+    "filename": "l1malwarebits.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "l1malwarebits.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "LMIinfo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "LMIinfo.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "IObitUnlocker.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "iobitunlocker.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "WinTapix.sys",
+    "category": "malicious",
+    "tags": [
+      "WinTapix.sys",
+      "SRVNET2.SYS"
+    ],
+    "resources": [
+      "https://www.fortinet.com/blog/threat-research/wintapix-kernal-driver-middle-east-countries"
+    ]
+  },
+  {
+    "filename": "ppa_x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ppa_x64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/315",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "Novawave_Novabench_NovabenchDriverWin10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Novawave_Novabench_NovabenchDriverWin10.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "CITMDRV_AMD64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CITMDRV_AMD64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "mimidrv.sys",
+    "category": "malicious",
+    "tags": [
+      "mimidrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/55#issuecomment-1537161951",
+      "https://github.com/hfiref0x/KDU",
+      "https://posts.specterops.io/mimidrv-in-depth-4d273d19e148"
+    ]
+  },
+  {
+    "filename": "ASIO32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ASIO32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "ViveRRAudio.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ViveRRAudio.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/vive-vr-headset-kernel-driver-vulnerable-for-out-of-bounds-memory-read"
+    ]
+  },
+  {
+    "filename": "thelper.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "thelper.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/en/eset-research/edr-killers-explained/"
+    ]
+  },
+  {
+    "filename": "smep_capcom.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "smep_capcom.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "fiddrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fiddrv64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "elrawdsk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "elrawdsk.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/",
+      "https://securelist.com/shamoon-the-wiper-further-details-part-ii/57784/"
+    ]
+  },
+  {
+    "filename": "sfdrvx32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "sfdrvx32.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "probmon.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "probmon.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://www.welivesecurity.com/en/eset-research/embargo-ransomware-rocknrust/"
+    ]
+  },
+  {
+    "filename": "4.sys",
+    "category": "malicious",
+    "tags": [
+      "4.sys"
+    ],
+    "resources": [
+      "https://www.sentinelone.com/labs/driving-through-defenses-targeted-attacks-leverage-signed-malicious-microsoft-drivers/",
+      ""
+    ]
+  },
+  {
+    "filename": "chinese_cheat_driver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "chinese_cheat_driver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "wamsdk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "wamsdk.sys"
+    ],
+    "resources": [
+      "https://research.checkpoint.com/2025/silver-fox-apt-vulnerable-drivers/"
+    ]
+  },
+  {
+    "filename": "AsUpIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsUpIO.sys",
+      "AsUpIO64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.m"
+    ]
+  },
+  {
+    "filename": "AsUpIO64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsUpIO.sys",
+      "AsUpIO64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.m"
+    ]
+  },
+  {
+    "filename": "PanMonFlt.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PanMonFlt.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Realtime Driver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Realtime Driver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "wantd_5.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd_5.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "d2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "d2.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "MsIo32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "MsIo64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "TmComm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TmComm.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "ADV64DRV.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ADV64DRV.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "piddrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "piddrv64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "HpPortIox64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HpPortIox64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "ditpio64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ditpio64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "fastdumpx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fastdumpx64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "cpupress.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "cpupress.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "jnprva.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "jnprva.sys",
+      "neofltr.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/ivanti-pulse-vpn-privilege-escalation"
+    ]
+  },
+  {
+    "filename": "CSC.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CSC.sys"
+    ],
+    "resources": [
+      "https://github.com/varwara/CVE-2024-26229/tree/main",
+      "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-26229",
+      "https://github.com/zer0condition/ZeroHVCI"
+    ]
+  },
+  {
+    "filename": "WinIO32A.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIO32A.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "FoxKeDriver64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "FoxKeDriver64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "inpoutx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "inpoutx64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "ProcObsrvesx.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ProcObsrvesx.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/vulnerability-notice-escan-antivirus"
+    ]
+  },
+  {
+    "filename": "POORTRY1.sys",
+    "category": "malicious",
+    "tags": [
+      "POORTRY1.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "TVicPort64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TVicPort64.sys"
+    ],
+    "resources": [
+      "https://www.entechtaiwan.com/dev/port/index.shtm"
+    ]
+  },
+  {
+    "filename": "PDFWKRNL.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PDFWKRNL.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/en/eset-research/edr-killers-explained/"
+    ]
+  },
+  {
+    "filename": "PanMonFltX64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PanMonFltX64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "hw.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "hw.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules",
+      "https://decoded.avast.io/janvojtesek/the-return-of-candiru-zero-days-in-the-middle-east/",
+      "https://www.virustotal.com/gui/file/6a4875ae86131a594019dec4abd46ac6ba47e57a88287b814d07d929858fe3e5/detection"
+    ]
+  },
+  {
+    "filename": "viraglt64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "viraglt64.sys",
+      "viragt64.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "CmUpx.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CmUpx.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "burntcigar.sys",
+    "category": "malicious",
+    "tags": [
+      "burntcigar.sys"
+    ],
+    "resources": [
+      "https://www.virustotal.com/gui/file/7c5329b842cc3eaf1ec6c11b00e09a8c5e38ad14134b40a8bae3eda0a167a919",
+      "https://news.sophos.com/en-us/2024/08/27/burnt-cigar-2/",
+      "https://www.fortiguard.com/threat-signal-report/4920"
+    ]
+  },
+  {
+    "filename": "AMDRyzenMasterDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AMDRyzenMasterDriver.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/elastic/protections-artifacts/search?q=AMDRyzenMasterDriver",
+      "https://github.com/NtGabrielGomes/CVE-2023-20564"
+    ]
+  },
+  {
+    "filename": "DirectIo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DirectIo.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "aswArPot.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "aswArPot.sys",
+      "avgArPot.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "viragt64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "viragt64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "viragt.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "viragt64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "1109.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "1109.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "TBT_Force_Power_Control_Access64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TBT_Force_Power_Control_Access64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/316",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "mtcBSv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mtcBSv64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "prokiller64.sys",
+    "category": "malicious",
+    "tags": [
+      "prokiller64.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      "https://news.sophos.com/en-us/2022/12/13/signed-driver-malware-moves-up-the-software-trust-chain/"
+    ]
+  },
+  {
+    "filename": "RtsTpx.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "RtsTpx.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "CITMDRV_IA64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CITMDRV_IA64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "UDDB2B6.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "UDDB2B6.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/323",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "b.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "b.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "KApcHelper_x64.sys",
+    "category": "malicious",
+    "tags": [
+      "KApcHelper_x64.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware"
+    ]
+  },
+  {
+    "filename": "b1.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "b1.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "dbk64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dbk64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "iomem64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "iomem64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "OpenLibSys.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "OpenLibSys.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "dddriver64Dcsa.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dddriver64Dcsa.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WDTKernel.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WDTKernel.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/290",
+      "https://blogs.vmware.com/security/2023/10/hunting-vulnerable-kernel-drivers.html"
+    ]
+  },
+  {
+    "filename": "ControlCenter.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ControlCenter.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "mtxmem.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mtxmem.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "kEvP64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "kEvP64.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "cpuz141.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "cpuz141.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "Dh_Kernel.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Dh_Kernel.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "MSqPq.sys",
+    "category": "malicious",
+    "tags": [
+      "MSqPq.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "Khwmon.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Khwmon.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "AMDPowerProfiler.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AMDPowerProfiler.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "My.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "My.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "semav6msr.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "semav6msr.sys",
+      "semav6msr64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "semav6msr64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "semav6msr.sys",
+      "semav6msr64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "superbmc.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "superbmc.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "Afd.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Afd.sys"
+    ],
+    "resources": [
+      "https://securityintelligence.com/x-force/patch-tuesday-exploit-wednesday-pwning-windows-ancillary-function-driver-winsock/",
+      "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2023-21768"
+    ]
+  },
+  {
+    "filename": "smep_namco.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "smep_namco.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "gdrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "gdrv.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "TSDRVX64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TSDRVX64.sys"
+    ],
+    "resources": []
+  },
+  {
+    "filename": "CorsairLLAccess64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CorsairLLAccess64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "pxitrig64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "pxitrig64.sys"
+    ],
+    "resources": []
+  },
+  {
+    "filename": "d.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "d.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "daxin_blank4.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank4.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "HwOs2Ec10x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HwOs2Ec10x64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "LenovoDiagnosticsDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "LenovoDiagnosticsDriver.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules",
+      "https://nephosec.com/cve-2022-3699-lenovo-diagnostics-driver-eop-arbitrary-r-w/",
+      "https://github.com/alfarom256/CVE-2022-3699"
+    ]
+  },
+  {
+    "filename": "kdhacker64_ev.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "kdhacker64_ev.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/309"
+    ]
+  },
+  {
+    "filename": "6c8a.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "6c8a.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "daxin_blank.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "bsitf.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bsitf.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/magicsword-io/LOLDrivers/pull/332",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WiseUnlo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WiseUnlo.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "wantd_3.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd_3.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "cpuz_x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "cpuz_x64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "gibepext.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "gibepext.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "KfeCo10X64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "KfeCo10X64.sys"
+    ],
+    "resources": [
+      "https://zwclose.github.io/2023/04/18/killer2.html",
+      "https://twitter.com/zwclose/status/1648441215808049153",
+      "https://zwclose.github.io/2022/12/18/killer1.html"
+    ]
+  },
+  {
+    "filename": "dbutil.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dbutil.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "wantd_2.sys",
+    "category": "malicious",
+    "tags": [
+      "wantd_2.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "shimano32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "shimano32.sys",
+      "shimano64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/163"
+    ]
+  },
+  {
+    "filename": "shimano64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "shimano32.sys",
+      "shimano64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/163"
+    ]
+  },
+  {
+    "filename": "AsrDrv10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrDrv10.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "EneTechIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "EneTechIo64.sys"
+    ],
+    "resources": [
+      "https://github.com/hfiref0x/KDU/releases/tag/v1.2.0",
+      "https://gist.github.com/k4nfr3/af970e7facb09195e56f2112e1c9549c"
+    ]
+  },
+  {
+    "filename": "c.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "c.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "ntbios_2.sys",
+    "category": "malicious",
+    "tags": [
+      "ntbios_2.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "BSMEMx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BSMEMx64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "nt2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nt2.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "GLCKIO2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "GLCKIO2.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "POORTRY.sys",
+    "category": "malicious",
+    "tags": [
+      "POORTRY.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "SysDrv3S.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SysDrv3S.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/55#issuecomment-1537161951"
+    ]
+  },
+  {
+    "filename": "gvcidrv64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "gvcidrv64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "daxin_blank2.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank2.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "ktgn.sys",
+    "category": "malicious",
+    "tags": [
+      "ktgn.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "throttlestop.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "throttlestop.sys"
+    ],
+    "resources": [
+      "https://securelist.com/av-killer-exploiting-throttlestop-sys/117026/",
+      "https://www.cve.org/CVERecord?id=CVE-2025-7771"
+    ]
+  },
+  {
+    "filename": "bandai.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bandai.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Se64a.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Se64a.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "fiddrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fiddrv.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "WYProxy64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WYProxy64.sys",
+      "WYProxy32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "WYProxy32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WYProxy64.sys",
+      "WYProxy32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "inetcache.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "inetcache.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "asmmap64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asmmap64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "PoisonX.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX11.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX12.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX13.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX14.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX15.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX16.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX17.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX18.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX4.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX5.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX6.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX7.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX8.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "PoisonX9.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PoisonX.sys",
+      "PoisonX10.sys",
+      "PoisonX11.sys",
+      "PoisonX12.sys",
+      "PoisonX13.sys"
+    ],
+    "resources": [
+      "https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4",
+      "https://github.com/j3h4ck/PoisonKiller/"
+    ]
+  },
+  {
+    "filename": "netfilterdrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "netfilterdrv.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "ntbios.sys",
+    "category": "malicious",
+    "tags": [
+      "ntbios.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "Amd_RPMC_BiosToolCommonDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Amd_RPMC_BiosToolCommonDriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "LgDCatcher.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "LgDCatcher.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "KmWpsMs.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "KmWpsMs.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "sdrv_win_sliff.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "sdrv_win_sliff.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "AppShopDrv103.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AppShopDrv103.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/222",
+      "https://github.com/hfiref0x/KDU"
+    ]
+  },
+  {
+    "filename": "fjfwupgd.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fjfwupgd.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "ndislan.sys",
+    "category": "malicious",
+    "tags": [
+      "ndislan.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "rtkio64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rtkio.sys",
+      "rtkio64.sys",
+      "rtkiow8x64.sys",
+      "rtkiow10x64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://github.com/elastic/protections-artifacts/search?q=rtkio"
+    ]
+  },
+  {
+    "filename": "rtkio.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rtkio.sys",
+      "rtkio64.sys",
+      "rtkiow8x64.sys",
+      "rtkiow10x64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://github.com/elastic/protections-artifacts/search?q=rtkio"
+    ]
+  },
+  {
+    "filename": "rtkiow10x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rtkio.sys",
+      "rtkio64.sys",
+      "rtkiow8x64.sys",
+      "rtkiow10x64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://github.com/elastic/protections-artifacts/search?q=rtkio"
+    ]
+  },
+  {
+    "filename": "rtkiow8x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rtkio.sys",
+      "rtkio64.sys",
+      "rtkiow8x64.sys",
+      "rtkiow10x64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md",
+      "https://github.com/elastic/protections-artifacts/search?q=rtkio"
+    ]
+  },
+  {
+    "filename": "ImmunetUtilDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ImmunetUtilDriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "windows8-10-32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "windows8-10-32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "windows7-32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "windows7-32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "SparkIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SparkIO.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/322",
+      "https://nvd.nist.gov/vuln/detail/CVE-2022-37415",
+      "https://gist.github.com/alfarom256/220cb75816ca2b5556e7fc8d8d2803a0"
+    ]
+  },
+  {
+    "filename": "rzpnk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rzpnk.sys"
+    ],
+    "resources": [
+      "https://github.com/nomi-sec/PoC-in-GitHub/blob/2a85c15ed806287861a7adec6545c85aec618e3b/2017/CVE-2017-9769.json#L13",
+      "https://www.rapid7.com/db/modules/exploit/windows/local/razer_zwopenprocess/"
+    ]
+  },
+  {
+    "filename": "ADRMDRVSYS.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ADRMDRVSYS.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/vulnerability-notice-adlink-pxi-platform-services?hsLang=en"
+    ]
+  },
+  {
+    "filename": "LgCoreTemp.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "LgCoreTemp.sys"
+    ],
+    "resources": [
+      "https://github.com/VoidSec/Exploit-Development/tree/b82b6d3ac1cce66221101d3e0f4634aa64cb4ca7/windows/x64/kernel/logitech_v.9.02.65_DoS"
+    ]
+  },
+  {
+    "filename": "NBIOLib_X64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NBIOLib_X64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "NTIOLib_X64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NTIOLib_X64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "PanIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PanIO.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "WCPU.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WCPU.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "asio.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asio.sys",
+      "AsIO32.sys",
+      "AsIO3.sys",
+      "AsIO3_64.sys",
+      "AsIO2.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "AsIO3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asio.sys",
+      "AsIO32.sys",
+      "AsIO3.sys",
+      "AsIO3_64.sys",
+      "AsIO2.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "AsIO2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asio.sys",
+      "AsIO32.sys",
+      "AsIO3.sys",
+      "AsIO3_64.sys",
+      "AsIO2.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "AsIO3_64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asio.sys",
+      "AsIO32.sys",
+      "AsIO3.sys",
+      "AsIO3_64.sys",
+      "AsIO2.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "AsIO64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asio.sys",
+      "AsIO32.sys",
+      "AsIO3.sys",
+      "AsIO3_64.sys",
+      "AsIO2.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://github.com/namazso/physmem_drivers",
+      "https://gist.github.com/mgraeber-rc/1bde6a2a83237f17b463d051d32e802c"
+    ]
+  },
+  {
+    "filename": "termdd.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "termdd.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://kat.lua.cz/posts/Some_fun_with_vintage_bugs_and_driver_signing_enforcement/"
+    ]
+  },
+  {
+    "filename": "DDDriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DDDriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "wsftprm.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "wsftprm.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/vulnerability-notice-topaz-antifraud",
+      "https://github.com/xM0kht4r/AV-EDR-Killer"
+    ]
+  },
+  {
+    "filename": "ALSysIO64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ALSysIO64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "mtxC9CB.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mtxC9CB.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WinIo64A.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIo64A.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Phymemx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Phymemx64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "834761775.sys",
+    "category": "malicious",
+    "tags": [
+      "834761775.sys"
+    ],
+    "resources": [
+      "https://blog.talosintelligence.com/undocumented-reddriver/"
+    ]
+  },
+  {
+    "filename": "ncpl.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ncpl.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "BS_Flash64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_Flash64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "80.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "80.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "gameink.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "gameink.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrDrv102.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrDrv102.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "echo_driver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "echo_driver.sys"
+    ],
+    "resources": [
+      "https://ioctl.fail/echo-ac-writeup/",
+      "https://github.com/kite03/echoac-poc/tree/main/PoC",
+      "https://github.com/pseuxide/kur"
+    ]
+  },
+  {
+    "filename": "echodriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "echo_driver.sys"
+    ],
+    "resources": [
+      "https://ioctl.fail/echo-ac-writeup/",
+      "https://github.com/kite03/echoac-poc/tree/main/PoC",
+      "https://github.com/pseuxide/kur"
+    ]
+  },
+  {
+    "filename": "echo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "echo_driver.sys"
+    ],
+    "resources": [
+      "https://ioctl.fail/echo-ac-writeup/",
+      "https://github.com/kite03/echoac-poc/tree/main/PoC",
+      "https://github.com/pseuxide/kur"
+    ]
+  },
+  {
+    "filename": "rentdrv2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "echo_driver.sys"
+    ],
+    "resources": [
+      "https://ioctl.fail/echo-ac-writeup/",
+      "https://github.com/kite03/echoac-poc/tree/main/PoC",
+      "https://github.com/pseuxide/kur"
+    ]
+  },
+  {
+    "filename": "PhlashNT.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PhlashNT.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "atillk64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "atillk64.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "Black.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Black.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "_xyzxbqvb.rdu_GFAC_Sys_x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "_xyzxbqvb.rdu_GFAC_Sys_x64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "Mnemosyne.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Mnemosyne.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "WINIODrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WINIODrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "NetworkLocker_x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NetworkLocker_x64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "AdvCare.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AdvCare.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/306",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "CardIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CardIo64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/310",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "TfSysMon.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TfSysMon.sys"
+    ],
+    "resources": [
+      "https://github.com/BlackSnufkin/BYOVD/tree/main/TfSysMon-Killer"
+    ]
+  },
+  {
+    "filename": "amdi2c.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TfSysMon.sys"
+    ],
+    "resources": [
+      "https://github.com/BlackSnufkin/BYOVD/tree/main/TfSysMon-Killer"
+    ]
+  },
+  {
+    "filename": "hlpdrv.sys",
+    "category": "malicious",
+    "tags": [
+      "bd1f381e5a3db22e88776b7873d4d2835e9a1ec620571d2b1da0c58f81c84a56"
+    ],
+    "resources": [
+      "https://www.guidepointsecurity.com/blog/gritrep-akira-sonicwall/",
+      "https://github.com/magicsword-io/LOLDrivers/raw/main/drivers/cf7cad39407d8cd93135be42b6bd258f.bin"
+    ]
+  },
+  {
+    "filename": "t3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "t3.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "BEDAISY.SYS",
+    "category": "vulnerable driver",
+    "tags": [
+      "bedaisy.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/23",
+      "https://infosec.exchange/@Rairii/109310279380973806"
+    ]
+  },
+  {
+    "filename": "TcIo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TcIo.sys",
+      "TcRouter.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/296",
+      "https://www.cisa.gov/news-events/ics-advisories/icsa-18-081-02",
+      "https://srcincite.io/advisories/src-2018-0007/"
+    ]
+  },
+  {
+    "filename": "TcRouter.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TcIo.sys",
+      "TcRouter.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/296",
+      "https://www.cisa.gov/news-events/ics-advisories/icsa-18-081-02",
+      "https://srcincite.io/advisories/src-2018-0007/"
+    ]
+  },
+  {
+    "filename": "ipctype.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ipctype.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/313",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "energydriver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "energydriver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/magicsword-io/LOLDrivers/issues/329",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "DBUtilDrv2.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DBUtilDrv2.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/",
+      "https://www.bleepingcomputer.com/news/security/dell-driver-fix-still-allows-windows-kernel-level-attacks/"
+    ]
+  },
+  {
+    "filename": "FDMCJHJYXZITI.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "FDMCJHJYXZITI.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "fidpcidrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "fidpcidrv.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "nxeng.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nxeng.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "PcieCubed.sys",
+    "category": "malicious",
+    "tags": [
+      "PcieCubed.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "SmSerl64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SmSerl64.sys"
+    ],
+    "resources": [
+      "https://nvd.nist.gov/vuln/detail/CVE-2024-55414",
+      "https://github.com/heyheysky/vulnerable-driver/blob/master/CVE-2024-55414/CVE-2024-55414_SmSerl64.sys_README.md"
+    ]
+  },
+  {
+    "filename": "msr.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "msr.sys"
+    ],
+    "resources": [
+      "https://twitter.com/wdormann/status/1699878227261411699",
+      "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/windows-defender-application-control/design/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "NICM.SYS",
+    "category": "vulnerable driver",
+    "tags": [
+      "NICM.SYS"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "dkrTK.sys",
+    "category": "malicious",
+    "tags": [
+      "dkrTK.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/content/dam/trendmicro/global/en/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver/indicators-blackcat-ransomware-deploys-new-signed-kernel-driver.txt",
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "nt6.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nt6.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrDrv103.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrDrv103.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "AsrIbDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrIbDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "TPwSav.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TPwSav.sys"
+    ],
+    "resources": [
+      "https://blackpointcyber.com/resources/blog/qilin-ransomware-and-the-hidden-dangers-of-byovd/"
+    ]
+  },
+  {
+    "filename": "vsdatant.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "vsdatant.sys"
+    ],
+    "resources": [
+      "https://venaksecurity.com/2025/03/20/cybercriminals-exploit-checkpoints-driver-in-a-byovd-attack/"
+    ]
+  },
+  {
+    "filename": "RwDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "RwDrv.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "SvIoCtrlx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SvIoCtrlx64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "capcom.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "capcom.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "windows-xp-64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "windows-xp-64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "DNDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "DNDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "zam64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "zam64.sys",
+      "zamguard32.sys",
+      "zamguard64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://www.reddit.com/r/crowdstrike/comments/13wjrgn/20230531_situational_awareness_spyboy_defense/",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "zamguard64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "zam64.sys",
+      "zamguard32.sys",
+      "zamguard64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://www.reddit.com/r/crowdstrike/comments/13wjrgn/20230531_situational_awareness_spyboy_defense/",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "zamguard32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "zam64.sys",
+      "zamguard32.sys",
+      "zamguard64.sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://www.reddit.com/r/crowdstrike/comments/13wjrgn/20230531_situational_awareness_spyboy_defense/",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "Agent64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Agent64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "HOSTNT.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "HOSTNT.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "tboflhelper.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "tboflhelper.sys"
+    ],
+    "resources": [
+      "https://northwave-cybersecurity.com/vulnerability-notice-terabyte-image-for-windows?hsLang=en"
+    ]
+  },
+  {
+    "filename": "NodeDriver.sys",
+    "category": "malicious",
+    "tags": [
+      "NodeDriver.sys"
+    ],
+    "resources": [
+      "https://www.mandiant.com/resources/blog/hunting-attestation-signed-malware",
+      ""
+    ]
+  },
+  {
+    "filename": "81.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "81.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "otipcibus.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "otipcibus.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "kbdcap64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "kbdcap64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "MemCtl.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "MemCtl.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "sandra.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "sandra.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/"
+    ]
+  },
+  {
+    "filename": "rspot.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "rspot.sys"
+    ],
+    "resources": [
+      "https://www.welivesecurity.com/en/eset-research/edr-killers-explained/"
+    ]
+  },
+  {
+    "filename": "BS_RCIOW1064.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_RCIOW1064.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "d4.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "d4.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "nipalk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nipalk.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/303",
+      "https://www.ni.com/en/support/security/available-critical-and-security-updates-for-ni-software/improper-input-validation-in-ni-pal.html",
+      "https://nvd.nist.gov/vuln/detail/CVE-2021-38304"
+    ]
+  },
+  {
+    "filename": "Monitor_win10_x64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Monitor_win10_x64.sys"
+    ],
+    "resources": [
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/334557-vulnerable-driver-megathread.html",
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/244386-mta-fairplaykd-driver-reversed-exploited-rpm.html",
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver"
+    ]
+  },
+  {
+    "filename": "mydrivers.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "mydrivers.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "GoFly64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "GoFly64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/299"
+    ]
+  },
+  {
+    "filename": "ni.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ni.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "SysFile_X64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SysFile_X64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "Bs_Def.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Bs_Def.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrSetupDrv103.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrSetupDrv103.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "b3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "b3.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "BS_HWMIo64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_HWMIo64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "BS_RCIO.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_RCIO.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules",
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "BS_I2cIo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_I2cIo.sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "p2KGhmzsARY1.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "p2KGhmzsARY1.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "SeasunProtect.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SeasunProtect.sys"
+    ],
+    "resources": []
+  },
+  {
+    "filename": "bwrsh.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bwrsh.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "GameTerSafe.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "GameTerSafe.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "BS_Def64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_Def64.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "IUForceDelete.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "IUForceDelete.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "iQVW64.SYS",
+    "category": "vulnerable driver",
+    "tags": [
+      "iQVW64.SYS"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "XLHA.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "XLHA.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/324",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "AIDA64Driver.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AIDA64Driver.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "wdisvhost.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "wdisvhost.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "TestBone.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "TestBone.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "d3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "d3.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "AsrOmgDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrOmgDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "CorMem.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "CorMem.sys"
+    ],
+    "resources": [
+      "https://github.com/KeServiceDescriptorTable/cormem.sys-vulnerable-driver",
+      "https://www.virustotal.com/gui/file/40c855d20d497823716a08a443dc85846233226985ee653770bc3b245cf2ed0f",
+      "https://x.com/skept1kal/status/2040200734570877354"
+    ]
+  },
+  {
+    "filename": "irec.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "irec.sys"
+    ],
+    "resources": [
+      "https://blog.dru1d.ninja/windows-driver-exploit-development-irec-sys-a5eb45093945",
+      "https://gist.github.com/dru1d-foofus/1af21179f253879f101c3a8d4f718bf0",
+      "https://www.binalyze.com/irec"
+    ]
+  },
+  {
+    "filename": "BlackBoneDrv10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BlackBoneDrv10.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "FairplayKD.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "FairplayKD.sys"
+    ],
+    "resources": [
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/334557-vulnerable-driver-megathread.html",
+      "https://www.unknowncheats.me/forum/anti-cheat-bypass/244386-mta-fairplaykd-driver-reversed-exploited-rpm.html",
+      ""
+    ]
+  },
+  {
+    "filename": "VBoxUSB.Sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "VBoxUSB.Sys"
+    ],
+    "resources": [
+      "Internal Research"
+    ]
+  },
+  {
+    "filename": "AsrDrv101.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrDrv101.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "WinIO32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIO32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "full.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "full.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "KfeCo11X64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "KfeCo11X64.sys"
+    ],
+    "resources": [
+      "https://zwclose.github.io/2023/04/18/killer2.html",
+      "https://twitter.com/zwclose/status/1648441215808049153",
+      "https://zwclose.github.io/2022/12/18/killer1.html"
+    ]
+  },
+  {
+    "filename": "ATHpExNt.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "athpexnt.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/255"
+    ]
+  },
+  {
+    "filename": "LcTkA.sys",
+    "category": "malicious",
+    "tags": [
+      "LcTkA.sys"
+    ],
+    "resources": [
+      "https://www.sentinelone.com/labs/driving-through-defenses-targeted-attacks-leverage-signed-malicious-microsoft-drivers/",
+      ""
+    ]
+  },
+  {
+    "filename": "BS_HWMIO64_W10.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_HWMIO64_W10.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "ArgusMonitor.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "ArgusMonitor.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/297",
+      "https://www.argusmonitor.com/"
+    ]
+  },
+  {
+    "filename": "procexp.Sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "procexp.Sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://malware.news/t/lazarus-group-attack-case-using-vulnerability-of-certificate-software-commonly-used-by-public-institutions-and-universities/67715",
+      "https://waawaa.github.io/en/Bypass-PPL-Using-Process-Explorer/"
+    ]
+  },
+  {
+    "filename": "procexp152.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "procexp.Sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://malware.news/t/lazarus-group-attack-case-using-vulnerability-of-certificate-software-commonly-used-by-public-institutions-and-universities/67715",
+      "https://waawaa.github.io/en/Bypass-PPL-Using-Process-Explorer/"
+    ]
+  },
+  {
+    "filename": "procexp1627.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "procexp.Sys"
+    ],
+    "resources": [
+      "Internal Research",
+      "https://malware.news/t/lazarus-group-attack-case-using-vulnerability-of-certificate-software-commonly-used-by-public-institutions-and-universities/67715",
+      "https://waawaa.github.io/en/Bypass-PPL-Using-Process-Explorer/"
+    ]
+  },
+  {
+    "filename": "BSMIx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BSMIx64.sys"
+    ],
+    "resources": [
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "IoManager.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "IoManager.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "SysInfo.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "SysInfo.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers"
+    ]
+  },
+  {
+    "filename": "AsrCDDrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "AsrCDDrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/326",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "malicious.sys",
+    "category": "malicious",
+    "tags": [
+      "malicious.sys"
+    ],
+    "resources": [
+      "https://github.com/zeze-zeze/CYBERSEC2023-BYOVD-Demo"
+    ]
+  },
+  {
+    "filename": "mJj0ge.sys",
+    "category": "malicious",
+    "tags": [
+      "mJj0ge.sys"
+    ],
+    "resources": [
+      "https://news.sophos.com/en-us/2022/12/13/signed-driver-malware-moves-up-the-software-trust-chain/"
+    ]
+  },
+  {
+    "filename": "dbutil_2_3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dbutil_2_3.sys"
+    ],
+    "resources": [
+      "https://github.com/namazso/physmem_drivers",
+      "https://www.sentinelone.com/labs/cve-2021-21551-hundreds-of-millions-of-dell-computers-at-risk-due-to-multiple-bios-driver-privilege-escalation-flaws/"
+    ]
+  },
+  {
+    "filename": "asrdrv104.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "asrdrv104.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "daxin_blank3.sys",
+    "category": "malicious",
+    "tags": [
+      "daxin_blank3.sys"
+    ],
+    "resources": [
+      "https://gist.github.com/MHaggis/9ab3bb795a6018d70fb11fa7c31f8f48",
+      "https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/daxin-backdoor-espionage",
+      ""
+    ]
+  },
+  {
+    "filename": "WinIo64B.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "WinIo64B.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "fgme.sys",
+    "category": "malicious",
+    "tags": [
+      "fgme.sys"
+    ],
+    "resources": [
+      "https://www.trendmicro.com/en_us/research/23/e/blackcat-ransomware-deploys-new-signed-kernel-driver.html"
+    ]
+  },
+  {
+    "filename": "BS_RCIO64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BS_RCIO64.sys"
+    ],
+    "resources": [
+      "https://github.com/jbaines-r7/dellicious",
+      "https://www.rapid7.com/blog/post/2021/12/13/driver-based-attacks-past-and-present/",
+      "https://github.com/elastic/protections-artifacts/blob/932baf346cc8a743f1963ad3d4565b42ed17bebe/yara/rules/Windows_VulnDriver_Biostar.yar#L54"
+    ]
+  },
+  {
+    "filename": "nstrwsk.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nstrwsk.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Lurker.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Lurker.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "Proxy32.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "Proxy32.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "piddrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "piddrv.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "dpmemio.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "dpmemio.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/288",
+      "https://www.virustotal.com/gui/file/7cf6881e43337c288b1883fafb234146a450ff94388aee395e05e36202c5afbb",
+      "https://www.virustotal.com/gui/file/cd631c54fe1375e4bdd2f63b58bd106066eeee267fc77b3161ceb023ab5fddda"
+    ]
+  },
+  {
+    "filename": "PanIOx64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "PanIOx64.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "nt3.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "nt3.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "BSMI.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "BSMI.sys",
+      "BSMIXP64.sys"
+    ],
+    "resources": [
+      "https://github.com/elastic/protections-artifacts/search?q=VulnDriver",
+      "https://github.com/eclypsium/Screwed-Drivers/blob/master/DRIVERS.md"
+    ]
+  },
+  {
+    "filename": "t.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "t.sys"
+    ],
+    "resources": [
+      "https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules"
+    ]
+  },
+  {
+    "filename": "signeddrv.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "signeddrv.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "NPR0.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "NPR0.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  },
+  {
+    "filename": "bin_intigua_driver64.sys",
+    "category": "vulnerable driver",
+    "tags": [
+      "bin_intigua_driver64.sys"
+    ],
+    "resources": [
+      "https://github.com/magicsword-io/LOLDrivers/issues/325",
+      "https://github.com/KeServiceDescriptorTable/vulnerable-drivers"
+    ]
+  }
+]

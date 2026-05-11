@@ -1,0 +1,57 @@
+[
+  {
+    "id": "ps-encodedcommand-utf16le",
+    "description": "PowerShell -EncodedCommand with UTF-16LE base64 payload — JAB prefix pattern",
+    "command": "powershell.exe -NonInteractive -WindowStyle Hidden -EncodedCommand JABhACAAPQAgACIAdABlAHMAdAAiADsAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAJABhAA==",
+    "expect": {
+      "classes": ["loader", "defense_evasion"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1059.001", "T1027.010"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "ps-enc-shorthand-bypass",
+    "description": "PowerShell -enc shorthand with -ep bypass and -nop flags",
+    "command": "powershell -nop -w hidden -ep bypass -enc JABjACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0AA==",
+    "expect": {
+      "classes": ["loader", "defense_evasion"],
+      "min_confidence": {"loader": "high", "defense_evasion": "medium"},
+      "techniques": ["T1059.001", "T1027.010"]
+    },
+    "reject": {"classes": ["impact"]}
+  },
+  {
+    "id": "ps-gzip-iex-payload",
+    "description": "PowerShell gzip-decompressed payload executed via IEX — H4sI prefix pattern",
+    "command": "powershell -c \"$b=[System.Convert]::FromBase64String('H4sIAAAAAAAA/6tWKkktLlGyUlIqS40vLUpVslIqLU4tykvMTQUA6nU3RDEAAAA=');$gz=New-Object IO.Compression.GZipStream((New-Object IO.MemoryStream(,$b)),[IO.Compression.CompressionMode]::Decompress);$sr=New-Object IO.StreamReader($gz);iex $sr.ReadToEnd()\"",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1059.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "ps-nested-gzip-base64",
+    "description": "Two-layer: gzip inside base64, both decoded before IEX execution",
+    "command": "powershell -c \"$b=[System.Convert]::FromBase64String('H4sIAGHJ/2kC/zXMXQ+BUByA8a9izQU3DcnEusB6QQwd5WQu0v9Mh061OqX69LJx++y3pwvq1a5zTpiISMVFLQ4SoPHjNpudkT4VDcJtnrWh92erJC5JxlugZwlb+jmZjH9EsM8O3mpyBPXwgFkaYen4QMwZWBFE+LXPfdcpYPUqToYi3VlVYveEwNykdxYkaxYOwFxMrFp57qjcgKHHHlpzz9yUgZ4Xl0soE6qE3uj7kN9Bo9HtUVWFfn9OSdXpwgcnTaH1zAAAAA==');$gz=New-Object IO.Compression.GZipStream((New-Object IO.MemoryStream(,$b)),[IO.Compression.CompressionMode]::Decompress);$sr=New-Object IO.StreamReader($gz);iex $sr.ReadToEnd()\"",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1059.001"]
+    },
+    "reject": {"classes": ["impact"]}
+  },
+  {
+    "id": "ps-three-layer-staged",
+    "description": "Three-layer: UTF-16LE EncodedCommand wrapping gzip-compressed PS stage",
+    "command": "powershell -nop -w hidden -ep bypass -EncodedCommand JABiAD0AWwBTAHkAcwB0AGUAbQAuAEMAbwBuAHYAZQByAHQAXQA6ADoARgByAG8AbQBCAGEAcwBlADYANABTAHQAcgBpAG4AZwAoACIASAA0AHMASQBBAE4AZwBkACsAdABvAEMALwB3ADMASwBzAFEANgBDAE0AQgBBAEcANABGAGUANQBVAFkAYQBqAE8AeQBNAE8AUgBoAE0AaQBVAFkAeQBEAGMAYQBqADIATgB5AFcAYQBuAHIAUgBIAEEAOABTAEgAbAAvAG4ANwA5AGkASABMAEcAMwB6AEYANAA0AFIAaABSAEYATABpAFMAKwB6AEoAcQAzADQAcgBZAHoAQwA5ACsAawAvAHAAcgBGAHIAMgBOAHUAYQBWAGIAKwBWADkAbQBoAGMAagA0AHgAbwBiAHEAQgBkAEgANwBmAEgAYwBFAGQAZgBpAFoAdAByAHMAbwBOAHgARwBlAFMASQBsACsAdABGAFcAUQBrAGIAVQBUAHYAaQBRAEoAQgBSAC8AcQArAEMAbQBCADIAdwBBAEEAQQBBAD0AIgApADsAJABnAHoAPQBOAGUAdwAtAE8AYgBqAGUAYwB0ACAASQBPAC4AQwBvAG0AcAByAGUAcwBzAGkAbwBuAC4ARwBaAGkAcABTAHQAcgBlAGEAbQAoACgATgBlAHcALQBPAGIAagBlAGMAdAAgAEkATwAuAE0AZQBtAG8AcgB5AFMAdAByAGUAYQBtACgALAAkAGIAKQApACwAWwBJAE8ALgBDAG8AbQBwAHIAZQBzAHMAaQBvAG4ALgBDAG8AbQBwAHIAZQBzAHMAaQBvAG4ATQBvAGQAZQBdADoAOgBEAGUAYwBvAG0AcAByAGUAcwBzACkAOwAkAHMAcgA9AE4AZQB3AC0ATwBiAGoAZQBjAHQAIABJAE8ALgBTAHQAcgBlAGEAbQBSAGUAYQBkAGUAcgAoACQAZwB6ACkAOwBpAGUAeAAgACQAcwByAC4AUgBlAGEAZABUAG8ARQBuAGQAKAApAA==",
+    "expect": {
+      "classes": ["loader", "defense_evasion"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1059.001", "T1027.010"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  }
+]

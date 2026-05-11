@@ -1,3 +1,6 @@
 [submodule "backend/data/LOLBAS"]
 	path = backend/data/LOLBAS
 	url = https://github.com/LOLBAS-Project/LOLBAS.git
+[submodule "backend/data/GTFOBins"]
+	path = backend/data/GTFOBins
+	url = https://github.com/GTFOBins/GTFOBins.github.io
