@@ -8,6 +8,7 @@ import secrets
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, urlparse, urlunparse
 
 import asyncpg
 
@@ -23,6 +24,32 @@ if _env_file.exists():
 _pool: asyncpg.Pool | None = None
 
 
+def _encode_dsn_password(dsn: str) -> str:
+    """Return the DSN with the password portion URL-encoded.
+
+    asyncpg requires that special characters in the password (e.g. ``@``)
+    are percent-encoded.  Supabase and other providers sometimes supply a
+    raw connection string where the password contains literal ``@`` symbols,
+    which confuses the URL parser and causes a ``ValueError`` at pool
+    creation time.  This function re-encodes only the password component so
+    that the rest of the URL is left intact.
+    """
+    parsed = urlparse(dsn)
+    if parsed.password is None:
+        return dsn
+    # ``parsed.password`` is already decoded by urlparse, so we can safely
+    # re-encode it with ``quote``.  ``safe=""`` ensures every special
+    # character (including ``@``, ``:``, ``/``) is escaped.
+    encoded_password = quote(parsed.password, safe="")
+    # Reconstruct the netloc with the encoded password.
+    userinfo = f"{parsed.username}:{encoded_password}"
+    host_part = parsed.hostname
+    if parsed.port:
+        host_part = f"{host_part}:{parsed.port}"
+    netloc = f"{userinfo}@{host_part}"
+    return urlunparse(parsed._replace(netloc=netloc))
+
+
 async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
@@ -36,7 +63,7 @@ async def get_pool() -> asyncpg.Pool:
                 file=sys.stderr,
             )
             sys.exit(1)
-        _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
+        _pool = await asyncpg.create_pool(dsn=_encode_dsn_password(dsn), min_size=1, max_size=10)
     return _pool
 
 
