@@ -24,24 +24,74 @@ if _env_file.exists():
 _pool: asyncpg.Pool | None = None
 
 
-def _encode_dsn_password(dsn: str) -> str:
-    """Return the DSN with the password portion URL-encoded.
 
-    asyncpg requires that special characters in the password (e.g. ``@``)
-    are percent-encoded.  Supabase and other providers sometimes supply a
-    raw connection string where the password contains literal ``@`` symbols,
-    which confuses the URL parser and causes a ``ValueError`` at pool
-    creation time.  This function re-encodes only the password component so
-    that the rest of the URL is left intact.
+def _validate_and_encode_dsn(dsn: str) -> str:
+    """Validate the DATABASE_URL structure and return a pool-safe DSN.
+
+    Checks that the URL has the expected ``postgresql://username:password@host:port/db``
+    shape *before* handing it to asyncpg.  When the URL is malformed (missing
+    username, missing password, or the password itself contains a bare ``@``
+    that confuses the parser) a ``ValueError`` is raised with a human-readable
+    message that shows exactly what was received so the operator can fix the
+    environment variable at the source.
+
+    For well-formed URLs the password is percent-encoded so that special
+    characters (``@``, ``:``, ``/``, …) do not confuse asyncpg's own parser.
     """
     parsed = urlparse(dsn)
+
+    # ── Structural checks ──────────────────────────────────────────────────────
+    errors: list[str] = []
+
+    if parsed.scheme not in ("postgresql", "postgres"):
+        errors.append(
+            f"  scheme   : got {parsed.scheme!r}, expected 'postgresql' or 'postgres'"
+        )
+
+    if not parsed.username:
+        errors.append(
+            "  username : missing — URL must be postgresql://USERNAME:password@host/db"
+        )
+
     if parsed.password is None:
-        return dsn
-    # ``parsed.password`` is already decoded by urlparse, so we can safely
-    # re-encode it with ``quote``.  ``safe=""`` ensures every special
-    # character (including ``@``, ``:``, ``/``) is escaped.
-    encoded_password = quote(parsed.password, safe="")
-    # Reconstruct the netloc with the encoded password.
+        errors.append(
+            "  password : missing — URL must be postgresql://username:PASSWORD@host/db"
+        )
+
+    if not parsed.hostname:
+        errors.append(
+            "  hostname : missing — URL must be postgresql://user:pass@HOSTNAME:port/db"
+        )
+
+    if errors:
+        # Redact the raw value so we don't log credentials, but show enough
+        # structure for the operator to understand what was parsed.
+        redacted = (
+            f"{parsed.scheme or '?'}://"
+            f"{parsed.username or '<missing>'}:<redacted>"
+            f"@{parsed.hostname or '<missing>'}"
+            f":{parsed.port or '<missing>'}"
+            f"{parsed.path or '/<missing>'}"
+        )
+        raise ValueError(
+            "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+            f"  Received (redacted): {redacted}\n"
+            "  Problems detected:\n"
+            + "\n".join(errors)
+            + "\n\n"
+            "  Expected format:\n"
+            "    postgresql://username:password@hostname:5432/database\n\n"
+            "  Common causes:\n"
+            "    • The password contains a literal '@' — it must be percent-encoded\n"
+            "      as '%40' in the URL, or set via PGPASSWORD instead.\n"
+            "    • The URL was copied without the username prefix.\n"
+            "    • The URL was split across multiple lines in the environment.\n"
+        )
+
+    # ── Re-encode the password so asyncpg receives a clean URL ────────────────
+    # ``parsed.password`` is already decoded by urlparse, so re-encoding with
+    # ``safe=""`` escapes every special character (``@``, ``:``, ``/``, …).
+    encoded_password = quote(parsed.password, safe="")  # type: ignore[arg-type]
     userinfo = f"{parsed.username}:{encoded_password}"
     host_part = parsed.hostname
     if parsed.port:
@@ -63,8 +113,16 @@ async def get_pool() -> asyncpg.Pool:
                 file=sys.stderr,
             )
             sys.exit(1)
-        _pool = await asyncpg.create_pool(dsn=_encode_dsn_password(dsn), min_size=1, max_size=10)
+
+        try:
+            safe_dsn = _validate_and_encode_dsn(dsn)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            sys.exit(1)
+
+        _pool = await asyncpg.create_pool(dsn=safe_dsn, min_size=1, max_size=10)
     return _pool
+
 
 
 async def close_pool() -> None:
