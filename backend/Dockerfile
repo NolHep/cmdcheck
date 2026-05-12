@@ -4,10 +4,7 @@ WORKDIR /app
 
 RUN pip install uv
 
-COPY pyproject.toml .
+COPY . .
 RUN uv pip install --system --no-cache ".[dev]"
 
-COPY . .
-
-# Ensure submodule data is present (mounted via volume in compose)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
