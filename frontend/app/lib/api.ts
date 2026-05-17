@@ -248,13 +248,16 @@ export function apiBase(): string {
     return process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   }
   const configured = process.env.NEXT_PUBLIC_API_URL;
-  // Only trust the configured URL when it's a real remote host (not localhost).
-  // When it's localhost, fall back to window.location.hostname so that
-  // devices on the LAN reach the backend on the server machine, not their own.
   if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) {
     return configured;
   }
-  return `http://${window.location.hostname}:8000`;
+  const hostname = window.location.hostname;
+  // Allow localhost and LAN addresses for dev; hard-fail on any other host so
+  // analyst commands are never accidentally sent to an attacker-controlled origin.
+  if (hostname === "localhost" || hostname === "127.0.0.1" || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\.\d+\.\d+$/.test(hostname)) {
+    return `http://${hostname}:8000`;
+  }
+  throw new Error("NEXT_PUBLIC_API_URL is not configured. Set it to the backend URL before deploying.");
 }
 
 function extractDetail(body: unknown): string | null {

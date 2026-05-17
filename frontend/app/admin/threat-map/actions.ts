@@ -1,13 +1,22 @@
 "use server";
 
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const adminSecret = process.env.ADMIN_SECRET ?? "";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session || session.user?.role !== "admin") redirect("/login");
+}
 
 function headers() {
   return { "Content-Type": "application/json", "X-Admin-Secret": adminSecret };
 }
 
 export async function createGroup(name: string, description: string) {
+  await requireAdmin();
   const res = await fetch(`${backendUrl}/admin/threat-groups`, {
     method: "POST",
     headers: headers(),
@@ -18,6 +27,7 @@ export async function createGroup(name: string, description: string) {
 }
 
 export async function deleteGroup(groupId: string) {
+  await requireAdmin();
   const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}`, {
     method: "DELETE",
     headers: headers(),
@@ -26,6 +36,7 @@ export async function deleteGroup(groupId: string) {
 }
 
 export async function addMember(groupId: string, slug: string, notes: string) {
+  await requireAdmin();
   const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}/members`, {
     method: "POST",
     headers: headers(),
@@ -39,6 +50,7 @@ export async function addMember(groupId: string, slug: string, notes: string) {
 }
 
 export async function removeMember(groupId: string, slug: string) {
+  await requireAdmin();
   const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}/members/${slug}`, {
     method: "DELETE",
     headers: headers(),

@@ -560,20 +560,23 @@ async def fetch_threat_groups() -> list[dict[str, Any]]:
         members = await conn.fetch(
             """
             SELECT m.group_id, m.slug, m.notes, m.added_at,
-                   a.command
+                   a.command, a.encrypted
             FROM threat_group_members m
             LEFT JOIN analyses a ON a.slug = m.slug AND a.deleted_at IS NULL
             ORDER BY m.added_at ASC
             """
         )
+    from .encryption import decrypt
     member_map: dict[str, list[dict[str, Any]]] = {}
     for m in members:
         gid = str(m["group_id"])
+        raw_cmd = m["command"]
+        cmd_preview = decrypt(raw_cmd, m.get("encrypted", False))[:120] if raw_cmd else None
         member_map.setdefault(gid, []).append({
             "slug": m["slug"],
             "notes": m["notes"],
             "added_at": m["added_at"].isoformat(),
-            "command": m["command"][:120] if m["command"] else None,
+            "command": cmd_preview,
         })
     return [
         {
@@ -606,10 +609,11 @@ async def delete_threat_group(group_id: str) -> bool:
 
 
 async def add_threat_group_member(group_id: str, slug: str, notes: str | None) -> dict[str, Any] | None:
+    from .encryption import decrypt
     pool = await get_pool()
     async with pool.acquire() as conn:
-        command = await conn.fetchval(
-            "SELECT command FROM analyses WHERE slug = $1 AND deleted_at IS NULL", slug
+        analysis_row = await conn.fetchrow(
+            "SELECT command, encrypted FROM analyses WHERE slug = $1 AND deleted_at IS NULL", slug
         )
         try:
             row = await conn.fetchrow(
@@ -623,11 +627,15 @@ async def add_threat_group_member(group_id: str, slug: str, notes: str | None) -
             )
         except Exception:
             return None
+    if analysis_row:
+        cmd_preview = decrypt(analysis_row["command"], analysis_row.get("encrypted", False))[:120]
+    else:
+        cmd_preview = None
     return {
         "slug": row["slug"],
         "notes": row["notes"],
         "added_at": row["added_at"].isoformat(),
-        "command": command[:120] if command else None,
+        "command": cmd_preview,
     }
 
 
@@ -702,19 +710,21 @@ async def fetch_workspace(workspace_id: str, requesting_user_id: str) -> dict[st
         )
         analyses = await conn.fetch(
             """
-            SELECT slug, command, result, created_at
+            SELECT slug, command, result, created_at, encrypted
             FROM analyses
             WHERE workspace_id = $1::uuid AND deleted_at IS NULL
             ORDER BY created_at DESC LIMIT 50
             """,
             workspace_id,
         )
+    from .encryption import decrypt
     recent: list[dict[str, Any]] = []
     for row in analyses:
         result = json.loads(row["result"])
+        command = decrypt(row["command"], row.get("encrypted", False))
         recent.append({
             "slug": row["slug"],
-            "command": row["command"][:200],
+            "command": command[:200],
             "threat_labels": [tc["label"] for tc in result.get("threat_classes", []) if tc.get("confidence") in ("high", "medium")],
             "created_at": row["created_at"].isoformat(),
         })
@@ -921,6 +931,13 @@ async def fetch_admin_stats() -> dict[str, Any]:
 
 
 async def fetch_analysis(slug: str) -> dict[str, Any] | None:
+    """Fetch an analysis by slug.
+
+    Private analyses use random unguessable slugs — possession of the slug is
+    the bearer credential. No additional auth enforcement is needed here.
+    The analyze endpoint never deduplicates against private analyses (it only
+    does the existing-slug lookup for public submissions).
+    """
     from .encryption import decrypt
     pool = await get_pool()
     async with pool.acquire() as conn:

@@ -1,23 +1,26 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
+const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
+
+const AnalyzeBodySchema = z.object({
+  command: z.string().min(1).max(65536),
+  parent_process: z.string().max(256).nullable().optional(),
+  is_private: z.boolean().optional(),
+  skip_redaction: z.boolean().optional(),
+  workspace_id: z.string().uuid().nullable().optional(),
+});
 
 export async function POST(request: Request): Promise<NextResponse> {
   const session = await auth();
-  const body = await request.json().catch(() => ({}));
-
-  const { command, parent_process, is_private, skip_redaction, workspace_id } = body as {
-    command?: string;
-    parent_process?: string | null;
-    is_private?: boolean;
-    skip_redaction?: boolean;
-    workspace_id?: string | null;
-  };
-
-  if (!command) {
-    return NextResponse.json({ code: "missing_command", detail: "command is required" }, { status: 400 });
+  const raw = await request.json().catch(() => null);
+  const parsed = AnalyzeBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ code: "invalid_input", detail: parsed.error.issues }, { status: 400 });
   }
+
+  const { command, parent_process, is_private, skip_redaction, workspace_id } = parsed.data;
 
   if (is_private && !session?.user?.email) {
     return NextResponse.json(
@@ -26,14 +29,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const res = await fetch(`${backendUrl}/analyze`, {
+  // skip_redaction requires an authenticated session — anonymous users cannot
+  // disable the credential/IP redaction pass on public commands.
+  const effective_skip_redaction = !!skip_redaction && !!session?.user?.email;
+
+  const res = await fetch(`${backend}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       command,
       parent_process: parent_process ?? null,
       is_private: !!is_private,
-      skip_redaction: !!skip_redaction,
+      skip_redaction: effective_skip_redaction,
       workspace_id: workspace_id ?? null,
       user_email: session?.user?.email ?? null,
     }),

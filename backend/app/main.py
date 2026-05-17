@@ -25,10 +25,10 @@ from . import stripe_billing
 from .db import (
     accept_workspace_invite, add_threat_group_member, close_pool,
     consume_verification_token, count_users, create_api_key, create_bug_report,
-    create_threat_group, create_user, create_workspace, create_workspace_invite,
-    delete_analysis, delete_threat_group, delete_workspace, fetch_admin_stats,
-    fetch_analysis, fetch_api_keys_for_user, fetch_bug_reports, fetch_invite,
-    fetch_recent, fetch_subscription_status, fetch_threat_groups,
+    create_threat_group, create_user, create_verification_token, create_workspace,
+    create_workspace_invite, delete_analysis, delete_threat_group, delete_workspace,
+    fetch_admin_stats, fetch_analysis, fetch_api_keys_for_user, fetch_bug_reports,
+    fetch_invite, fetch_recent, fetch_subscription_status, fetch_threat_groups,
     fetch_user_by_api_key, fetch_user_by_email, fetch_workspace,
     fetch_workspaces_for_user, get_banner, remove_threat_group_member,
     remove_workspace_member, revoke_api_key, run_migrations, search_analyses,
@@ -42,7 +42,7 @@ from .loldrivers import load_catalog as load_loldrivers, match as loldrivers_mat
 from .parent_score import score_parent
 from .parser import extract_binaries, parse_command
 from .redactor import redact
-from .slug import make_slug
+from .slug import make_slug, make_private_slug
 from .ip_extractor import extract_ips
 from . import threat_intel as threat_intel_mod
 from .url_extractor import extract_urls_from_analysis
@@ -314,7 +314,7 @@ async def _resolve_api_key_user(request: Request) -> dict[str, Any] | None:
 
 
 def _require_admin(x_admin_secret: str | None = Header(default=None)) -> None:
-    if not _ADMIN_SECRET or x_admin_secret != _ADMIN_SECRET:
+    if not _ADMIN_SECRET or not secrets.compare_digest(x_admin_secret or "", _ADMIN_SECRET):
         raise HTTPException(status_code=403, detail={"code": "forbidden", "detail": "Admin access required"})
 
 
@@ -432,16 +432,20 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     elif workspace_id:
         workspace_id = None  # ignore workspace_id if user is not identified
 
-    slug = make_slug(command)
-
-    existing = await fetch_analysis(slug)
-    if existing is not None and not existing.get("deleted"):
-        if parent_process and not existing.get("parent_verdict"):
-            verdict = score_parent(parent_process, command)
-            if verdict:
-                existing["parent_verdict"] = asdict(verdict)
-        return existing
-    # If deleted (or None), fall through to re-analyze and restore the row
+    # Private analyses get a random unguessable slug — no deduplication, no leakage.
+    # Public analyses keep the deterministic hash slug for stable shareable links.
+    if is_private:
+        slug = make_private_slug()
+    else:
+        slug = make_slug(command)
+        existing = await fetch_analysis(slug)
+        if existing is not None and not existing.get("deleted"):
+            if parent_process and not existing.get("parent_verdict"):
+                verdict = score_parent(parent_process, command)
+                if verdict:
+                    existing["parent_verdict"] = asdict(verdict)
+            return existing
+        # If deleted (or None), fall through to re-analyze and restore the row
 
     ast, parse_error = parse_command(command)
     layers = decode_layers(command)
@@ -863,8 +867,8 @@ async def billing_webhook(request: Request) -> dict[str, str]:
 
     try:
         event = stripe_billing.construct_webhook_event(payload, sig_header)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail={"code": "invalid_signature", "detail": str(exc)})
+    except Exception:
+        raise HTTPException(status_code=400, detail={"code": "invalid_signature", "detail": "Invalid webhook signature"})
 
     event_type: str = event["type"]
     data_obj = event["data"]["object"]

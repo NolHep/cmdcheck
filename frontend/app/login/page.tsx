@@ -9,7 +9,9 @@ import { apiBase } from "@/app/lib/api";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/";
+  const rawNext = params.get("next") ?? "/";
+  // Reject absolute URLs and protocol-relative paths to prevent open-redirect.
+  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
