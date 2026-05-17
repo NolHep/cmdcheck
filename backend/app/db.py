@@ -173,7 +173,7 @@ async def get_pool() -> asyncpg.Pool:
                     statement_cache_size=0,
                 )
                 break
-            except (OSError, asyncpg.PostgresConnectionFailureError) as exc:
+            except Exception as exc:
                 last_exc = exc
                 if attempt < 2:
                     import asyncio
