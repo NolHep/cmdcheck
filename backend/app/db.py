@@ -160,7 +160,40 @@ async def get_pool() -> asyncpg.Pool:
             print(str(exc), file=sys.stderr)
             sys.exit(1)
 
-        _pool = await asyncpg.create_pool(dsn=safe_dsn, min_size=1, max_size=10)
+        last_exc: Exception | None = None
+        for attempt in range(3):
+            try:
+                _pool = await asyncpg.create_pool(
+                    dsn=safe_dsn,
+                    min_size=1,
+                    max_size=10,
+                    # Supabase poolers (pgBouncer) require no prepared-statement
+                    # cache; without this asyncpg sends named statements that
+                    # pgBouncer can't route, causing connection failures.
+                    statement_cache_size=0,
+                )
+                break
+            except (OSError, asyncpg.PostgresConnectionFailureError) as exc:
+                last_exc = exc
+                if attempt < 2:
+                    import asyncio
+                    wait = 2 ** attempt
+                    print(
+                        f"[cmdcheck] DB connection attempt {attempt + 1} failed, "
+                        f"retrying in {wait}s: {exc}",
+                        file=sys.stderr,
+                    )
+                    await asyncio.sleep(wait)
+        else:
+            print(
+                f"\n[cmdcheck] Could not connect to database after 3 attempts.\n"
+                f"  Last error: {last_exc}\n"
+                f"  Ensure DATABASE_URL is set correctly in Railway variables and\n"
+                f"  that your Supabase project is not paused (free tier sleeps).\n"
+                f"  Use the Session mode pooler URL (port 5432), not port 6543.\n",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     return _pool
 
 
