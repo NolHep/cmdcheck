@@ -340,7 +340,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if _CORS_WILDCARD else _ALLOWED_ORIGINS,
     # Always allow LAN addresses so dev testing from phones/tablets works
-    allow_origin_regex=r"https?://(localhost|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?",
+    allow_origin_regex=r"https?://(localhost|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?|https://[a-zA-Z0-9-]+\.vercel\.app",
     allow_methods=["GET", "POST", "DELETE", "PATCH", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
