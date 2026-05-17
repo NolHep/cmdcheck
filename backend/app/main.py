@@ -47,6 +47,8 @@ from .ip_extractor import extract_ips
 from . import threat_intel as threat_intel_mod
 from .url_extractor import extract_urls_from_analysis
 from .email import send_verification_email, send_workspace_invite_email
+from .story import generate_story
+from . import threat_actors as threat_actors_mod
 from .users import hash_password, is_admin_email, verify_password
 from .virustotal import lookup_urls
 
@@ -322,6 +324,7 @@ async def lifespan(app: FastAPI):
     load_lolbas()
     load_gtfobins()
     load_loldrivers()
+    threat_actors_mod.load_catalog()
     _stripe_key = os.getenv("STRIPE_SECRET_KEY", "")
     if _stripe_key:
         stripe_billing.init(_stripe_key)
@@ -533,6 +536,12 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         "binaries_in_command": binaries_in_command,
         "is_private": is_private,
     }
+
+    # Story and threat actor attribution — generated after the full result is assembled
+    # so story.py and threat_actors.py can read all fields.
+    result["story"] = generate_story(result)
+    technique_ids = threat_actors_mod.collect_techniques(result)
+    result["attributed_actors"] = threat_actors_mod.match_actors(technique_ids)
 
     await upsert_analysis(slug, stored_command, result, is_private=is_private, user_id=user_id, workspace_id=workspace_id)
     return result

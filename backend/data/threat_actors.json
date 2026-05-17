@@ -1,0 +1,325 @@
+[
+  {
+    "id": "G0007",
+    "name": "APT28",
+    "aliases": ["Fancy Bear", "STRONTIUM", "Sofacy", "Pawn Storm", "Sednit"],
+    "country": "Russia",
+    "motivation": "espionage",
+    "description": "Russian GRU Unit 26165 threat group active since at least 2004. Primarily targets governments, militaries, and security organizations.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1027.001", "T1547.001",
+      "T1003.001", "T1021.001", "T1021.002", "T1055", "T1566.001",
+      "T1071.001", "T1041", "T1070.001", "T1105", "T1562.001",
+      "T1078", "T1112", "T1218.011", "T1016", "T1083"
+    ]
+  },
+  {
+    "id": "G0016",
+    "name": "APT29",
+    "aliases": ["Cozy Bear", "The Dukes", "Midnight Blizzard", "NOBELIUM", "Yttrium"],
+    "country": "Russia",
+    "motivation": "espionage",
+    "description": "Russian SVR threat group responsible for the SolarWinds supply chain attack and numerous government breaches. Known for stealthy, long-dwell intrusions.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1027.001", "T1003.001",
+      "T1021.001", "T1218.001", "T1055", "T1071.001", "T1041",
+      "T1078", "T1566.001", "T1105", "T1112", "T1070.001",
+      "T1547.001", "T1218.010", "T1016", "T1083", "T1046"
+    ]
+  },
+  {
+    "id": "G0034",
+    "name": "Sandworm",
+    "aliases": ["Voodoo Bear", "BlackEnergy", "Seashell Blizzard", "IRIDIUM"],
+    "country": "Russia",
+    "motivation": "destruction, espionage",
+    "description": "Russian GRU Unit 74455 group responsible for NotPetya, attacks on Ukrainian power grid, and Olympic Destroyer. Focuses on destructive operations.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1543.003", "T1490",
+      "T1070.001", "T1486", "T1562.001", "T1105", "T1071.001",
+      "T1003.001", "T1021.002", "T1078", "T1112", "T1047"
+    ]
+  },
+  {
+    "id": "G0010",
+    "name": "Turla",
+    "aliases": ["Snake", "Venomous Bear", "Waterbug", "KRYPTON", "Secret Blizzard"],
+    "country": "Russia",
+    "motivation": "espionage",
+    "description": "Russian FSB-linked group known for sophisticated backdoors and hijacking other threat actors' infrastructure. Active since at least 2004.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1055",
+      "T1218.011", "T1071.001", "T1041", "T1070.001", "T1003.001",
+      "T1021.001", "T1078", "T1112", "T1016", "T1083", "T1105"
+    ]
+  },
+  {
+    "id": "G0032",
+    "name": "Lazarus Group",
+    "aliases": ["Hidden Cobra", "Zinc", "Diamond Sleet", "Whois Team", "APT38"],
+    "country": "North Korea",
+    "motivation": "espionage, financial",
+    "description": "North Korean state-sponsored group linked to the $81M Bangladesh Bank heist, WannaCry ransomware, and Sony Pictures breach. The most prolific nation-state financial threat actor.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1490", "T1486", "T1105", "T1071.001", "T1041",
+      "T1055", "T1218.011", "T1078", "T1070.001", "T1112",
+      "T1021.001", "T1021.002", "T1016", "T1083", "T1046"
+    ]
+  },
+  {
+    "id": "G0096",
+    "name": "APT41",
+    "aliases": ["Double Dragon", "Winnti", "Barium", "Wicked Panda", "Brass Typhoon"],
+    "country": "China",
+    "motivation": "espionage, financial",
+    "description": "Chinese group uniquely conducting both state-sponsored espionage and financially motivated cybercrime. Notable for supply chain attacks and video game industry targeting.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1053.005",
+      "T1055", "T1218.010", "T1218.011", "T1071.001", "T1041",
+      "T1003.001", "T1078", "T1105", "T1070.001", "T1112",
+      "T1016", "T1083", "T1046", "T1021.001", "T1543.003"
+    ]
+  },
+  {
+    "id": "G0025",
+    "name": "APT17",
+    "aliases": ["Deputy Dog", "Tailgater Team", "Group 72"],
+    "country": "China",
+    "motivation": "espionage",
+    "description": "Chinese threat group that has targeted U.S. government entities, the defense industry, law firms, and IT companies.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1071.001", "T1105", "T1055", "T1016", "T1083"
+    ]
+  },
+  {
+    "id": "G0045",
+    "name": "APT10",
+    "aliases": ["Stone Panda", "MenuPass", "Cicada", "Potassium", "Bronze Riverside"],
+    "country": "China",
+    "motivation": "espionage",
+    "description": "Chinese group primarily targeting managed service providers to indirectly reach their clients. Known for Operation Cloud Hopper.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1003.001", "T1041",
+      "T1071.001", "T1105", "T1078", "T1021.001", "T1021.002",
+      "T1016", "T1083", "T1046", "T1547.001", "T1070.001"
+    ]
+  },
+  {
+    "id": "G0050",
+    "name": "APT32",
+    "aliases": ["OceanLotus", "SeaLotus", "APT-C-00", "Canvas Cyclone"],
+    "country": "Vietnam",
+    "motivation": "espionage",
+    "description": "Vietnamese state-sponsored group targeting foreign corporations, governments, and journalists with access to political, economic, and corporate secrets.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1053.005", "T1218.001",
+      "T1218.010", "T1218.011", "T1547.001", "T1071.001", "T1105",
+      "T1055", "T1003.001", "T1016", "T1083", "T1070.001"
+    ]
+  },
+  {
+    "id": "G0049",
+    "name": "OilRig",
+    "aliases": ["APT34", "HELIX KITTEN", "Cobalt Gypsy", "Crambus", "Hazel Sandstorm"],
+    "country": "Iran",
+    "motivation": "espionage",
+    "description": "Iranian government-linked group targeting Middle Eastern and international organizations in energy, financial, government, and critical infrastructure sectors.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1071.001", "T1041", "T1105", "T1078", "T1016",
+      "T1083", "T1046", "T1543.003", "T1053.005", "T1112"
+    ]
+  },
+  {
+    "id": "G0064",
+    "name": "APT33",
+    "aliases": ["Elfin", "Refined Kitten", "Magnallium", "Peach Sandstorm"],
+    "country": "Iran",
+    "motivation": "espionage, destruction",
+    "description": "Iranian group targeting aerospace, energy, and petrochemical industries. Associated with destructive Shamoon malware variants and password spraying campaigns.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1071.001", "T1105", "T1078", "T1486", "T1490",
+      "T1016", "T1083", "T1562.001", "T1070.001", "T1053.005"
+    ]
+  },
+  {
+    "id": "G0046",
+    "name": "FIN7",
+    "aliases": ["Carbanak", "Navigator Group", "ITG14", "Sangria Tempest"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Sophisticated financially motivated group targeting the hospitality, restaurant, and retail industries. Known for spear-phishing with malicious documents and point-of-sale malware.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1218.001", "T1053.005",
+      "T1003.001", "T1547.001", "T1071.001", "T1105", "T1055",
+      "T1016", "T1083", "T1046", "T1078", "T1566.001"
+    ]
+  },
+  {
+    "id": "G0008",
+    "name": "Carbanak",
+    "aliases": ["Anunak", "Carbon Spider"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Cybercriminal group responsible for stealing over $1 billion from banks worldwide. Uses spear-phishing to gain access to banking networks.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1218.011", "T1053.005",
+      "T1003.001", "T1547.001", "T1021.001", "T1021.002", "T1105",
+      "T1078", "T1016", "T1083", "T1071.001", "T1041"
+    ]
+  },
+  {
+    "id": "G0102",
+    "name": "Wizard Spider",
+    "aliases": ["UNC1878", "Gold Blackburn", "Periwinkle Tempest"],
+    "country": "Russia",
+    "motivation": "financial",
+    "description": "Russia-based cybercriminal group operating TrickBot, Ryuk, Conti, and BazarLoader. One of the most prolific ransomware operators targeting hospitals and critical infrastructure.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1490", "T1486",
+      "T1003.001", "T1003.002", "T1053.005", "T1547.001", "T1105",
+      "T1071.001", "T1041", "T1078", "T1021.001", "T1021.002",
+      "T1562.001", "T1070.001", "T1055", "T1016", "T1083"
+    ]
+  },
+  {
+    "id": "G0092",
+    "name": "TA505",
+    "aliases": ["Hive0065", "Spandex Tempest"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Prolific cybercriminal group distributing Locky, Dridex, FlawedAmmyy, and Clop ransomware. Among the highest-volume email threat actors globally.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1218.011", "T1218.010",
+      "T1053.005", "T1105", "T1547.001", "T1071.001", "T1041",
+      "T1566.001", "T1078", "T1016", "T1083", "T1490"
+    ]
+  },
+  {
+    "id": "G0080",
+    "name": "Cobalt Group",
+    "aliases": ["Cobalt Gang", "TEMP.Metastrike"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Cybercriminal group targeting banks and ATM networks, primarily in Eastern Europe and Central Asia. Known for using Cobalt Strike and custom ATM malware.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1218.010", "T1218.011",
+      "T1053.005", "T1547.001", "T1105", "T1071.001", "T1041",
+      "T1055", "T1003.001", "T1078", "T1566.001", "T1016"
+    ]
+  },
+  {
+    "id": "G0037",
+    "name": "FIN6",
+    "aliases": ["ITG08", "Skeleton Spider", "MageCart Group 6"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Financially motivated group primarily targeting payment card data from point-of-sale systems in the retail, hospitality, and restaurant industries.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1003.001", "T1547.001",
+      "T1053.005", "T1021.001", "T1021.002", "T1105", "T1041",
+      "T1078", "T1016", "T1083", "T1046", "T1070.001"
+    ]
+  },
+  {
+    "id": "G1004",
+    "name": "LAPSUS$",
+    "aliases": ["DEV-0537", "Strawberry Tempest"],
+    "country": "Multiple",
+    "motivation": "financial, notoriety",
+    "description": "Loosely organized group known for social engineering, SIM swapping, and extortion. Breached Microsoft, Okta, Samsung, Nvidia, and Uber through credential theft and insider recruitment.",
+    "techniques": [
+      "T1059.003", "T1078", "T1136", "T1562.001", "T1003.001",
+      "T1087.001", "T1069.001", "T1016", "T1083", "T1041"
+    ]
+  },
+  {
+    "id": "G0088",
+    "name": "TEMP.Veles",
+    "aliases": ["Triton Group", "XENOTIME", "Electrum"],
+    "country": "Russia",
+    "motivation": "destruction",
+    "description": "Group responsible for the Triton/TRISIS attack targeting Schneider Electric safety systems at a Saudi petrochemical plant — the first known malware designed to cause physical damage.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1490", "T1562.001",
+      "T1070.001", "T1543.003", "T1105", "T1078", "T1016"
+    ]
+  },
+  {
+    "id": "G0082",
+    "name": "APT38",
+    "aliases": ["Nickel Gladstone", "Stardust Chollima"],
+    "country": "North Korea",
+    "motivation": "financial",
+    "description": "North Korean group focused solely on financial gain, responsible for SWIFT banking heists totaling over $2 billion. Distinct from Lazarus Group though shares infrastructure.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1003.001", "T1490",
+      "T1486", "T1105", "T1071.001", "T1041", "T1078",
+      "T1021.002", "T1070.001", "T1016", "T1083", "T1112"
+    ]
+  },
+  {
+    "id": "G0048",
+    "name": "RTM",
+    "aliases": ["Gold Everest"],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Cybercriminal group targeting Russian businesses with banking trojans since 2015. Uses phishing emails with malicious attachments to steal online banking credentials.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1105", "T1071.001", "T1016", "T1083", "T1053.005"
+    ]
+  },
+  {
+    "id": "G0083",
+    "name": "SilverTerrier",
+    "aliases": ["NaijaCyber"],
+    "country": "Nigeria",
+    "motivation": "financial",
+    "description": "Nigerian cybercriminal group conducting business email compromise (BEC) fraud and commodity malware campaigns targeting global organizations.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1105", "T1071.001", "T1566.001", "T1016", "T1083"
+    ]
+  },
+  {
+    "id": "G0039",
+    "name": "Suckfly",
+    "aliases": ["APT-C-01"],
+    "country": "China",
+    "motivation": "espionage",
+    "description": "Chinese espionage group known for stealing code signing certificates to sign malware, targeting Indian government and commercial organizations.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1105", "T1071.001", "T1016", "T1083", "T1070.001"
+    ]
+  },
+  {
+    "id": "G0085",
+    "name": "FIN4",
+    "aliases": [],
+    "country": "Unknown",
+    "motivation": "financial",
+    "description": "Group uniquely targeting healthcare and pharmaceutical industries for material non-public information for stock trading purposes.",
+    "techniques": [
+      "T1059.001", "T1078", "T1566.001", "T1003.001", "T1016",
+      "T1083", "T1071.001", "T1041"
+    ]
+  },
+  {
+    "id": "G0060",
+    "name": "BRONZE BUTLER",
+    "aliases": ["REDBALDKNIGHT", "Tick"],
+    "country": "China",
+    "motivation": "espionage",
+    "description": "Chinese group primarily targeting Japanese organizations in critical infrastructure, heavy industry, and manufacturing sectors.",
+    "techniques": [
+      "T1059.001", "T1059.003", "T1027", "T1547.001", "T1003.001",
+      "T1105", "T1071.001", "T1041", "T1016", "T1083",
+      "T1053.005", "T1070.001", "T1055"
+    ]
+  }
+]

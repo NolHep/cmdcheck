@@ -171,6 +171,21 @@ export type WorkspaceDetail = z.infer<typeof WorkspaceDetailSchema>;
 export type WorkspaceInvite = z.infer<typeof WorkspaceInviteSchema>;
 export type ApiKey = z.infer<typeof ApiKeySchema>;
 
+export const ThreatActorSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  aliases: z.array(z.string()).default([]),
+  country: z.string(),
+  motivation: z.string(),
+  description: z.string(),
+  url: z.string(),
+  matched_techniques: z.array(z.string()).default([]),
+  overlap_count: z.number(),
+  confidence: z.enum(["high", "medium", "low"]),
+});
+
+export type ThreatActor = z.infer<typeof ThreatActorSchema>;
+
 export const AnalyzeResponseSchema = z.object({
   slug: z.string().regex(/^[A-Z2-7]{12}$/),
   command: z.string().optional(),
@@ -196,6 +211,8 @@ export const AnalyzeResponseSchema = z.object({
     abuseipdb: z.boolean(),
     otx: z.boolean(),
   }).optional(),
+  story: z.string().optional(),
+  attributed_actors: z.array(ThreatActorSchema).default([]),
 });
 
 export const RecentItemSchema = z.object({
