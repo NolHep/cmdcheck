@@ -342,7 +342,7 @@ app.add_middleware(
     # Always allow LAN addresses so dev testing from phones/tablets works
     allow_origin_regex=r"https?://(localhost|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?",
     allow_methods=["GET", "POST", "DELETE", "PATCH", "PUT"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
