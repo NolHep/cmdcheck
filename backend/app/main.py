@@ -46,6 +46,7 @@ from .slug import make_slug
 from .ip_extractor import extract_ips
 from . import threat_intel as threat_intel_mod
 from .url_extractor import extract_urls_from_analysis
+from .email import send_verification_email, send_workspace_invite_email
 from .users import hash_password, is_admin_email, verify_password
 from .virustotal import lookup_urls
 
@@ -451,7 +452,9 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
                 seen_all_binaries.add(binary.lower())
                 all_binaries.append(binary)
 
-    # LOLBAS matching
+    # LOLBAS matching — key by both command binary name and catalog name so
+    # fuzzy-matched entries (e.g. "pwsh" → "PowerShell.exe") surface correctly
+    # in _build_binaries_in_command which looks up by the command binary name.
     lolbas_matches: list[dict[str, Any]] = []
     lolbas_by_name: dict[str, dict[str, Any]] = {}
     seen_lolbas: set[str] = set()
@@ -460,9 +463,10 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         if hit is not None and hit["name"] not in seen_lolbas:
             seen_lolbas.add(hit["name"])
             lolbas_matches.append(hit)
+            lolbas_by_name[binary.lower()] = hit
             lolbas_by_name[hit["name"].lower()] = hit
 
-    # GTFOBins matching
+    # GTFOBins matching — same dual-keying for consistency
     gtfobins_matches: list[dict[str, Any]] = []
     gtfobins_by_name: dict[str, dict[str, Any]] = {}
     seen_gtfobins: set[str] = set()
@@ -471,6 +475,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         if hit is not None and hit["name"] not in seen_gtfobins:
             seen_gtfobins.add(hit["name"])
             gtfobins_matches.append(hit)
+            gtfobins_by_name[binary.lower()] = hit
             gtfobins_by_name[hit["name"].lower()] = hit
 
     # LOLDrivers matching — vulnerable kernel drivers (BYOVD)
@@ -491,10 +496,10 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         sub = await fetch_subscription_status(body.user_email or "")
         skip_redact = sub.get("status") in ("active", "trialing")
 
-    stored_command, was_redacted = ("", False) if skip_redact else redact(command)
     if skip_redact:
-        stored_command = command
-        was_redacted = False
+        stored_command, was_redacted = command, False
+    else:
+        stored_command, was_redacted = redact(command)
 
     # URL + IP extraction then multi-source threat intel enrichment
     extracted_urls = extract_urls_from_analysis(command, layers)
@@ -504,6 +509,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
 
     result: dict[str, Any] = {
         "slug": slug,
+        "command": stored_command,
         "parsed": ast,
         "parsed_error": parse_error,
         "decoded_layers": layers,
@@ -935,6 +941,7 @@ async def workspace_invite(workspace_id: str, body: WorkspaceInviteRequest) -> d
     token = secrets.token_urlsafe(32)
     invite = await create_workspace_invite(workspace_id, body.invite_email, str(owner["id"]), token)
     invite["workspace_name"] = ws["name"]
+    await send_workspace_invite_email(body.invite_email, ws["name"], token)
     return invite
 
 

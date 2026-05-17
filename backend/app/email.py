@@ -50,3 +50,42 @@ async def send_verification_email(to_email: str, token: str) -> None:
         )
         if resp.status_code >= 400:
             logger.error("Resend error %d: %s", resp.status_code, resp.text)
+
+
+async def send_workspace_invite_email(to_email: str, workspace_name: str, token: str) -> None:
+    invite_url = f"{_APP_URL}/workspaces/invite/{token}"
+    subject = f"You've been invited to join {workspace_name} on cmdcheck"
+    body_text = (
+        f"You've been invited to join the workspace \"{workspace_name}\" on cmdcheck.\n\n"
+        f"Accept your invite:\n{invite_url}\n\n"
+        f"This invite expires in 7 days."
+    )
+    body_html = (
+        f"<p>You've been invited to join the workspace <strong>{workspace_name}</strong> on cmdcheck.</p>"
+        f'<p><a href="{invite_url}">Accept invite →</a></p>'
+        f"<p>This invite expires in 7 days.</p>"
+    )
+
+    if not _RESEND_API_KEY:
+        logger.info(
+            "[email-dev] Workspace invite → %s (workspace: %s)\n  Link: %s",
+            to_email,
+            workspace_name,
+            invite_url,
+        )
+        return
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {_RESEND_API_KEY}"},
+            json={
+                "from": _FROM_EMAIL,
+                "to": [to_email],
+                "subject": subject,
+                "text": body_text,
+                "html": body_html,
+            },
+        )
+        if resp.status_code >= 400:
+            logger.error("Resend error %d: %s", resp.status_code, resp.text)
