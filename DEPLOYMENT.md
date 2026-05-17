@@ -35,6 +35,8 @@ All have free tiers. Full deployment takes ~30 minutes.
 | `ALLOWED_ORIGINS` | Your Vercel frontend URL (e.g. `https://cmdcheck.vercel.app`) |
 | `APP_URL` | Same Vercel URL — used in verification emails |
 | `VIRUSTOTAL_API_KEY` | Optional — VirusTotal lookups skip gracefully if unset |
+| `ABUSEIPDB_API_KEY` | Optional — AbuseIPDB IP reputation lookups |
+| `OTX_API_KEY` | Optional — AlienVault OTX threat intelligence |
 | `RESEND_API_KEY` | Optional — email verification falls back to server log if unset |
 | `FROM_EMAIL` | e.g. `cmdcheck <noreply@yourdomain.com>` |
 
@@ -92,6 +94,8 @@ ADMIN_SECRET=<generate: openssl rand -hex 16>
 ADMIN_EMAIL=you@example.com
 APP_URL=https://your-app.vercel.app
 VIRUSTOTAL_API_KEY=<optional>
+ABUSEIPDB_API_KEY=<optional: abuseipdb.com>
+OTX_API_KEY=<optional: otx.alienvault.com>
 RESEND_API_KEY=<optional: resend.com>
 FROM_EMAIL=cmdcheck <noreply@yourdomain.com>
 ```
@@ -116,6 +120,7 @@ AUTH_URL=https://your-app.vercel.app
 | CORS error in browser | `ALLOWED_ORIGINS` must exactly match your Vercel URL, no trailing slash |
 | Auth redirects to wrong URL | `AUTH_URL` in Vercel env must match your actual deployed domain |
 | Railway build fails | Confirm root directory is `backend` and `pyproject.toml` is present |
+| Vercel: admin page unprotected | Ensure `proxy.ts` exists at frontend root (Next.js 16 renamed `middleware.ts`) |
 | Verification email not arriving | Check Railway logs — if `RESEND_API_KEY` is unset the link prints there |
 | Sign-in hangs after deploy | Ensure `BACKEND_URL` is set in Vercel (server-side auth calls use this) |
 | Admin page returns 403 | `ADMIN_SECRET` must be identical in both Railway and Vercel env vars |
