@@ -9,5 +9,4 @@ RUN uv pip install --system --no-cache ".[dev]"
 
 COPY . .
 
-# Ensure submodule data is present (mounted via volume in compose)
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

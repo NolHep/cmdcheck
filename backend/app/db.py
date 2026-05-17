@@ -8,6 +8,7 @@ import secrets
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import asyncpg
 
@@ -23,6 +24,122 @@ if _env_file.exists():
 _pool: asyncpg.Pool | None = None
 
 
+
+def _validate_and_encode_dsn(dsn: str) -> str:
+    """Validate the DATABASE_URL structure and return a pool-safe DSN.
+
+    Parses the URL manually so that passwords containing literal ``@`` symbols
+    (common in Supabase connection strings) are handled correctly.  The
+    standard library's ``urlparse`` treats every ``@`` as a potential
+    user/host delimiter, so it cannot reliably split a URL whose password
+    contains ``@``.
+
+    The approach used here is:
+      1. Split on the first ``://`` to extract the scheme.
+      2. Find the *last* ``@`` in the remainder — that is always the
+         user/host delimiter in a valid PostgreSQL URL.
+      3. Everything to the left of that ``@`` is ``username:password``;
+         split on the first ``:`` to separate them.
+      4. Percent-encode the raw password with ``quote(safe="")`` so that
+         special characters (``@``, ``:``, ``/``, …) do not confuse asyncpg.
+      5. Reconstruct the full URL with the encoded password.
+
+    A ``ValueError`` with a human-readable message is raised when the URL
+    does not match the expected shape.
+    """
+    # ── Step 1: extract scheme ─────────────────────────────────────────────────
+    if "://" not in dsn:
+        raise ValueError(
+            "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+            "  Problems detected:\n"
+            "    scheme   : missing '://' separator\n\n"
+            "  Expected format:\n"
+            "    postgresql://username:password@hostname:5432/database\n"
+        )
+
+    scheme, _, after_scheme = dsn.partition("://")
+
+    errors: list[str] = []
+
+    if scheme not in ("postgresql", "postgres"):
+        errors.append(
+            f"  scheme   : got {scheme!r}, expected 'postgresql' or 'postgres'"
+        )
+
+    # ── Step 2: find the last '@' — the user/host delimiter ───────────────────
+    last_at = after_scheme.rfind("@")
+    if last_at == -1:
+        errors.append(
+            "  userinfo : missing '@' — URL must be postgresql://user:pass@HOSTNAME/db"
+        )
+        if errors:
+            raise ValueError(
+                "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+                "  Problems detected:\n"
+                + "\n".join(errors)
+                + "\n\n"
+                "  Expected format:\n"
+                "    postgresql://username:password@hostname:5432/database\n\n"
+                "  Common causes:\n"
+                "    • The URL was copied without the username prefix.\n"
+                "    • The URL was split across multiple lines in the environment.\n"
+            )
+
+    userinfo = after_scheme[:last_at]
+    hostinfo = after_scheme[last_at + 1:]
+
+    # ── Step 3: split userinfo into username and raw password ──────────────────
+    if ":" not in userinfo:
+        errors.append(
+            "  password : missing — URL must be postgresql://username:PASSWORD@host/db"
+        )
+        username = userinfo
+        raw_password: str | None = None
+    else:
+        username, _, raw_password = userinfo.partition(":")
+
+    if not username:
+        errors.append(
+            "  username : missing — URL must be postgresql://USERNAME:password@host/db"
+        )
+
+    if raw_password is None:
+        errors.append(
+            "  password : missing — URL must be postgresql://username:PASSWORD@host/db"
+        )
+
+    # Basic hostname check (hostinfo is "host:port/db" or "host/db")
+    hostname_part = hostinfo.split("/")[0].split(":")[0]
+    if not hostname_part:
+        errors.append(
+            "  hostname : missing — URL must be postgresql://user:pass@HOSTNAME:port/db"
+        )
+
+    if errors:
+        raise ValueError(
+            "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+            f"  Received (redacted): {scheme}://{username or '<missing>'}:<redacted>@{hostname_part or '<missing>'}/<db>\n"
+            "  Problems detected:\n"
+            + "\n".join(errors)
+            + "\n\n"
+            "  Expected format:\n"
+            "    postgresql://username:password@hostname:5432/database\n\n"
+            "  Common causes:\n"
+            "    • The password contains a literal '@' — encode it as '%40' in the URL.\n"
+            "    • The URL was copied without the username prefix.\n"
+            "    • The URL was split across multiple lines in the environment.\n"
+        )
+
+    # ── Step 4: percent-encode the raw password ────────────────────────────────
+    # ``raw_password`` is the literal string from the URL (not decoded), so any
+    # already-encoded sequences (e.g. ``%40``) are preserved and the bare
+    # special characters (``@``, ``:``, ``/``, …) are encoded for the first time.
+    encoded_password = quote(raw_password, safe="")  # type: ignore[arg-type]
+
+    # ── Step 5: reconstruct the full URL ──────────────────────────────────────
+    return f"{scheme}://{username}:{encoded_password}@{hostinfo}"
+
+
 async def get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
@@ -36,8 +153,16 @@ async def get_pool() -> asyncpg.Pool:
                 file=sys.stderr,
             )
             sys.exit(1)
-        _pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
+
+        try:
+            safe_dsn = _validate_and_encode_dsn(dsn)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            sys.exit(1)
+
+        _pool = await asyncpg.create_pool(dsn=safe_dsn, min_size=1, max_size=10)
     return _pool
+
 
 
 async def close_pool() -> None:
