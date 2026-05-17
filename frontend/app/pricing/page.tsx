@@ -13,11 +13,12 @@ export const metadata: Metadata = {
 const TIERS = [
   {
     name: "Individual",
-    price: "$19",
+    price: "$9.99",
     period: "/month",
     tagline: "For analysts who need privacy and speed.",
     featured: false,
     tier: "individual" as const,
+    contactUs: false,
     features: [
       "Private command submissions",
       "120 analyses / minute",
@@ -29,11 +30,12 @@ const TIERS = [
   },
   {
     name: "Teams",
-    price: "$79",
-    period: "/month",
+    price: null,
+    period: null,
     tagline: "For incident response teams.",
     featured: true,
     tier: "teams" as const,
+    contactUs: true,
     features: [
       "Everything in Individual",
       "Up to 15 team members",
@@ -46,11 +48,12 @@ const TIERS = [
   },
   {
     name: "Organization",
-    price: "$299",
-    period: "/month",
+    price: null,
+    period: null,
     tagline: "For security operations centers and MSSPs.",
     featured: false,
     tier: null,
+    contactUs: true,
     features: [
       "Everything in Teams",
       "Unlimited members",
@@ -145,10 +148,16 @@ export default async function PricingPage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-1">
                 {tier.name}
               </p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">{tier.price}</span>
-                <span className="text-[var(--muted)] text-sm">{tier.period}</span>
-              </div>
+              {tier.contactUs ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-[var(--muted)]">Contact us</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold">{tier.price}</span>
+                  <span className="text-[var(--muted)] text-sm">{tier.period}</span>
+                </div>
+              )}
               <p className="text-[var(--muted)] text-sm mt-2">{tier.tagline}</p>
             </div>
 
@@ -174,21 +183,25 @@ export default async function PricingPage() {
               ))}
             </ul>
 
-            {tier.tier ? (
+            {tier.contactUs ? (
+              <a
+                href="mailto:hello@cmdcheck.io"
+                className={`w-full py-2.5 rounded-lg font-semibold text-sm border transition-colors text-center block ${
+                  tier.featured
+                    ? "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#0d1117]"
+                    : "border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                }`}
+              >
+                Contact us →
+              </a>
+            ) : tier.tier ? (
               <CheckoutButton
                 tier={tier.tier}
                 featured={tier.featured}
                 label={`Subscribe to ${tier.name}`}
                 loggedIn={loggedIn}
               />
-            ) : (
-              <a
-                href="mailto:hello@cmdcheck.io"
-                className="w-full py-2.5 rounded-lg font-semibold text-sm border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-center block"
-              >
-                Contact us
-              </a>
-            )}
+            ) : null}
           </div>
         ))}
       </div>
