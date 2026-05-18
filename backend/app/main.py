@@ -205,6 +205,61 @@ _SYSTEM_BINARY_INFO: dict[str, dict[str, Any]] = {
         "abuse_note": "Used for persistence (Run keys), credential theft (SAM/SYSTEM hive export), and disabling security features via registry modification.",
         "techniques": ["T1112", "T1547.001"],
     },
+    "regsvr32.exe": {
+        "description": "Registers and unregisters COM server DLLs (Windows built-in)",
+        "abuse_note": "Classic LOLBin — loads arbitrary DLLs and scriptlets (SCT files) remotely via /u /n /s /i: flags, bypassing AppLocker and application whitelisting. Used by Squiblydoo technique.",
+        "techniques": ["T1218.010"],
+    },
+    "rundll32.exe": {
+        "description": "Loads and runs DLL exports (Windows built-in)",
+        "abuse_note": "Executes arbitrary DLLs and exported functions. Abused to run shellcode loaders, proxy C2 callbacks, and bypass application control policies.",
+        "techniques": ["T1218.011"],
+    },
+    "mshta.exe": {
+        "description": "Microsoft HTML Application host (Windows built-in)",
+        "abuse_note": "Executes HTA files (HTML with VBScript/JScript) locally or from URLs, bypassing many script-blocking policies. Common initial access and persistence vector.",
+        "techniques": ["T1218.005"],
+    },
+    "wscript.exe": {
+        "description": "Windows Script Host — GUI script runner (Windows built-in)",
+        "abuse_note": "Executes VBScript and JScript files. Used as a dropper stage, often paired with obfuscated .vbs/.js payloads delivered via phishing.",
+        "techniques": ["T1059.005", "T1059.007"],
+    },
+    "cscript.exe": {
+        "description": "Windows Script Host — console script runner (Windows built-in)",
+        "abuse_note": "Console variant of wscript. Used to run malicious .vbs/.js scripts with output redirected to avoid UI popups.",
+        "techniques": ["T1059.005", "T1059.007"],
+    },
+    "certutil.exe": {
+        "description": "Certificate management utility (Windows built-in)",
+        "abuse_note": "Abused to download files (-urlcache -split -f), decode base64 (-decode), and encode payloads. A top LOLBAS download-and-execute primitive.",
+        "techniques": ["T1105", "T1140", "T1218"],
+    },
+    "bitsadmin.exe": {
+        "description": "Background Intelligent Transfer Service admin tool (Windows built-in)",
+        "abuse_note": "Used to download payloads and execute commands via BITS jobs, which can persist across reboots and bypass network monitoring.",
+        "techniques": ["T1197", "T1105"],
+    },
+    "cmd.exe": {
+        "description": "Windows Command Prompt shell (Windows built-in)",
+        "abuse_note": "The primary Windows shell. Used to chain commands, execute dropped payloads, and spawn child processes. Presence in unusual parent-child relationships is a key detection signal.",
+        "techniques": ["T1059.003"],
+    },
+    "msiexec.exe": {
+        "description": "Windows Installer service host (Windows built-in)",
+        "abuse_note": "Installs MSI packages from local paths or URLs (/i http://...). Used to deliver and execute malicious installers, bypassing some application control policies.",
+        "techniques": ["T1218.007"],
+    },
+    "odbcconf.exe": {
+        "description": "ODBC configuration tool (Windows built-in)",
+        "abuse_note": "Loads arbitrary DLLs via the REGSVR action flag, bypassing application whitelisting. Less common but effective LOLBin.",
+        "techniques": ["T1218.008"],
+    },
+    "expand.exe": {
+        "description": "Cabinet file expander (Windows built-in)",
+        "abuse_note": "Used to decompress and drop payloads from embedded cabinet files, evading file-type detection.",
+        "techniques": ["T1140"],
+    },
 }
 
 
