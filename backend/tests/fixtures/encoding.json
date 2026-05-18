@@ -2,6 +2,7 @@
   {
     "id": "ps-encodedcommand-utf16le",
     "description": "PowerShell -EncodedCommand with UTF-16LE base64 payload — JAB prefix pattern",
+    "source": "synthetic",
     "command": "powershell.exe -NonInteractive -WindowStyle Hidden -EncodedCommand JABhACAAPQAgACIAdABlAHMAdAAiADsAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAJABhAA==",
     "expect": {
       "classes": ["loader", "defense_evasion"],

