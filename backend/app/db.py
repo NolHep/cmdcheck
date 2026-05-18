@@ -454,6 +454,54 @@ async def consume_verification_token(token: str) -> str | None:
     return user_id
 
 
+async def create_password_reset_token(user_id: str) -> str:
+    token = secrets.token_urlsafe(32)
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE password_reset_tokens SET used = true WHERE user_id = $1::uuid AND NOT used",
+            user_id,
+        )
+        await conn.execute(
+            "INSERT INTO password_reset_tokens (token, user_id) VALUES ($1, $2::uuid)",
+            token,
+            user_id,
+        )
+    return token
+
+
+async def consume_password_reset_token(token: str) -> str | None:
+    """Mark token used and return user_id, or None if invalid/expired."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            row = await conn.fetchrow(
+                """
+                SELECT user_id FROM password_reset_tokens
+                WHERE token = $1 AND NOT used AND expires_at > NOW()
+                """,
+                token,
+            )
+            if row is None:
+                return None
+            user_id = str(row["user_id"])
+            await conn.execute(
+                "UPDATE password_reset_tokens SET used = true WHERE token = $1",
+                token,
+            )
+    return user_id
+
+
+async def update_user_password(user_id: str, password_hash: str) -> None:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE users SET password_hash = $1 WHERE id = $2::uuid",
+            password_hash,
+            user_id,
+        )
+
+
 async def count_users() -> int:
     pool = await get_pool()
     async with pool.acquire() as conn:

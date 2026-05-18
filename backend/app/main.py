@@ -24,8 +24,10 @@ from . import mitre as mitre_catalog
 from . import stripe_billing
 from .db import (
     accept_workspace_invite, add_threat_group_member, close_pool,
-    consume_verification_token, count_users, create_api_key, create_bug_report,
-    create_threat_group, create_user, create_verification_token, create_workspace,
+    consume_password_reset_token, consume_verification_token, count_users,
+    create_api_key, create_bug_report,
+    create_password_reset_token, create_threat_group, create_user,
+    create_verification_token, create_workspace,
     create_workspace_invite, delete_analysis, delete_threat_group, delete_workspace,
     fetch_admin_stats, fetch_analysis, fetch_api_keys_for_user, fetch_bug_reports,
     fetch_invite, fetch_recent, fetch_subscription_status, fetch_threat_groups,
@@ -33,7 +35,7 @@ from .db import (
     fetch_workspaces_for_user, get_banner, remove_threat_group_member,
     remove_workspace_member, revoke_api_key, run_migrations, search_analyses,
     set_setting, set_stripe_customer_id, update_bug_report,
-    update_subscription_by_customer, upsert_analysis,
+    update_subscription_by_customer, update_user_password, upsert_analysis,
 )
 from .decoder import decode_layers
 from .gtfobins import load_catalog as load_gtfobins, match as gtfobins_match
@@ -46,7 +48,7 @@ from .slug import make_slug, make_private_slug
 from .ip_extractor import extract_ips
 from . import threat_intel as threat_intel_mod
 from .url_extractor import extract_urls_from_analysis
-from .email import send_verification_email, send_workspace_invite_email
+from .email import send_password_reset_email, send_verification_email, send_workspace_invite_email
 from .story import generate_story
 from . import threat_actors as threat_actors_mod
 from .users import hash_password, is_admin_email, verify_password
@@ -672,6 +674,36 @@ async def resend_verification(request: Request, body: ResendVerificationRequest)
     token = await create_verification_token(str(user["id"]))
     await send_verification_email(body.email, token)
     return {"ok": True, "already_verified": False}
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=8, max_length=128)
+
+
+@app.post("/auth/forgot-password")
+@limiter.limit("5/hour")
+async def forgot_password(request: Request, body: ForgotPasswordRequest) -> dict[str, Any]:
+    user = await fetch_user_by_email(body.email)
+    # Always return success to prevent email enumeration
+    if user:
+        token = await create_password_reset_token(str(user["id"]))
+        await send_password_reset_email(body.email, token)
+    return {"ok": True}
+
+
+@app.post("/auth/reset-password")
+@limiter.limit("10/hour")
+async def reset_password(request: Request, body: ResetPasswordRequest) -> dict[str, Any]:
+    user_id = await consume_password_reset_token(body.token)
+    if user_id is None:
+        raise HTTPException(status_code=400, detail={"code": "invalid_token", "detail": "Reset link is invalid or has expired."})
+    await update_user_password(user_id, hash_password(body.password))
+    return {"ok": True}
 
 
 # ── Public settings ─────────────────────────────────────────────────────────────
