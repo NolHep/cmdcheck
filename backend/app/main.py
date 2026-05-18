@@ -460,7 +460,8 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         # Per-tier rate limit for authenticated web users
         web_user = await fetch_user_by_email(body.user_email)
         if web_user:
-            tier = (web_user or {}).get("subscription_tier", "free")
+            user_id = str(web_user["id"])
+            tier = web_user.get("subscription_tier", "free")
             if not _check_tier_limit(f"email:{body.user_email}", tier):
                 raise HTTPException(
                     status_code=429,
