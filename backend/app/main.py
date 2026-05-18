@@ -118,6 +118,16 @@ _THREAT_TOOL_INFO: dict[str, dict[str, Any]] = {
 }
 
 _SYSTEM_BINARY_INFO: dict[str, dict[str, Any]] = {
+    "powershell.exe": {
+        "description": "Windows PowerShell scripting shell (Windows built-in)",
+        "abuse_note": "The most common living-off-the-land execution vehicle. Used to download and execute payloads (-EncodedCommand, IEX, DownloadString), bypass execution policy, disable defenses, and establish persistence — present in the majority of modern intrusions.",
+        "techniques": ["T1059.001", "T1027.010", "T1562.001"],
+    },
+    "pwsh.exe": {
+        "description": "PowerShell Core (cross-platform, open-source edition)",
+        "abuse_note": "Cross-platform variant of PowerShell. Attackers use it to bypass policies and monitoring rules targeting the legacy powershell.exe path.",
+        "techniques": ["T1059.001"],
+    },
     "vssadmin.exe": {
         "description": "Volume Shadow Copy Service admin tool (Windows built-in)",
         "abuse_note": "Ransomware runs 'vssadmin delete shadows /all' before encryption to destroy backup copies and prevent file recovery.",

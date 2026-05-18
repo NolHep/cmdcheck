@@ -57,6 +57,23 @@ _WIN_EXTENSIONLESS_BINARIES = frozenset({
     "cmd", "powershell", "mshta", "wscript", "cscript", "rundll32", "regsvr32",
 })
 
+# Tokens that are NOT binaries and must never appear in the binaries list.
+# PowerShell built-in aliases and cmdlet verbs are commonly present in decoded
+# payloads; URL scheme prefixes (http, https, ftp) appear at the start of URLs.
+_NON_BINARY_TOKENS = frozenset({
+    # PowerShell aliases
+    "iex", "icm", "gci", "gps", "gwmi", "sal", "saps", "sls", "sv", "gv",
+    "rv", "gi", "si", "ni", "ri", "ii", "gc", "sc", "ac", "clc", "clv",
+    "compare", "diff", "measure", "select", "sort", "group", "where", "foreach",
+    "ft", "fl", "fw", "out", "tee", "write", "echo", "read", "get", "set",
+    "new", "remove", "invoke", "start", "stop", "wait", "test", "add", "clear",
+    "copy", "move", "rename", "split", "join", "format", "export", "import",
+    "convertto", "convertfrom", "register", "unregister", "enable", "disable",
+    "suspend", "resume", "restart", "reset", "use", "enter", "exit",
+    # URL scheme prefixes — appear at token position 0 of bare URLs
+    "http", "https", "ftp", "ftps", "file",
+})
+
 
 def extract_binaries(command: str) -> list[str]:
     """Return candidate binary names (without path, lowercase) from a command string."""
@@ -81,13 +98,15 @@ def extract_binaries(command: str) -> list[str]:
     if not found:
         for m in _UNIX_BINARY_RE.finditer(command):
             name = m.group(2).lower()
-            if name and name not in found:
+            if name and name not in found and name not in _NON_BINARY_TOKENS:
                 found.append(name)
 
     # Fallback: first whitespace-delimited token
     if not found:
         first = command.strip().split()[0] if command.strip() else ""
         if first:
-            found.append(first.lower().split("\\")[-1].split("/")[-1])
+            candidate = first.lower().split("\\")[-1].split("/")[-1]
+            if candidate and candidate not in _NON_BINARY_TOKENS:
+                found.append(candidate)
 
     return found
