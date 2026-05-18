@@ -31,7 +31,7 @@ function LoginForm() {
       redirect: false,
     });
     setLoading(false);
-    if (result?.error) {
+    if (!result || result.error) {
       // Ask the backend directly to distinguish "wrong password" from "unverified email"
       try {
         const check = await fetch(`${apiBase()}/auth/verify`, {
@@ -50,8 +50,8 @@ function LoginForm() {
       } catch { /* network error — fall through to generic message */ }
       setError("Invalid email or password.");
     } else {
-      router.push(next);
-      router.refresh();
+      // Hard navigation so the server re-reads the fresh session cookie in the layout.
+      window.location.href = next;
     }
   }
 

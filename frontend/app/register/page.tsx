@@ -39,12 +39,11 @@ export default function RegisterPage() {
       }
       // Auto sign-in after registration
       const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) {
+      if (!result || result.error) {
         setError("Account created — please sign in.");
         router.push("/login");
       } else {
-        router.push("/");
-        router.refresh();
+        window.location.href = "/";
       }
     } catch {
       setError("Network error. Is the backend running?");
