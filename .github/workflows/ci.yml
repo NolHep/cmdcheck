@@ -87,6 +87,15 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: frontend
 
+      - name: Build Next.js app
+        run: npm run build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          AUTH_SECRET: ci-playwright-test-secret-not-for-production
+          NEXTAUTH_URL: http://localhost:3000
+          NEXT_TELEMETRY_DISABLED: "1"
+
       - name: Run Playwright tests
         run: npm run test:e2e
         working-directory: frontend
