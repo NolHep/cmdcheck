@@ -38,7 +38,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
         if (!res.ok) return null;
-        const user = await res.json();
+        let user: { id: string; email: string; role: "user" | "admin" };
+        try {
+          user = await res.json();
+        } catch {
+          return null;
+        }
         return { id: user.id, email: user.email, role: user.role, name: user.email };
       },
     }),
@@ -59,5 +64,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
 });

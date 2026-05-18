@@ -98,15 +98,9 @@ def extract_binaries(command: str) -> list[str]:
     if not found:
         for m in _UNIX_BINARY_RE.finditer(command):
             name = m.group(2).lower()
-            if name and name not in found and name not in _NON_BINARY_TOKENS:
+            # Reject PS aliases, URL schemes, and implausibly long tokens
+            # (base64 blobs and PS code fragments match [a-z0-9_-]+ but are not binaries)
+            if name and name not in found and name not in _NON_BINARY_TOKENS and len(name) <= 40:
                 found.append(name)
-
-    # Fallback: first whitespace-delimited token
-    if not found:
-        first = command.strip().split()[0] if command.strip() else ""
-        if first:
-            candidate = first.lower().split("\\")[-1].split("/")[-1]
-            if candidate and candidate not in _NON_BINARY_TOKENS:
-                found.append(candidate)
 
     return found
