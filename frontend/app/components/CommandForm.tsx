@@ -45,6 +45,7 @@ export default function CommandForm({
           isPrivate: loggedIn && (isPrivate || !!selectedWorkspace),
           skipRedaction: loggedIn && skipRedaction,
           workspaceId: selectedWorkspace || undefined,
+          loggedIn,
         });
         router.push(`/c/${result.slug}`);
       } catch (err) {

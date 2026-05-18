@@ -279,15 +279,16 @@ function extractDetail(body: unknown): string | null {
 export async function postAnalyze(
   command: string,
   parentProcess?: string,
-  options?: { isPrivate?: boolean; skipRedaction?: boolean; workspaceId?: string },
+  options?: { isPrivate?: boolean; skipRedaction?: boolean; workspaceId?: string; loggedIn?: boolean },
 ): Promise<AnalyzeResponse> {
   const isPrivate = options?.isPrivate ?? false;
   const skipRedaction = options?.skipRedaction ?? false;
   const workspaceId = options?.workspaceId ?? null;
+  const loggedIn = options?.loggedIn ?? false;
 
-  // Private submissions, redaction opt-out, and workspace tagging all go through
-  // the Next.js API route so the server can attach the verified session email.
-  const needsAuth = isPrivate || skipRedaction || !!workspaceId;
+  // Route through the Next.js API whenever the user is logged in so the server
+  // can attach user_email (for ownership tracking) regardless of privacy setting.
+  const needsAuth = isPrivate || skipRedaction || !!workspaceId || loggedIn;
   const url = needsAuth ? "/api/analyze" : `${apiBase()}/analyze`;
 
   const res = await fetchWithTimeout(url, {
