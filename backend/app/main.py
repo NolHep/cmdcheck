@@ -1044,8 +1044,6 @@ async def workspace_create(body: WorkspaceCreateRequest) -> dict[str, Any]:
     user = await fetch_user_by_email(body.email)
     if not user:
         raise HTTPException(401, {"code": "unauthenticated", "detail": "Account not found."})
-    if user.get("subscription_status", "free") not in ("active", "trialing"):
-        raise HTTPException(402, {"code": "subscription_required", "detail": "Workspaces require an active subscription."})
     return await create_workspace(body.name, str(user["id"]))
 
 

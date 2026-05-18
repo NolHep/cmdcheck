@@ -64,13 +64,13 @@ export default function CommandForm({
         value={command}
         onChange={(e) => setCommand(e.target.value)}
         placeholder={`Paste a suspicious command line here…\n\npowershell -enc JAB…\nmshta "javascript:…"\ncertutil -decode payload.b64 out.exe`}
-        rows={10}
+        rows={6}
         spellCheck={false}
         autoCorrect="off"
         autoCapitalize="off"
-        className="w-full font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+        className="w-full font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)] sm:rows-10 min-h-[120px] sm:min-h-[200px]"
       />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
         <label htmlFor="parent-process" className="text-[var(--muted)] text-xs whitespace-nowrap shrink-0">
           Parent process
         </label>
@@ -79,13 +79,12 @@ export default function CommandForm({
           type="text"
           value={parentProcess}
           onChange={(e) => setParentProcess(e.target.value)}
-          placeholder="e.g. winword.exe"
+          placeholder="e.g. winword.exe  (optional)"
           spellCheck={false}
           autoCorrect="off"
           autoCapitalize="off"
           className="flex-1 font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
         />
-        <span className="text-[var(--muted)] text-xs italic shrink-0">optional</span>
       </div>
       {loggedIn && (
         <div className="flex flex-col gap-2">
@@ -137,15 +136,15 @@ export default function CommandForm({
           {error}
         </p>
       )}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <button
           type="submit"
           disabled={isPending || !command.trim()}
-          className="px-6 py-2 bg-[var(--accent)] text-[#0d1117] font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition-all"
+          className="w-full sm:w-auto px-6 py-2.5 bg-[var(--accent)] text-[#0d1117] font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition-all"
         >
           {isPending ? "Analyzing…" : "Analyze"}
         </button>
-        <span className="text-[var(--muted)] text-xs">
+        <span className="text-[var(--muted)] text-xs text-center sm:text-left">
           Every analysis gets a shareable permalink
         </span>
       </div>

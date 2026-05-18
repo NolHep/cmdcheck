@@ -22,7 +22,12 @@ export default function NewWorkspacePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.detail ?? "Failed to create workspace.");
+        const msg = typeof data?.detail === "string"
+          ? data.detail
+          : typeof data?.detail?.detail === "string"
+          ? data.detail.detail
+          : "Failed to create workspace.";
+        setError(msg);
         return;
       }
       router.push(`/workspaces/${data.id}`);

@@ -180,9 +180,9 @@ export default async function AnalysisPage({
           {/* Footer */}
           <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-4">
             {a.command && <ReanalyzeForm command={a.command} slug={slug} />}
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
               <ExportPanel analysis={a} />
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <span className="text-[var(--muted)] text-xs">
                   {a.submitter_email ? `Submitted by ${a.submitter_email}` : "Anonymous"}
                 </span>

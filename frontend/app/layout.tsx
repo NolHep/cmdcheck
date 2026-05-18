@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import SiteBanner from "@/app/components/SiteBanner";
 import UserMenu from "@/app/components/UserMenu";
+import MobileNav from "@/app/components/MobileNav";
 import { backendUrl } from "@/app/lib/api";
 import "./globals.css";
 
@@ -39,30 +40,40 @@ export default async function RootLayout({
           </Link>
           <span className="text-[var(--muted)] text-sm hidden sm:inline">command-line analyzer</span>
           <nav className="ml-auto flex items-center gap-4">
-            <Link href="/search" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-              Search
-            </Link>
-            <Link href="/recent" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-              Recent
-            </Link>
-            <Link href="/docs" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-              Docs
-            </Link>
-            <Link href="/pricing" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-              Pricing
-            </Link>
-            {session?.user && (
-              <Link href="/workspaces" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-                Workspaces
+            {/* Desktop nav — hidden on mobile */}
+            <div className="hidden md:flex items-center gap-4">
+              <Link href="/search" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Search
               </Link>
-            )}
-            {session?.user ? (
-              <UserMenu email={session.user.email!} role={session.user.role} />
-            ) : (
-              <Link href="/login" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-                Sign in
+              <Link href="/recent" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Recent
               </Link>
-            )}
+              <Link href="/docs" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Docs
+              </Link>
+              <Link href="/pricing" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                Pricing
+              </Link>
+              {session?.user && (
+                <Link href="/workspaces" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                  Workspaces
+                </Link>
+              )}
+              {session?.user ? (
+                <UserMenu email={session.user.email!} role={session.user.role} />
+              ) : (
+                <Link href="/login" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
+                  Sign in
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile nav — hamburger, shown only on mobile */}
+            <MobileNav
+              loggedIn={!!session?.user}
+              email={session?.user?.email ?? undefined}
+              role={session?.user?.role}
+            />
           </nav>
         </header>
         <main className="flex-1 flex flex-col">{children}</main>
