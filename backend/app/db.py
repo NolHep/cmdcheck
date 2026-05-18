@@ -1042,20 +1042,14 @@ async def count_analyses() -> int:
         return await conn.fetchval("SELECT COUNT(*) FROM analyses WHERE deleted_at IS NULL")
 
 
-async def fetch_analysis(slug: str) -> dict[str, Any] | None:
-    """Fetch an analysis by slug.
-
-    Private analyses use random unguessable slugs — possession of the slug is
-    the bearer credential. No additional auth enforcement is needed here.
-    The analyze endpoint never deduplicates against private analyses (it only
-    does the existing-slug lookup for public submissions).
-    """
+async def fetch_analysis(slug: str, requesting_user_id: str | None = None) -> dict[str, Any] | None:
     from .encryption import decrypt
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
             SELECT a.slug, a.command, a.result, a.deleted_at, a.encrypted,
+                   a.is_private, a.workspace_id,
                    u.email AS submitter_email
             FROM analyses a
             LEFT JOIN users u ON u.id = a.user_id
@@ -1063,11 +1057,25 @@ async def fetch_analysis(slug: str) -> dict[str, Any] | None:
             """,
             slug,
         )
-    if row is None:
-        return None
-    if row["deleted_at"] is not None:
-        return {"slug": row["slug"], "deleted": True}
-    command = decrypt(row["command"], row.get("encrypted", False))
+        if row is None:
+            return None
+        if row["deleted_at"] is not None:
+            return {"slug": row["slug"], "deleted": True}
+        # Workspace-private analyses are only visible to workspace members.
+        if row["is_private"] and row["workspace_id"]:
+            if not requesting_user_id:
+                return None
+            is_member = await conn.fetchval(
+                """
+                SELECT 1 FROM workspace_members
+                WHERE workspace_id = $1 AND user_id = $2::uuid
+                """,
+                row["workspace_id"],
+                requesting_user_id,
+            )
+            if not is_member:
+                return None
+        command = decrypt(row["command"], row.get("encrypted", False))
     return {
         "slug": row["slug"],
         "command": command,

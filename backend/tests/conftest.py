@@ -39,8 +39,23 @@ async def _mock_upsert(
     _store[slug] = {"slug": slug, "command": command, "is_private": is_private, **result}
 
 
-async def _mock_fetch(slug: str) -> dict[str, Any] | None:
+async def _mock_fetch(slug: str, requesting_user_id: str | None = None) -> dict[str, Any] | None:
     return _store.get(slug)
+
+
+async def _mock_search(query: str, limit: int = 20) -> list[dict[str, Any]]:
+    results = []
+    for slug, data in _store.items():
+        if not data.get("is_private") and query.lower() in data.get("command", "").lower():
+            results.append({
+                "slug": slug,
+                "command": data["command"][:200],
+                "has_lolbas": bool(data.get("lolbas_match") or data.get("lolbas_matches")),
+                "has_encoding": len(data.get("decoded_layers", [])) > 0,
+                "threat_labels": [],
+                "created_at": "2024-01-01T00:00:00",
+            })
+    return results[:limit]
 
 
 @pytest.fixture(autouse=True)
@@ -56,6 +71,7 @@ async def client():
         patch("app.main.run_migrations", new=AsyncMock(side_effect=_mock_run_migrations)),
         patch("app.main.upsert_analysis", new=AsyncMock(side_effect=_mock_upsert)),
         patch("app.main.fetch_analysis", new=AsyncMock(side_effect=_mock_fetch)),
+        patch("app.main.search_analyses", new=AsyncMock(side_effect=_mock_search)),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             yield ac

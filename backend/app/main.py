@@ -637,10 +637,18 @@ async def search(q: str, limit: int = 20) -> list[dict[str, Any]]:
 
 
 @app.get("/c/{slug}")
-async def get_analysis(slug: str) -> dict[str, Any]:
+async def get_analysis(
+    slug: str,
+    x_user_email: str | None = Header(default=None, alias="X-User-Email"),
+) -> dict[str, Any]:
     if len(slug) != 12 or not slug.isalnum():
         raise HTTPException(status_code=400, detail={"code": "invalid_slug", "detail": "Bad slug format"})
-    row = await fetch_analysis(slug)
+    requesting_user_id: str | None = None
+    if x_user_email:
+        user = await fetch_user_by_email(x_user_email)
+        if user:
+            requesting_user_id = str(user["id"])
+    row = await fetch_analysis(slug, requesting_user_id=requesting_user_id)
     if row is None:
         raise HTTPException(status_code=404, detail={"code": "not_found", "detail": "Analysis not found"})
     return row
