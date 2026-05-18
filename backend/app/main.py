@@ -24,14 +24,14 @@ from . import mitre as mitre_catalog
 from . import stripe_billing
 from .db import (
     accept_workspace_invite, add_threat_group_member, close_pool,
-    consume_password_reset_token, consume_verification_token, count_users,
+    consume_password_reset_token, consume_verification_token, count_analyses, count_users,
     create_api_key, create_bug_report,
     create_password_reset_token, create_threat_group, create_user,
     create_verification_token, create_workspace,
     create_workspace_invite, delete_analysis, delete_threat_group, delete_workspace,
-    fetch_admin_stats, fetch_analysis, fetch_api_keys_for_user, fetch_bug_reports,
-    fetch_invite, fetch_recent, fetch_subscription_status, fetch_threat_groups,
-    fetch_user_by_api_key, fetch_user_by_email, fetch_workspace,
+    fetch_admin_stats, fetch_analyses_for_user, fetch_analysis, fetch_api_keys_for_user,
+    fetch_bug_reports, fetch_invite, fetch_recent, fetch_subscription_status,
+    fetch_threat_groups, fetch_user_by_api_key, fetch_user_by_email, fetch_workspace,
     fetch_workspaces_for_user, get_banner, remove_threat_group_member,
     remove_workspace_member, revoke_api_key, run_migrations, search_analyses,
     set_setting, set_stripe_customer_id, update_bug_report,
@@ -646,7 +646,11 @@ async def get_analysis(slug: str) -> dict[str, Any]:
 
 
 @app.delete("/c/{slug}")
-async def delete_analysis_endpoint(slug: str) -> dict[str, Any]:
+async def delete_analysis_endpoint(
+    slug: str,
+    x_user_email: str | None = Header(default=None, alias="X-User-Email"),
+    x_admin_secret: str | None = Header(default=None, alias="X-Admin-Secret"),
+) -> dict[str, Any]:
     if len(slug) != 12 or not slug.isalnum():
         raise HTTPException(status_code=400, detail={"code": "invalid_slug", "detail": "Bad slug format"})
     row = await fetch_analysis(slug)
@@ -654,10 +658,34 @@ async def delete_analysis_endpoint(slug: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail={"code": "not_found", "detail": "Analysis not found"})
     if row.get("deleted"):
         raise HTTPException(status_code=410, detail={"code": "already_deleted", "detail": "Already deleted"})
-    success = await delete_analysis(slug)
+    is_admin = bool(
+        x_admin_secret and _ADMIN_SECRET and secrets.compare_digest(x_admin_secret, _ADMIN_SECRET)
+    )
+    success = await delete_analysis(slug, user_email=x_user_email, is_admin=is_admin)
     if not success:
-        raise HTTPException(status_code=404, detail={"code": "not_found", "detail": "Analysis not found"})
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "forbidden", "detail": "Not authorized to delete this analysis"},
+        )
     return {"slug": slug, "deleted": True}
+
+
+@app.get("/stats/count")
+async def stats_count() -> dict[str, Any]:
+    count = await count_analyses()
+    return {"count": count}
+
+
+@app.get("/user/analyses")
+async def user_analyses_endpoint(
+    x_user_email: str | None = Header(default=None, alias="X-User-Email"),
+) -> list[dict[str, Any]]:
+    if not x_user_email:
+        raise HTTPException(status_code=401, detail={"code": "unauthenticated", "detail": "Sign in required"})
+    user = await fetch_user_by_email(x_user_email)
+    if not user:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "detail": "User not found"})
+    return await fetch_analyses_for_user(str(user["id"]))
 
 
 # ── Auth ────────────────────────────────────────────────────────────────────────

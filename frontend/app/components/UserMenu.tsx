@@ -42,6 +42,20 @@ export default function UserMenu({
               <span className="text-xs text-[var(--accent)] font-semibold">Admin</span>
             )}
           </div>
+          <Link
+            href="/account"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
+          >
+            Account
+          </Link>
+          <Link
+            href="/account/api-keys"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
+          >
+            API keys
+          </Link>
           {role === "admin" && (
             <Link
               href="/admin"

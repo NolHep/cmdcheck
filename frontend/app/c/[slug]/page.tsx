@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { getAnalysis } from "@/app/lib/api";
 
 const getCachedAnalysis = cache(getAnalysis);
@@ -47,7 +48,7 @@ export default async function AnalysisPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const analysis = await getCachedAnalysis(slug);
+  const [analysis, session] = await Promise.all([getCachedAnalysis(slug), auth()]);
   if (!analysis) notFound();
 
   if ("deleted" in analysis && analysis.deleted) {
@@ -66,6 +67,11 @@ export default async function AnalysisPage({
   }
 
   const a = analysis as AnalyzeResponse;
+  const sessionEmail = session?.user?.email ?? null;
+  const isAdmin = session?.user?.role === "admin";
+  const canDelete =
+    isAdmin ||
+    (!!sessionEmail && !!a.submitter_email && sessionEmail === a.submitter_email);
   const lolbasMatches = a.lolbas_matches?.length ? a.lolbas_matches : (a.lolbas_match ? [a.lolbas_match] : []);
   const gtfobinsMatches = a.gtfobins_matches?.length ? a.gtfobins_matches : (a.gtfobins_match ? [a.gtfobins_match] : []);
   const hasLolbas = lolbasMatches.length > 0;
@@ -176,7 +182,12 @@ export default async function AnalysisPage({
             {a.command && <ReanalyzeForm command={a.command} slug={slug} />}
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <ExportPanel analysis={a} />
-              <DeleteButton slug={slug} />
+              <div className="flex items-center gap-4">
+                <span className="text-[var(--muted)] text-xs">
+                  {a.submitter_email ? `Submitted by ${a.submitter_email}` : "Anonymous"}
+                </span>
+                <DeleteButton slug={slug} canDelete={canDelete} />
+              </div>
             </div>
           </div>
         </div>

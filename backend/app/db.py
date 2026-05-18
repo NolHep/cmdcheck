@@ -251,14 +251,36 @@ async def upsert_analysis(
         )
 
 
-async def delete_analysis(slug: str) -> bool:
-    """Soft-delete an analysis. Returns True if a row was updated."""
+async def delete_analysis(
+    slug: str,
+    user_email: str | None = None,
+    is_admin: bool = False,
+) -> bool:
+    """Soft-delete an analysis. Returns True if a row was updated.
+
+    If is_admin is True, any analysis may be deleted.
+    If user_email is provided, only analyses owned by that user may be deleted.
+    If neither is provided, returns False (no anonymous deletes).
+    """
     pool = await get_pool()
     async with pool.acquire() as conn:
-        result = await conn.execute(
-            "UPDATE analyses SET deleted_at = NOW() WHERE slug = $1 AND deleted_at IS NULL",
-            slug,
-        )
+        if is_admin:
+            result = await conn.execute(
+                "UPDATE analyses SET deleted_at = NOW() WHERE slug = $1 AND deleted_at IS NULL",
+                slug,
+            )
+        elif user_email:
+            result = await conn.execute(
+                """
+                UPDATE analyses SET deleted_at = NOW()
+                WHERE slug = $1 AND deleted_at IS NULL
+                  AND user_id = (SELECT id FROM users WHERE email = $2 LIMIT 1)
+                """,
+                slug,
+                user_email.lower().strip(),
+            )
+        else:
+            return False
     return result == "UPDATE 1"
 
 
@@ -978,6 +1000,48 @@ async def fetch_admin_stats() -> dict[str, Any]:
     }
 
 
+async def fetch_analyses_for_user(user_id: str, limit: int = 50) -> list[dict[str, Any]]:
+    from .encryption import decrypt
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT slug, command, result, created_at, is_private, encrypted
+            FROM analyses
+            WHERE user_id = $1::uuid AND deleted_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT $2
+            """,
+            user_id,
+            limit,
+        )
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        result = json.loads(row["result"])
+        command = decrypt(row["command"], row.get("encrypted", False))
+        high_threats = [
+            tc["label"]
+            for tc in result.get("threat_classes", [])
+            if tc.get("confidence") in ("high", "medium")
+        ]
+        items.append({
+            "slug": row["slug"],
+            "command": command[:200],
+            "has_lolbas": bool(result.get("lolbas_match") or result.get("lolbas_matches")),
+            "has_encoding": len(result.get("decoded_layers", [])) > 0,
+            "threat_labels": high_threats,
+            "created_at": row["created_at"].isoformat(),
+            "is_private": row["is_private"],
+        })
+    return items
+
+
+async def count_analyses() -> int:
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetchval("SELECT COUNT(*) FROM analyses WHERE deleted_at IS NULL")
+
+
 async def fetch_analysis(slug: str) -> dict[str, Any] | None:
     """Fetch an analysis by slug.
 
@@ -990,11 +1054,23 @@ async def fetch_analysis(slug: str) -> dict[str, Any] | None:
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT slug, command, result, deleted_at, encrypted FROM analyses WHERE slug = $1", slug
+            """
+            SELECT a.slug, a.command, a.result, a.deleted_at, a.encrypted,
+                   u.email AS submitter_email
+            FROM analyses a
+            LEFT JOIN users u ON u.id = a.user_id
+            WHERE a.slug = $1
+            """,
+            slug,
         )
     if row is None:
         return None
     if row["deleted_at"] is not None:
         return {"slug": row["slug"], "deleted": True}
     command = decrypt(row["command"], row.get("encrypted", False))
-    return {"slug": row["slug"], "command": command, **json.loads(row["result"])}
+    return {
+        "slug": row["slug"],
+        "command": command,
+        "submitter_email": row["submitter_email"],
+        **json.loads(row["result"]),
+    }

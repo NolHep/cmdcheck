@@ -2,17 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteAnalysis } from "@/app/lib/api";
+import { authedDeleteAnalysis } from "@/app/lib/api";
 
-export default function DeleteButton({ slug }: { slug: string }) {
+export default function DeleteButton({
+  slug,
+  canDelete,
+}: {
+  slug: string;
+  canDelete: boolean;
+}) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "confirming" | "deleting" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
+  if (!canDelete) return null;
+
   async function handleDelete() {
     setState("deleting");
     try {
-      await deleteAnalysis(slug);
+      await authedDeleteAnalysis(slug);
       router.refresh();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Delete failed");

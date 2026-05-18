@@ -213,6 +213,7 @@ export const AnalyzeResponseSchema = z.object({
   }).optional(),
   story: z.string().optional(),
   attributed_actors: z.array(ThreatActorSchema).default([]),
+  submitter_email: z.string().nullable().optional(),
 });
 
 export const RecentItemSchema = z.object({
@@ -324,6 +325,32 @@ export async function deleteAnalysis(slug: string): Promise<void> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(extractDetail(body) ?? `API error ${res.status}`);
+  }
+}
+
+export async function authedDeleteAnalysis(slug: string): Promise<void> {
+  const res = await fetchWithTimeout(`/api/delete/${slug}`, { method: "DELETE" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractDetail(body) ?? `API error ${res.status}`);
+  }
+}
+
+export async function getUserAnalyses(): Promise<RecentItem[]> {
+  const res = await fetchWithTimeout(`/api/user-analyses`, { cache: "no-store" } as RequestInit);
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return z.array(RecentItemSchema).parse(data);
+}
+
+export async function getAnalysisCount(): Promise<number> {
+  try {
+    const res = await fetchWithTimeout(`${apiBase()}/stats/count`, { cache: "no-store" } as RequestInit);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.count ?? 0;
+  } catch {
+    return 0;
   }
 }
 
