@@ -34,7 +34,7 @@ export default async function RootLayout({
     <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <SiteBanner banner={banner} />
-        <header className="border-b border-[var(--border)] px-6 py-3 flex items-center gap-4">
+        <header className="sticky top-0 z-40 border-b border-[var(--border)] px-6 py-3 flex items-center gap-4 bg-[rgba(13,17,23,0.85)] backdrop-blur-md">
           <Link href="/" className="text-[var(--accent)] font-mono font-bold text-lg tracking-tight">
             cmdcheck
           </Link>

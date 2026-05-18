@@ -92,10 +92,10 @@ export default async function AnalysisPage({
     <div className="w-full max-w-[1400px] mx-auto px-4 py-8 flex flex-col gap-6">
 
       {/* Verdict banner — full width */}
-      <div className={`rounded-lg border px-5 py-4 flex items-start justify-between gap-4 ${verdict.style}`}>
-        <div>
-          <p className="font-bold text-sm uppercase tracking-wide">{verdict.label}</p>
-          <p className="text-sm mt-0.5 opacity-80">{verdict.detail}</p>
+      <div className={`rounded-xl border px-5 py-4 flex items-start justify-between gap-4 ${verdict.style}`}>
+        <div className="min-w-0">
+          <p className="font-semibold text-xs uppercase tracking-widest opacity-70 mb-1">{verdict.label}</p>
+          <p className="text-sm leading-relaxed">{verdict.detail}</p>
         </div>
         <CopyLinkButton slug={slug} />
       </div>
@@ -178,13 +178,15 @@ export default async function AnalysisPage({
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-[var(--border)] flex flex-col gap-4">
+          <div className="pt-4 border-t border-[var(--border)] flex flex-col gap-4">
             {a.command && <ReanalyzeForm command={a.command} slug={slug} />}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
               <ExportPanel analysis={a} />
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-[var(--muted)] text-xs">
-                  {a.submitter_email ? `Submitted by ${a.submitter_email}` : "Anonymous"}
+                  {a.submitter_email
+                    ? <><span className="opacity-60">by</span> {a.submitter_email}</>
+                    : <span className="opacity-60">anonymous</span>}
                 </span>
                 <DeleteButton slug={slug} canDelete={canDelete} />
               </div>

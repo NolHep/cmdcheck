@@ -2,12 +2,6 @@
 
 import { useState } from "react";
 
-function apiBase() {
-  if (typeof window === "undefined") return "http://localhost:8000";
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  return `http://${window.location.hostname}:8000`;
-}
-
 export default function FeedbackPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -21,7 +15,7 @@ export default function FeedbackPage() {
     setState("submitting");
     setError("");
     try {
-      const res = await fetch(`${apiBase()}/feedback`, {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -33,7 +27,10 @@ export default function FeedbackPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(body?.detail?.detail ?? "Submission failed. Please try again.");
+        const msg = typeof body?.detail === "string" ? body.detail
+          : typeof body?.detail?.detail === "string" ? body.detail.detail
+          : "Submission failed. Please try again.";
+        setError(msg);
         setState("error");
         return;
       }
@@ -75,7 +72,7 @@ export default function FeedbackPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Short description of the issue"
-            className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+            className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:ring-opacity-20 placeholder:text-[var(--muted)] transition-colors"
           />
         </div>
 

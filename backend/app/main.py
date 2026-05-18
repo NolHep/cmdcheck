@@ -1139,7 +1139,8 @@ async def api_key_create(body: ApiKeyCreateRequest) -> dict[str, Any]:
     user = await fetch_user_by_email(body.email)
     if not user:
         raise HTTPException(401, {"code": "unauthenticated", "detail": "Account not found."})
-    if user.get("subscription_tier", "free") not in ("organization", "teams", "individual"):
+    is_admin_user = user.get("role") == "admin"
+    if not is_admin_user and user.get("subscription_tier", "free") not in ("organization", "teams", "individual"):
         raise HTTPException(402, {"code": "subscription_required", "detail": "API keys require an active subscription."})
     plaintext = "cckey_" + secrets.token_urlsafe(32)
     key_hash = hashlib.sha256(plaintext.encode()).hexdigest()

@@ -69,7 +69,7 @@ export default function CommandForm({
         spellCheck={false}
         autoCorrect="off"
         autoCapitalize="off"
-        className="w-full font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)] sm:rows-10 min-h-[120px] sm:min-h-[200px]"
+        className="w-full font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-4 py-3 resize-y focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:ring-opacity-20 placeholder:text-[var(--muted)] min-h-[140px] sm:min-h-[200px] transition-colors"
       />
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
         <label htmlFor="parent-process" className="text-[var(--muted)] text-xs whitespace-nowrap shrink-0">
@@ -84,7 +84,7 @@ export default function CommandForm({
           spellCheck={false}
           autoCorrect="off"
           autoCapitalize="off"
-          className="flex-1 font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+          className="flex-1 font-mono text-sm bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:ring-opacity-20 placeholder:text-[var(--muted)] transition-colors"
         />
       </div>
       {loggedIn && (
@@ -141,7 +141,7 @@ export default function CommandForm({
         <button
           type="submit"
           disabled={isPending || !command.trim()}
-          className="w-full sm:w-auto px-6 py-2.5 bg-[var(--accent)] text-[#0d1117] font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition-all"
+          className="w-full sm:w-auto px-6 py-2.5 bg-[var(--accent)] text-[#0d1117] font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.98] transition-all"
         >
           {isPending ? "Analyzing…" : "Analyze"}
         </button>
