@@ -51,9 +51,6 @@ export default async function RootLayout({
               <Link href="/docs" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
                 Docs
               </Link>
-              <Link href="/pricing" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
-                Pricing
-              </Link>
               {session?.user && (
                 <Link href="/workspaces" className="text-[var(--muted)] text-sm hover:text-[var(--foreground)] transition-colors">
                   Workspaces
@@ -80,9 +77,6 @@ export default async function RootLayout({
         <footer className="border-t border-[var(--border)] px-6 py-3 flex items-center justify-between">
           <span className="text-[var(--muted)] text-xs">cmdcheck</span>
           <div className="flex items-center gap-4">
-            <Link href="/pricing" className="text-[var(--muted)] text-xs hover:text-[var(--foreground)] transition-colors">
-              Pricing
-            </Link>
             <Link href="/feedback" className="text-[var(--muted)] text-xs hover:text-[var(--foreground)] transition-colors">
               Report a bug
             </Link>
