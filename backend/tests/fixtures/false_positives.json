@@ -50,5 +50,50 @@
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "defense_evasion"]
     }
+  },
+  {
+    "id": "benign-curl-download",
+    "description": "curl downloading a public ISO — no pipe to shell, no malicious extension, no threat",
+    "command": "curl -L -o ubuntu.iso https://releases.ubuntu[.]com/22.04/ubuntu-22.04.3-desktop-amd64.iso",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
+    }
+  },
+  {
+    "id": "benign-wget-tarball",
+    "description": "wget downloading a source tarball — developer workflow, no malicious indicators",
+    "command": "wget https://nodejs[.]org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
+    }
+  },
+  {
+    "id": "benign-docker-run",
+    "description": "docker run launching a standard container image — routine DevOps, no threat",
+    "command": "docker run --rm -it -p 8080:80 nginx:latest",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
+    }
+  },
+  {
+    "id": "benign-npm-install",
+    "description": "npm install for a development dependency — routine Node.js workflow",
+    "command": "npm install --save-dev typescript @types/node eslint",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence", "defense_evasion"]
+    }
+  },
+  {
+    "id": "benign-pip-install",
+    "description": "pip install for a Python library — routine Python development workflow",
+    "command": "pip install requests flask sqlalchemy",
+    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "reject": {
+      "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence", "defense_evasion"]
+    }
   }
 ]

