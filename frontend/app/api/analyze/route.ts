@@ -1,8 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
+import { backendUrl } from "@/app/lib/api";
 
 const AnalyzeBodySchema = z.object({
   command: z.string().min(1).max(65536),
@@ -33,7 +32,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // disable the credential/IP redaction pass on public commands.
   const effective_skip_redaction = !!skip_redaction && !!session?.user?.email;
 
-  const res = await fetch(`${backend}/analyze`, {
+  const res = await fetch(`${backendUrl()}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

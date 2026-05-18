@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
+import { backendUrl } from "@/app/lib/api";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const session = await auth();
@@ -23,7 +22,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const origin = new URL(request.url).origin;
 
-  const res = await fetch(`${backendUrl}/billing/checkout`, {
+  const res = await fetch(`${backendUrl()}/billing/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

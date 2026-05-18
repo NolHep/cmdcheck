@@ -2,8 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { updateBanner, updateBugReport } from "./actions";
+import { backendUrl } from "@/app/lib/api";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const adminSecret = process.env.ADMIN_SECRET ?? "";
 
 function adminHeaders() {
@@ -11,7 +11,7 @@ function adminHeaders() {
 }
 
 async function getStats() {
-  const res = await fetch(`${backendUrl}/admin/stats`, {
+  const res = await fetch(`${backendUrl()}/admin/stats`, {
     headers: adminHeaders(),
     next: { revalidate: 60 },
   });
@@ -20,7 +20,7 @@ async function getStats() {
 }
 
 async function getBugReports() {
-  const res = await fetch(`${backendUrl}/admin/bug-reports`, {
+  const res = await fetch(`${backendUrl()}/admin/bug-reports`, {
     headers: adminHeaders(),
     next: { revalidate: 0 },
   });
@@ -29,7 +29,7 @@ async function getBugReports() {
 }
 
 async function getBanner() {
-  const res = await fetch(`${backendUrl}/settings/banner`, {
+  const res = await fetch(`${backendUrl()}/settings/banner`, {
     next: { revalidate: 10 },
   });
   if (!res.ok) return { enabled: false, message: "", type: "info" };

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { backendUrl } from "@/app/lib/api";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const adminSecret = process.env.ADMIN_SECRET ?? "";
 
 async function requireAdmin() {
@@ -21,7 +21,7 @@ function adminHeaders() {
 
 export async function updateBanner(data: FormData) {
   await requireAdmin();
-  await fetch(`${backendUrl}/admin/settings/banner`, {
+  await fetch(`${backendUrl()}/admin/settings/banner`, {
     method: "PUT",
     headers: adminHeaders(),
     body: JSON.stringify({
@@ -36,7 +36,7 @@ export async function updateBanner(data: FormData) {
 
 export async function updateBugReport(id: string, status: string, notes: string) {
   await requireAdmin();
-  await fetch(`${backendUrl}/admin/bug-reports/${id}`, {
+  await fetch(`${backendUrl()}/admin/bug-reports/${id}`, {
     method: "PATCH",
     headers: adminHeaders(),
     body: JSON.stringify({ status, admin_notes: notes || null }),

@@ -1,6 +1,5 @@
 import Link from "next/link";
-
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
+import { backendUrl } from "@/app/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +16,7 @@ export default async function VerifyEmailPage({
 
   let ok = false;
   try {
-    const res = await fetch(`${backendUrl}/auth/verify-email`, {
+    const res = await fetch(`${backendUrl()}/auth/verify-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

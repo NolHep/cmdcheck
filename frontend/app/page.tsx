@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import HomeContent from "@/app/components/HomeContent";
-
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
+import { backendUrl } from "@/app/lib/api";
 
 async function getUserWorkspaces(email: string): Promise<{ id: string; name: string }[]> {
   try {
     const res = await fetch(
-      `${backend}/workspaces/mine?email=${encodeURIComponent(email)}`,
+      `${backendUrl()}/workspaces/mine?email=${encodeURIComponent(email)}`,
       { cache: "no-store" },
     );
     if (!res.ok) return [];

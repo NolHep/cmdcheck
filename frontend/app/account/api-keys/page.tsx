@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import ApiKeysClient from "./ApiKeysClient";
+import { backendUrl } from "@/app/lib/api";
 
 export const metadata: Metadata = { title: "API keys — cmdcheck" };
 
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 async function getKeys(email: string) {
   try {
-    const res = await fetch(`${backend}/api-keys?email=${encodeURIComponent(email)}`, { cache: "no-store" });
+    const res = await fetch(`${backendUrl()}/api-keys?email=${encodeURIComponent(email)}`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json();
   } catch {

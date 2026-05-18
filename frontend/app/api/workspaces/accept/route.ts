@@ -1,8 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
+import { backendUrl } from "@/app/lib/api";
 
 const AcceptInviteSchema = z.object({
   token: z.string().min(1).max(256),
@@ -18,7 +17,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ code: "invalid_input", detail: parsed.error.issues }, { status: 400 });
   }
 
-  const res = await fetch(`${backend}/workspaces/accept/${parsed.data.token}`, {
+  const res = await fetch(`${backendUrl()}/workspaces/accept/${parsed.data.token}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token: parsed.data.token, user_email: session.user.email }),

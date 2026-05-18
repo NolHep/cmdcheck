@@ -2,12 +2,12 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ThreatMapClient from "./ThreatMapClient";
+import { backendUrl } from "@/app/lib/api";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const adminSecret = process.env.ADMIN_SECRET ?? "";
 
 async function getGroups() {
-  const res = await fetch(`${backendUrl}/admin/threat-groups`, {
+  const res = await fetch(`${backendUrl()}/admin/threat-groups`, {
     headers: { "X-Admin-Secret": adminSecret },
     cache: "no-store",
   });

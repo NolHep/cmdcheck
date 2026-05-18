@@ -243,13 +243,17 @@ function fetchWithTimeout(url: string, options: RequestInit = {}, ms = 15000): P
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
+export function backendUrl(): string {
+  return (process.env.BACKEND_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+}
+
 export function apiBase(): string {
   if (typeof window === "undefined") {
-    return process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    return (process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
   }
   const configured = process.env.NEXT_PUBLIC_API_URL;
   if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) {
-    return configured;
+    return configured.replace(/\/+$/, "");
   }
   const hostname = window.location.hostname;
   // Allow localhost and LAN addresses for dev; hard-fail on any other host so

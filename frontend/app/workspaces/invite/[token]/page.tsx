@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import AcceptInviteButton from "./AcceptInviteButton";
+import { backendUrl } from "@/app/lib/api";
 
 export const metadata: Metadata = { title: "Workspace invite — cmdcheck" };
 
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 async function getInvite(token: string) {
   try {
-    const res = await fetch(`${backend}/workspaces/invite/${token}`, { cache: "no-store" });
+    const res = await fetch(`${backendUrl()}/workspaces/invite/${token}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch {

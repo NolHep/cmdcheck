@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { backendUrl } from "@/app/lib/api";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const adminSecret = process.env.ADMIN_SECRET ?? "";
 
 async function requireAdmin() {
@@ -17,7 +17,7 @@ function headers() {
 
 export async function createGroup(name: string, description: string) {
   await requireAdmin();
-  const res = await fetch(`${backendUrl}/admin/threat-groups`, {
+  const res = await fetch(`${backendUrl()}/admin/threat-groups`, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({ name, description: description || null }),
@@ -28,7 +28,7 @@ export async function createGroup(name: string, description: string) {
 
 export async function deleteGroup(groupId: string) {
   await requireAdmin();
-  const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}`, {
+  const res = await fetch(`${backendUrl()}/admin/threat-groups/${groupId}`, {
     method: "DELETE",
     headers: headers(),
   });
@@ -37,7 +37,7 @@ export async function deleteGroup(groupId: string) {
 
 export async function addMember(groupId: string, slug: string, notes: string) {
   await requireAdmin();
-  const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}/members`, {
+  const res = await fetch(`${backendUrl()}/admin/threat-groups/${groupId}/members`, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({ slug, notes: notes || null }),
@@ -51,7 +51,7 @@ export async function addMember(groupId: string, slug: string, notes: string) {
 
 export async function removeMember(groupId: string, slug: string) {
   await requireAdmin();
-  const res = await fetch(`${backendUrl}/admin/threat-groups/${groupId}/members/${slug}`, {
+  const res = await fetch(`${backendUrl()}/admin/threat-groups/${groupId}/members/${slug}`, {
     method: "DELETE",
     headers: headers(),
   });

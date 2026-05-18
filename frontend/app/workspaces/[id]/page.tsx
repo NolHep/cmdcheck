@@ -3,15 +3,14 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import WorkspaceActions from "./WorkspaceActions";
+import { backendUrl } from "@/app/lib/api";
 
 export const metadata: Metadata = { title: "Workspace — cmdcheck" };
-
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
 
 async function getWorkspace(id: string, email: string) {
   try {
     const res = await fetch(
-      `${backend}/workspaces/${id}?email=${encodeURIComponent(email)}`,
+      `${backendUrl()}/workspaces/${id}?email=${encodeURIComponent(email)}`,
       { cache: "no-store" },
     );
     if (res.status === 404) return null;

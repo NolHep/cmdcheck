@@ -1,5 +1,6 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { backendUrl } from "@/app/lib/api";
 
 declare module "next-auth" {
   interface User {
@@ -13,8 +14,6 @@ declare module "next-auth" {
   }
 }
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -26,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
         let res: Response;
         try {
-          res = await fetch(`${backendUrl}/auth/verify`, {
+          res = await fetch(`${backendUrl()}/auth/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

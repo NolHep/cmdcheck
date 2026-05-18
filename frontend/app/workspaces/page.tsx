@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { backendUrl } from "@/app/lib/api";
 
 export const metadata: Metadata = { title: "Workspaces — cmdcheck" };
 
-const backend = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 async function getWorkspaces(email: string) {
   try {
-    const res = await fetch(`${backend}/workspaces/mine?email=${encodeURIComponent(email)}`, { cache: "no-store" });
+    const res = await fetch(`${backendUrl()}/workspaces/mine?email=${encodeURIComponent(email)}`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json();
   } catch {

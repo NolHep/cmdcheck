@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import SiteBanner from "@/app/components/SiteBanner";
 import UserMenu from "@/app/components/UserMenu";
+import { backendUrl } from "@/app/lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,11 +12,9 @@ export const metadata: Metadata = {
     "Paste a suspicious command line and get structured analysis: deobfuscation, LOLBAS match, MITRE ATT&CK techniques, and a shareable permalink.",
 };
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 async function getBanner() {
   try {
-    const res = await fetch(`${backendUrl}/settings/banner`, {
+    const res = await fetch(`${backendUrl()}/settings/banner`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
