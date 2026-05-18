@@ -66,7 +66,7 @@ _CLASSES: list[_ClassDef] = [
 
     # ── Loader / Code Execution ───────────────────────────────────────────────
     _ClassDef("loader", "Loader", [
-        _r(r"-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?\s+[A-Za-z0-9+/]{20,}",
+        _r(r"(?:-EncodedCommand|-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?|-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+[A-Za-z0-9+/]{20,}",
            "Executes base64-encoded PowerShell command", "high", "T1059.001", "T1027.010"),
         _r(r"(Invoke-Expression|IEX)\s*[\(\$]",
            "Executes string as code via Invoke-Expression", "high", "T1059.001"),

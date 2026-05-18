@@ -3,8 +3,9 @@
 Handles (in order of attempt per layer):
 - Standard base64 / PowerShell -EncodedCommand (UTF-16LE base64)
 - gzip-compressed payloads (H4sI prefix after decode)
+- zlib/deflate-compressed payloads ([IO.Compression.DeflateStream])
 - Hex escape sequences  (\x41\x42\x43)
-- Pure hex strings      (4142434445...)
+- Pure hex strings      (4142434445...) — UTF-8 and UTF-16LE
 - URL-encoded strings   (%41%42%43)
 - PowerShell [char] concatenation  ([char]0x41+[char]66)
 Recurses up to MAX_LAYERS deep.
@@ -15,6 +16,7 @@ from __future__ import annotations
 import base64
 import gzip
 import re
+import zlib
 from typing import Any
 from urllib.parse import unquote
 
@@ -24,12 +26,20 @@ MAX_LAYERS = 5
 _GZIP_MAGIC = b"\x1f\x8b"
 # UTF-16LE BOM or common PowerShell start bytes
 _UTF16LE_BOM = b"\xff\xfe"
+# zlib/deflate headers: default (0x78 0x9C), no-compression (0x78 0x01),
+# best-compression (0x78 0xDA), fast-compression (0x78 0x5E)
+_ZLIB_HEADERS = (b"\x78\x9c", b"\x78\x01", b"\x78\xda", b"\x78\x5e")
 
 
 def _try_b64_decode(s: str) -> bytes | None:
-    """Return decoded bytes if *s* is valid base64, else None."""
-    s = s.strip()
-    # Pad if necessary
+    """Return decoded bytes if *s* is valid base64, else None.
+
+    Strips ALL whitespace (not just leading/trailing) before attempting decode
+    so that base64 blobs split across multiple lines in scripts still work.
+    """
+    s = re.sub(r"\s+", "", s)
+    if not s:
+        return None
     padding = 4 - len(s) % 4
     if padding != 4:
         s += "=" * padding
@@ -64,6 +74,26 @@ def _decode_bytes(raw: bytes) -> tuple[str, str] | None:
             # Gzip header confirmed but decompression failed — truncated or corrupt payload.
             hex_preview = raw[:48].hex(" ")
             return f"[gzip header confirmed — decompression failed (truncated/corrupt payload)]\nhex: {hex_preview}...", "base64-gzip (truncated)"
+
+    # zlib/deflate — PowerShell [IO.Compression.DeflateStream] payloads
+    if raw[:2] in _ZLIB_HEADERS:
+        try:
+            decompressed = zlib.decompress(raw)
+            try:
+                return decompressed.decode("utf-8"), "base64-zlib"
+            except UnicodeDecodeError:
+                pass
+            if len(decompressed) % 2 == 0 and len(decompressed) >= 4:
+                try:
+                    text = decompressed.decode("utf-16-le")
+                    printable = sum(c.isprintable() or c in "\r\n\t" for c in text)
+                    if printable / len(text) > 0.85:
+                        return text, "base64-zlib"
+                except UnicodeDecodeError:
+                    pass
+            return decompressed.decode("latin-1"), "base64-zlib"
+        except Exception:
+            pass
 
     # UTF-16LE (PowerShell encoded commands — starts with FF FE BOM or produces valid text)
     if raw[:2] == _UTF16LE_BOM:
@@ -118,15 +148,30 @@ def _try_hex_escape(text: str) -> list[tuple[str, str]]:
 # ── Pure hex string: 4142434445... ────────────────────────────────────────────
 
 def _try_hex_string(text: str) -> list[tuple[str, str]]:
-    """Decode standalone hex strings of 20+ chars."""
+    """Decode standalone hex strings of 20+ chars. Tries UTF-8 then UTF-16LE."""
     results: list[tuple[str, str]] = []
     for blob in re.findall(r"\b([0-9a-fA-F]{20,})\b", text):
         if len(blob) % 2 != 0:
             continue
         try:
-            decoded = bytes.fromhex(blob).decode("utf-8")
-            if _is_readable(decoded, threshold=0.9):
-                results.append((decoded, "hex-string"))
+            raw = bytes.fromhex(blob)
+            # UTF-8 first
+            try:
+                decoded = raw.decode("utf-8")
+                if _is_readable(decoded, threshold=0.9):
+                    results.append((decoded, "hex-string"))
+                    continue
+            except UnicodeDecodeError:
+                pass
+            # UTF-16LE — common for hex-encoded PowerShell commands
+            if len(raw) % 2 == 0 and len(raw) >= 4:
+                try:
+                    decoded = raw.decode("utf-16-le")
+                    ascii_printable = sum(0x20 <= ord(c) < 0x7F or c in "\r\n\t" for c in decoded)
+                    if len(decoded) > 0 and ascii_printable / len(decoded) > 0.75:
+                        results.append((decoded, "hex-string-utf16le"))
+                except UnicodeDecodeError:
+                    pass
         except Exception:
             pass
     return results
@@ -176,9 +221,10 @@ def _extract_b64_candidates(text: str) -> list[str]:
     """Pull base64 blobs out of a command string."""
     candidates: list[str] = []
 
-    # PowerShell -EncodedCommand / -enc / -en
+    # PowerShell -EncodedCommand and all valid abbreviations down to -e
+    # (any unambiguous prefix of -EncodedCommand is accepted by PS)
     ps_enc = re.findall(
-        r"(?:-EncodedCommand|-[Ee][Nn][Cc](?:[Oo][Dd][Ee][Dd](?:[Cc][Oo][Mm][Mm][Aa][Nn][Dd])?)?)\s+([A-Za-z0-9+/=]{20,})",
+        r"(?:-EncodedCommand|-[Ee][Nn][Cc](?:[Oo][Dd][Ee][Dd](?:[Cc][Oo][Mm][Mm][Aa][Nn][Dd])?)?|-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+([A-Za-z0-9+/=]{20,})",
         text,
     )
     candidates.extend(ps_enc)
