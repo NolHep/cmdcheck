@@ -21,6 +21,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address as _get_remote_address
 
 from .classifier import classify
+from .scoring import compute_verdict
 from . import mitre as mitre_catalog
 from . import stripe_billing
 from .db import (
@@ -596,6 +597,13 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     binaries_in_command = _build_binaries_in_command(all_binaries, lolbas_by_name, gtfobins_by_name)
 
     threat_classes = classify(command, layers)
+    verdict = compute_verdict(
+        threat_classes,
+        has_lolbas=bool(lolbas_matches),
+        has_gtfobins=bool(gtfobins_matches),
+        has_loldrivers=loldrivers is not None,
+        encoding_depth=len(layers),
+    )
     parent_verdict = score_parent(parent_process, command) if parent_process else None
     # Redaction opt-out — subscribers only; silently redact if not subscribed
     skip_redact = body.skip_redaction and user_id is not None
@@ -626,6 +634,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         "gtfobins_matches": gtfobins_matches,
         "loldrivers_match": loldrivers,
         "threat_classes": [asdict(tc) for tc in threat_classes],
+        "verdict": verdict,
         "parent_verdict": asdict(parent_verdict) if parent_verdict else None,
         "redacted": was_redacted,
         "extracted_urls": extracted_urls,

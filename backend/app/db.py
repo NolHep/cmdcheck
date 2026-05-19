@@ -325,6 +325,7 @@ async def fetch_recent(limit: int = 50) -> list[dict[str, Any]]:
             "has_lolbas": result.get("lolbas_match") is not None,
             "has_encoding": len(result.get("decoded_layers", [])) > 0,
             "threat_labels": high_threats,
+            "severity": (result.get("verdict") or {}).get("severity"),
             "created_at": row["created_at"].isoformat(),
         })
     return items
@@ -360,6 +361,7 @@ async def search_analyses(query: str, limit: int = 20) -> list[dict[str, Any]]:
             "has_lolbas": result.get("lolbas_match") is not None,
             "has_encoding": len(result.get("decoded_layers", [])) > 0,
             "threat_labels": high_threats,
+            "severity": (result.get("verdict") or {}).get("severity"),
             "created_at": row["created_at"].isoformat(),
         })
     return items
@@ -1044,6 +1046,7 @@ async def fetch_analyses_for_user(user_id: str, limit: int = 50) -> list[dict[st
             "has_lolbas": bool(result.get("lolbas_match") or result.get("lolbas_matches")),
             "has_encoding": len(result.get("decoded_layers", [])) > 0,
             "threat_labels": high_threats,
+            "severity": (result.get("verdict") or {}).get("severity"),
             "created_at": row["created_at"].isoformat(),
             "is_private": row["is_private"],
         })

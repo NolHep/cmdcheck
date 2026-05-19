@@ -25,13 +25,7 @@ export async function generateMetadata({
   const analysis = await getCachedAnalysis(slug);
   if (!analysis || "deleted" in analysis) return { title: "Analysis — cmdcheck" };
   const a = analysis as AnalyzeResponse;
-  const verdict = getVerdict(
-    !!(a.lolbas_matches?.length || a.lolbas_match),
-    !!(a.gtfobins_matches?.length || a.gtfobins_match),
-    !!a.loldrivers_match,
-    a.decoded_layers.length > 0,
-    a.threat_classes,
-  );
+  const verdict = resolveVerdict(a);
   const snippet = a.command ? a.command.slice(0, 120) : slug;
   const description = `${verdict.detail} | ${snippet}`;
   return {
@@ -79,7 +73,7 @@ export default async function AnalysisPage({
   const hasLoldrivers = !!a.loldrivers_match;
   const hasEncoding = a.decoded_layers.length > 0;
   const hasActors = a.attributed_actors && a.attributed_actors.length > 0;
-  const verdict = getVerdict(hasLolbas, hasGtfobins, hasLoldrivers, hasEncoding, a.threat_classes);
+  const verdict = resolveVerdict(a);
 
   const hasSidebar =
     a.threat_classes.length > 0 ||
@@ -252,6 +246,34 @@ export default async function AnalysisPage({
 }
 
 /* ── verdict ── */
+
+const SEVERITY_STYLE: Record<string, string> = {
+  malicious: "border-[var(--danger)] bg-[#2d1515] text-[var(--foreground)]",
+  suspicious: "border-[var(--danger)] bg-[#2d1515] text-[var(--foreground)]",
+  notable: "border-yellow-600 bg-[#2a2000] text-[var(--foreground)]",
+  low: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
+  clean: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
+};
+
+// Prefer the backend-computed, persisted verdict so a permalink renders the
+// same forever. Fall back to client-side derivation only for legacy rows
+// stored before the verdict was persisted.
+function resolveVerdict(a: AnalyzeResponse) {
+  if (a.verdict) {
+    return {
+      label: a.verdict.label,
+      detail: a.verdict.detail,
+      style: SEVERITY_STYLE[a.verdict.severity] ?? SEVERITY_STYLE.clean,
+    };
+  }
+  return getVerdict(
+    !!(a.lolbas_matches?.length || a.lolbas_match),
+    !!(a.gtfobins_matches?.length || a.gtfobins_match),
+    !!a.loldrivers_match,
+    a.decoded_layers.length > 0,
+    a.threat_classes,
+  );
+}
 
 function getVerdict(
   hasLolbas: boolean, hasGtfobins: boolean, hasLoldrivers: boolean,

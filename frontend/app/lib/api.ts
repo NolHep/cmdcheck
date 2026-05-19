@@ -49,6 +49,18 @@ const ThreatClassSchema = z.object({
   confidence: z.enum(["high", "medium", "low"]),
   signals: z.array(z.string()),
   techniques: z.array(TechniqueDetailSchema).default([]),
+  max_depth: z.number().optional(),
+});
+
+export const SeverityEnum = z.enum([
+  "malicious", "suspicious", "notable", "low", "clean",
+]);
+
+const VerdictSchema = z.object({
+  severity: SeverityEnum,
+  label: z.string(),
+  detail: z.string(),
+  score: z.number(),
 });
 
 const ParentVerdictSchema = z.object({
@@ -198,6 +210,7 @@ export const AnalyzeResponseSchema = z.object({
   gtfobins_matches: z.array(GtfobinsMatchItemSchema).default([]),
   loldrivers_match: LoldriversMatchSchema,
   threat_classes: z.array(ThreatClassSchema).default([]),
+  verdict: VerdictSchema.nullable().optional(),
   parent_verdict: ParentVerdictSchema.nullable().optional(),
   redacted: z.boolean().optional(),
   extracted_urls: z.array(z.string()).default([]),
@@ -222,6 +235,7 @@ export const RecentItemSchema = z.object({
   has_lolbas: z.boolean(),
   has_encoding: z.boolean(),
   threat_labels: z.array(z.string()),
+  severity: SeverityEnum.nullable().optional(),
   created_at: z.string(),
 });
 
@@ -231,6 +245,8 @@ export type LolbasMatch = z.infer<typeof LolbasMatchSchema>;
 export type GtfobinsMatch = z.infer<typeof GtfobinsMatchSchema>;
 export type LoldriversMatch = z.infer<typeof LoldriversMatchSchema>;
 export type ThreatClass = z.infer<typeof ThreatClassSchema>;
+export type Severity = z.infer<typeof SeverityEnum>;
+export type Verdict = z.infer<typeof VerdictSchema>;
 export type ParentVerdict = z.infer<typeof ParentVerdictSchema>;
 export type TechniqueDetail = z.infer<typeof TechniqueDetailSchema>;
 export type RecentItem = z.infer<typeof RecentItemSchema>;

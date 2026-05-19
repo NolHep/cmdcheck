@@ -3,7 +3,7 @@
     "id": "benign-ipconfig",
     "description": "ipconfig /all — sysadmin network diagnostic, must not trigger high-confidence classes",
     "command": "ipconfig /all",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
     }
@@ -12,7 +12,7 @@
     "id": "benign-git-commit",
     "description": "git commit — normal developer workflow, no detections expected",
     "command": "git commit -m \"fix: update README.md\"",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion", "recon"]
     }
@@ -21,7 +21,7 @@
     "id": "benign-schtasks-query",
     "description": "schtasks /query — reading scheduled tasks, not creating them",
     "command": "schtasks /query /fo LIST /v",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["c2_persistence", "impact", "dropper", "loader", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
     }
@@ -30,7 +30,7 @@
     "id": "benign-ping",
     "description": "ping — standard connectivity check, no threat signals",
     "command": "ping 8.8.8.8 -n 4",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "c2_persistence", "credential_theft", "lateral_movement", "data_staging", "defense_evasion"]
     }
@@ -39,14 +39,14 @@
     "id": "benign-vssadmin-list",
     "description": "vssadmin list shadows — read-only VSS query, not deletion",
     "command": "vssadmin list shadows /for=C:",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {"classes": ["impact", "dropper", "credential_theft"]}
   },
   {
     "id": "benign-compress-archive",
     "description": "Compress-Archive for a legitimate backup — no exfil indicators",
     "command": "Compress-Archive -Path C:\\Users\\user\\Documents -DestinationPath C:\\Backup\\docs.zip",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "defense_evasion"]
     }
@@ -55,7 +55,7 @@
     "id": "benign-curl-download",
     "description": "curl downloading a public ISO — no pipe to shell, no malicious extension, no threat",
     "command": "curl -L -o ubuntu.iso https://releases.ubuntu[.]com/22.04/ubuntu-22.04.3-desktop-amd64.iso",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
     }
@@ -64,7 +64,7 @@
     "id": "benign-wget-tarball",
     "description": "wget downloading a source tarball — developer workflow, no malicious indicators",
     "command": "wget https://nodejs[.]org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
     }
@@ -73,7 +73,7 @@
     "id": "benign-docker-run",
     "description": "docker run launching a standard container image — routine DevOps, no threat",
     "command": "docker run --rm -it -p 8080:80 nginx:latest",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence"]
     }
@@ -82,7 +82,7 @@
     "id": "benign-npm-install",
     "description": "npm install for a development dependency — routine Node.js workflow",
     "command": "npm install --save-dev typescript @types/node eslint",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence", "defense_evasion"]
     }
@@ -91,7 +91,7 @@
     "id": "benign-pip-install",
     "description": "pip install for a Python library — routine Python development workflow",
     "command": "pip install requests flask sqlalchemy",
-    "expect": {"classes": [], "min_confidence": {}, "techniques": []},
+    "expect": {"classes": [], "min_confidence": {}, "techniques": [], "max_verdict": "low"},
     "reject": {
       "classes": ["impact", "dropper", "loader", "credential_theft", "lateral_movement", "c2_persistence", "defense_evasion"]
     }

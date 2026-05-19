@@ -21,9 +21,13 @@ from pathlib import Path
 import pytest
 
 from app.classifier import classify
+from app.scoring import compute_verdict
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 CONF_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2}
+SEV_RANK: dict[str, int] = {
+    "clean": 0, "low": 1, "notable": 2, "suspicious": 3, "malicious": 4,
+}
 
 
 def _load_fixtures() -> list[pytest.param]:
@@ -72,6 +76,25 @@ def test_classifier_fixture(fx: dict) -> None:
             f"  Command: {command[:120]!r}\n"
             f"  Got: {sorted(all_tids)}"
         )
+
+    # Minimum aggregate severity (the actual product output). Behavior-only —
+    # LOLBAS/encoding context isn't available at fixture level.
+    min_sev = expect.get("verdict")
+    max_sev = expect.get("max_verdict")
+    if min_sev or max_sev:
+        v = compute_verdict(result)
+        if min_sev:
+            assert SEV_RANK[v["severity"]] >= SEV_RANK[min_sev], (
+                f"Verdict: expected >= {min_sev!r}, got {v['severity']!r} "
+                f"(score {v['score']}).\n  Command: {command[:120]!r}"
+            )
+        if max_sev:
+            assert SEV_RANK[v["severity"]] <= SEV_RANK[max_sev], (
+                f"Verdict: expected <= {max_sev!r} (false-positive gate), got "
+                f"{v['severity']!r} (score {v['score']}).\n"
+                f"  Command: {command[:120]!r}\n"
+                f"  Classes: {[(tc.name, tc.confidence) for tc in result]}"
+            )
 
     # Rejected classes must be absent
     for cls in reject.get("classes", []):

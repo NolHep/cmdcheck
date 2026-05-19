@@ -21,6 +21,10 @@ class ThreatClass:
     confidence: Confidence
     signals: list[str]
     techniques: list[dict[str, Any]]
+    # Deepest decode layer at which a signal for this class was found.
+    # 0 = present in cleartext; >0 = only revealed after deobfuscation
+    # (a strong malice indicator — nobody accidentally encodes a benign command).
+    max_depth: int = 0
 
 
 @dataclass
@@ -29,10 +33,26 @@ class _Rule:
     signal: str
     confidence: Confidence
     technique_ids: list[str] = field(default_factory=list)
+    # When True, this rule's signal only counts if at least one *non*-corroborating
+    # rule in the same class also matched. Isolates single-token rules that are
+    # noisy on their own (e.g. bare "lsass", a generic "curl <url>").
+    requires_corroboration: bool = False
 
 
-def _r(pattern: str, signal: str, confidence: Confidence, *technique_ids: str) -> _Rule:
-    return _Rule(re.compile(pattern, re.IGNORECASE | re.DOTALL), signal, confidence, list(technique_ids))
+def _r(
+    pattern: str,
+    signal: str,
+    confidence: Confidence,
+    *technique_ids: str,
+    corroborate: bool = False,
+) -> _Rule:
+    return _Rule(
+        re.compile(pattern, re.IGNORECASE | re.DOTALL),
+        signal,
+        confidence,
+        list(technique_ids),
+        corroborate,
+    )
 
 
 @dataclass
@@ -40,6 +60,9 @@ class _ClassDef:
     name: str
     label: str
     rules: list[_Rule]
+    # Severity weight — how damaging this class is if the detection is true.
+    # Used by scoring.compute_verdict(); does not affect per-class confidence.
+    weight: float = 1.0
 
 
 _CLASSES: list[_ClassDef] = [
@@ -61,9 +84,10 @@ _CLASSES: list[_ClassDef] = [
         # wget/curl downloading executables or scripts (flags allowed before URL)
         _r(fr"\b(wget|curl)\b.*?{_URL}\S*\.(?:exe|ps1|bat|vbs|hta|sh|py|rb|pl)\b",
            "Downloads executable or script via wget/curl", "medium", "T1105"),
-        # curl/wget fetching any URL — generic download indicator (low, escalated by context)
+        # curl/wget fetching any URL — only counts alongside a stronger dropper
+        # signal (pipe-to-shell, malicious extension). Alone it is just a download.
         _r(fr"\b(curl|wget)\b.*?{_URL}",
-           "Fetches remote content via curl or wget", "low", "T1105"),
+           "Fetches remote content via curl or wget", "low", "T1105", corroborate=True),
         # Raw TCP socket — PowerShell reverse shell C2 channel
         _r(r"Net\.Sockets\.TcpClient|Net\.Sockets\.TcpListener",
            "Opens raw TCP socket (reverse shell or C2 beacon pattern)", "high", "T1095"),
@@ -163,8 +187,11 @@ _CLASSES: list[_ClassDef] = [
 
     # ── Credential Theft ──────────────────────────────────────────────────────
     _ClassDef("credential_theft", "Credential Theft", [
+        # A bare "lsass" mention is meaningless without a dump/access verb —
+        # `Get-Process lsass` is a defender's own command. Needs corroboration.
         _r(r"\blsass\b",
-           "References LSASS process (Windows credential store)", "medium", "T1003.001"),
+           "References LSASS process (Windows credential store)", "medium", "T1003.001",
+           corroborate=True),
         _r(r"\bmimikatz\b",
            "Mimikatz credential theft tool detected", "high", "T1003"),
         _r(r"\bsekurlsa\b",
@@ -378,6 +405,28 @@ _CLASSES: list[_ClassDef] = [
 
 _CONF_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2}
 
+# Severity weight per class — how damaging the behavior is *if the detection is
+# true*. Consumed by scoring.compute_verdict(); kept here so weights live next to
+# the rules they describe. Independent of per-rule confidence (= likelihood true).
+_CLASS_WEIGHTS: dict[str, float] = {
+    "impact": 1.8,            # ransomware / disk wipe / recovery destruction
+    "credential_theft": 1.6,
+    "loader": 1.5,
+    "dropper": 1.4,
+    "c2_persistence": 1.4,
+    "lateral_movement": 1.3,
+    "data_staging": 1.2,
+    "defense_evasion": 1.2,
+    "recon": 0.6,             # noisy, low-severity on its own
+}
+for _c in _CLASSES:
+    _c.weight = _CLASS_WEIGHTS.get(_c.name, 1.0)
+
+# Per-segment scan cap. Regex patterns here use nested `.*?` under DOTALL; on
+# adversarial multi-KB input that is a catastrophic-backtracking (ReDoS) risk.
+# Python's `re` has no timeout, so we bound the input each pattern sees instead.
+_MAX_SCAN_CHARS = 100_000
+
 # Commands with these flags are almost always help/version queries — suppress
 # low-confidence informational hits so `ipconfig --help` doesn't look suspicious.
 _BENIGN_FLAGS = re.compile(r"\s(--help|-h\b|--version|-V\b|/\?|/help)\b", re.IGNORECASE)
@@ -385,39 +434,67 @@ _BENIGN_SUPPRESSIBLE = frozenset({"recon", "defense_evasion"})
 
 
 def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatClass]:
-    """Return detected threat classes for a command and its decoded layers."""
-    corpus = command
+    """Return detected threat classes for a command and its decoded layers.
+
+    Rules are matched per-segment (the command at depth 0, then each decoded
+    layer at its own depth) rather than against one flattened blob. This stops
+    a regex from spanning unrelated content across layers and lets us record
+    the obfuscation depth at which each class first appears.
+    """
+    segments: list[tuple[int, str]] = [(0, command[:_MAX_SCAN_CHARS])]
     for layer in decoded_layers:
-        corpus += "\n" + layer.get("value", "")
+        depth = int(layer.get("layer", 1) or 1)
+        segments.append((depth, str(layer.get("value", ""))[:_MAX_SCAN_CHARS]))
 
     is_help_query = bool(_BENIGN_FLAGS.search(command))
 
     results: list[ThreatClass] = []
     for cls in _CLASSES:
-        matched_signals: list[str] = []
+        # Track core (non-corroborating) vs corroborating matches separately so a
+        # class that only matched isolated single-token rules can be suppressed.
+        core_signals: list[str] = []
+        corrob_signals: list[str] = []
         matched_technique_ids: list[str] = []
         best_conf: Confidence = "low"
+        max_depth = 0
 
         for rule in cls.rules:
-            if rule.pattern.search(corpus):
-                matched_signals.append(rule.signal)
-                if _CONF_RANK[rule.confidence] > _CONF_RANK[best_conf]:
-                    best_conf = rule.confidence
-                for tid in rule.technique_ids:
-                    if tid not in matched_technique_ids:
-                        matched_technique_ids.append(tid)
-
-        if matched_signals:
-            # Suppress low-confidence informational hits when the command looks
-            # like a help or version query (e.g. `ipconfig --help`, `curl -V`).
-            if is_help_query and best_conf == "low" and cls.name in _BENIGN_SUPPRESSIBLE:
+            hit_depth: int | None = None
+            for depth, text in segments:
+                if rule.pattern.search(text):
+                    hit_depth = depth if hit_depth is None else min(hit_depth, depth)
+            if hit_depth is None:
                 continue
-            results.append(ThreatClass(
-                name=cls.name,
-                label=cls.label,
-                confidence=best_conf,
-                signals=matched_signals,
-                techniques=mitre.enrich(matched_technique_ids),
-            ))
+
+            if rule.requires_corroboration:
+                corrob_signals.append(rule.signal)
+            else:
+                core_signals.append(rule.signal)
+            if _CONF_RANK[rule.confidence] > _CONF_RANK[best_conf]:
+                best_conf = rule.confidence
+            max_depth = max(max_depth, hit_depth)
+            for tid in rule.technique_ids:
+                if tid not in matched_technique_ids:
+                    matched_technique_ids.append(tid)
+
+        # A class backed only by corroboration-required rules is too weak to
+        # surface on its own (e.g. bare "lsass", generic "curl <url>").
+        if not core_signals:
+            continue
+
+        matched_signals = core_signals + corrob_signals
+
+        # Suppress low-confidence informational hits when the command looks
+        # like a help or version query (e.g. `ipconfig --help`, `curl -V`).
+        if is_help_query and best_conf == "low" and cls.name in _BENIGN_SUPPRESSIBLE:
+            continue
+        results.append(ThreatClass(
+            name=cls.name,
+            label=cls.label,
+            confidence=best_conf,
+            signals=matched_signals,
+            techniques=mitre.enrich(matched_technique_ids),
+            max_depth=max_depth,
+        ))
 
     return results

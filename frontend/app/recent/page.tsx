@@ -50,20 +50,35 @@ export default async function RecentPage() {
   );
 }
 
+// Prefer the backend-computed severity so the dot matches the analysis page
+// exactly. Fall back to heuristics only for legacy rows lacking a stored verdict.
+const SEVERITY_DOT: Record<string, string> = {
+  malicious: "bg-[var(--danger)]",
+  suspicious: "bg-[var(--danger)]",
+  notable: "bg-yellow-500",
+  low: "bg-[var(--border)]",
+  clean: "bg-[var(--border)]",
+};
+
 function verdictDot(item: RecentItem): { color: string; title: string } {
+  if (item.severity) {
+    const labels = item.threat_labels.join(", ");
+    return {
+      color: SEVERITY_DOT[item.severity] ?? SEVERITY_DOT.clean,
+      title: labels || item.severity,
+    };
+  }
+
   const hasThreats = item.threat_labels.length > 0;
-  // Red: classifier confirmed a threat AND it involves a known-abuse binary or encoding
   if (hasThreats && (item.has_lolbas || item.has_encoding)) {
     return { color: "bg-[var(--danger)]", title: `${item.threat_labels.join(", ")} — LOLbin or encoded payload` };
   }
-  // Yellow: classifier found something, or there's an encoded payload
   if (hasThreats || item.has_encoding) {
     return {
       color: "bg-yellow-500",
       title: hasThreats ? item.threat_labels.join(", ") : "Notable — encoded payload",
     };
   }
-  // Grey: LOLBAS match alone means the binary is known-abusable but nothing suspicious was detected
   return {
     color: "bg-[var(--border)]",
     title: item.has_lolbas ? "Known-abusable binary — no suspicious pattern detected" : "Low signal",
