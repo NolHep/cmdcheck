@@ -25,6 +25,9 @@ class ThreatClass:
     # 0 = present in cleartext; >0 = only revealed after deobfuscation
     # (a strong malice indicator — nobody accidentally encodes a benign command).
     max_depth: int = 0
+    # Max precision among the matched rule(s) that set this class's confidence.
+    # Scales the score in compute_verdict() without changing displayed confidence.
+    precision: float = 1.0
 
 
 @dataclass
@@ -37,6 +40,11 @@ class _Rule:
     # rule in the same class also matched. Isolates single-token rules that are
     # noisy on their own (e.g. bare "lsass", a generic "curl <url>").
     requires_corroboration: bool = False
+    # Likelihood the match is a true positive, independent of severity. A tool
+    # name like "mimikatz" is ~certain (1.0); a heuristic like a bare TcpClient
+    # reference is suggestive but weak (~0.6). Scales the score, not the
+    # displayed confidence.
+    precision: float = 1.0
 
 
 def _r(
@@ -45,6 +53,7 @@ def _r(
     confidence: Confidence,
     *technique_ids: str,
     corroborate: bool = False,
+    precision: float = 1.0,
 ) -> _Rule:
     return _Rule(
         re.compile(pattern, re.IGNORECASE | re.DOTALL),
@@ -52,6 +61,7 @@ def _r(
         confidence,
         list(technique_ids),
         corroborate,
+        precision,
     )
 
 
@@ -90,12 +100,17 @@ _CLASSES: list[_ClassDef] = [
            "Fetches remote content via curl or wget", "low", "T1105", corroborate=True),
         # Raw TCP socket — PowerShell reverse shell C2 channel
         _r(r"Net\.Sockets\.TcpClient|Net\.Sockets\.TcpListener",
-           "Opens raw TCP socket (reverse shell or C2 beacon pattern)", "high", "T1095"),
+           "Opens raw TCP socket (reverse shell or C2 beacon pattern)", "high", "T1095",
+           precision=0.7),
     ]),
 
     # ── Loader / Code Execution ───────────────────────────────────────────────
     _ClassDef("loader", "Loader", [
-        _r(r"(?:-EncodedCommand|-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?|-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+[A-Za-z0-9+/]{20,}",
+        # Unambiguous forms (-EncodedCommand, -enc…) accept a normal-length b64
+        # payload. The bare aliases -e/-en/-ec collide with common flags
+        # (grep -e, sed -e), so they require a 40+ char b64 run to disambiguate.
+        _r(r"(?:-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?)\s+[A-Za-z0-9+/]{20,}"
+           r"|(?:-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+[A-Za-z0-9+/]{40,}",
            "Executes base64-encoded PowerShell command", "high", "T1059.001", "T1027.010"),
         _r(r"(Invoke-Expression|IEX)\s*[\(\$]|\|\s*(?:iex|Invoke-Expression)\b",
            "Executes string as code via Invoke-Expression", "high", "T1059.001"),
@@ -133,8 +148,11 @@ _CLASSES: list[_ClassDef] = [
         # Additional LOLbins
         _r(r"\b(regsvcs|regasm)\b.*\.(?:dll|exe)",
            "Executes .NET assembly via regsvcs or regasm (LOLbin)", "high", "T1218.009"),
+        # Bare binary name only; Follina (CVE-2022-30190) needs a specific
+        # ms-msdt: payload to be a real exploit, so this is suggestive, not certain.
         _r(r"\bmsdt\b",
-           "Invokes Microsoft Support Diagnostic Tool (potential CVE-2022-30190 / Follina)", "high", "T1203"),
+           "Invokes Microsoft Support Diagnostic Tool (potential CVE-2022-30190 / Follina)", "high", "T1203",
+           precision=0.6),
         _r(r"\bforfiles\b.*?/c\b",
            "Uses forfiles /C to proxy-execute arbitrary commands (LOLBin, T1218)", "medium", "T1218"),
         _r(r"\bpcalua(?:\.exe)?\b",
@@ -243,9 +261,11 @@ _CLASSES: list[_ClassDef] = [
            "Initiates or shadows a Remote Desktop (RDP) session", "medium", "T1021.001"),
         _r(r"\b(xfreerdp|rdesktop)\b",
            "Remote Desktop connection via Linux/cross-platform RDP client", "medium", "T1021.001"),
-        # SSH/SCP lateral movement
+        # SSH/SCP lateral movement — `ssh user@host` alone is routine developer
+        # activity; only counts alongside a stronger lateral-movement signal.
         _r(r"\b(ssh|scp|sftp)\s+\S*@\S+",
-           "SSH, SCP, or SFTP connection to remote host (potential lateral movement)", "medium", "T1021.004"),
+           "SSH, SCP, or SFTP connection to remote host (potential lateral movement)", "medium", "T1021.004",
+           corroborate=True),
         _r(r"\bplink\b.*(-pw|-i|-ssh|-P\s)",
            "PuTTY plink SSH/remote connection", "medium", "T1021.004"),
         # Remote service control (lateral movement via sc.exe over network)
@@ -427,10 +447,20 @@ for _c in _CLASSES:
 # Python's `re` has no timeout, so we bound the input each pattern sees instead.
 _MAX_SCAN_CHARS = 100_000
 
-# Commands with these flags are almost always help/version queries — suppress
-# low-confidence informational hits so `ipconfig --help` doesn't look suspicious.
+# A pure help/version query (`ipconfig --help`, `curl -V`) shouldn't look
+# suspicious. But a bare substring check is trivially bypassed by appending
+# `--help` after a real payload, so we also require the absence of anything
+# that makes a command *do* something: chaining/operators, a URL, or a long
+# base64-ish blob. Suppression is still limited to low recon/defense_evasion.
 _BENIGN_FLAGS = re.compile(r"\s(--help|-h\b|--version|-V\b|/\?|/help)\b", re.IGNORECASE)
+_ACTIVE_TOKENS = re.compile(
+    r"[;&|`\n]|\$\(|&&|\|\||://|[A-Za-z0-9+/]{40,}",
+)
 _BENIGN_SUPPRESSIBLE = frozenset({"recon", "defense_evasion"})
+
+
+def _is_help_query(command: str) -> bool:
+    return bool(_BENIGN_FLAGS.search(command)) and not _ACTIVE_TOKENS.search(command)
 
 
 def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatClass]:
@@ -446,7 +476,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
         depth = int(layer.get("layer", 1) or 1)
         segments.append((depth, str(layer.get("value", ""))[:_MAX_SCAN_CHARS]))
 
-    is_help_query = bool(_BENIGN_FLAGS.search(command))
+    is_help_query = _is_help_query(command)
 
     results: list[ThreatClass] = []
     for cls in _CLASSES:
@@ -457,6 +487,8 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
         matched_technique_ids: list[str] = []
         best_conf: Confidence = "low"
         max_depth = 0
+        # (confidence, precision) for each matched core rule.
+        core_matches: list[tuple[Confidence, float]] = []
 
         for rule in cls.rules:
             hit_depth: int | None = None
@@ -470,6 +502,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
                 corrob_signals.append(rule.signal)
             else:
                 core_signals.append(rule.signal)
+                core_matches.append((rule.confidence, rule.precision))
             if _CONF_RANK[rule.confidence] > _CONF_RANK[best_conf]:
                 best_conf = rule.confidence
             max_depth = max(max_depth, hit_depth)
@@ -481,6 +514,12 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
         # surface on its own (e.g. bare "lsass", generic "curl <url>").
         if not core_signals:
             continue
+
+        # Class precision = best precision among core rules that reached the
+        # class's confidence tier (a strong tool-name match outranks a weak
+        # heuristic that happened to hit the same tier).
+        at_best = [p for c, p in core_matches if c == best_conf]
+        class_precision = max(at_best) if at_best else max(p for _, p in core_matches)
 
         matched_signals = core_signals + corrob_signals
 
@@ -495,6 +534,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
             signals=matched_signals,
             techniques=mitre.enrich(matched_technique_ids),
             max_depth=max_depth,
+            precision=class_precision,
         ))
 
     return results

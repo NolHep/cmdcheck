@@ -50,6 +50,7 @@ const ThreatClassSchema = z.object({
   signals: z.array(z.string()),
   techniques: z.array(TechniqueDetailSchema).default([]),
   max_depth: z.number().optional(),
+  precision: z.number().optional(),
 });
 
 export const SeverityEnum = z.enum([

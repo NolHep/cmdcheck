@@ -53,12 +53,14 @@ def compute_verdict(
         base = _CONF_BASE.get(tc.confidence, 1.0)
         weight = _CLASS_WEIGHTS.get(tc.name, 1.0)
         mult = _depth_multiplier(tc.max_depth)
-        pts = base * weight * mult
+        precision = getattr(tc, "precision", 1.0)
+        pts = base * weight * mult * precision
         score += pts
         breakdown.append({
             "class": tc.name,
             "confidence": tc.confidence,
             "max_depth": tc.max_depth,
+            "precision": precision,
             "points": round(pts, 2),
         })
         if tc.confidence in ("high", "medium"):
