@@ -43,3 +43,16 @@ export async function updateBugReport(id: string, status: string, notes: string)
   });
   revalidatePath("/admin");
 }
+
+export async function clearAllAnalyses(): Promise<{ deleted: number }> {
+  await requireAdmin();
+  const res = await fetch(`${backendUrl()}/admin/analyses`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to clear analyses");
+  const data = await res.json();
+  revalidatePath("/admin");
+  revalidatePath("/recent");
+  return { deleted: data.deleted as number };
+}

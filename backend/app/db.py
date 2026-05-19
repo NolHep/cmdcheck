@@ -284,6 +284,20 @@ async def delete_analysis(
     return result == "UPDATE 1"
 
 
+async def delete_all_analyses() -> int:
+    """Soft-delete every non-deleted analysis. Returns count of rows affected."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "UPDATE analyses SET deleted_at = NOW() WHERE deleted_at IS NULL"
+        )
+    # result is like "UPDATE 42"
+    try:
+        return int(result.split()[-1])
+    except (IndexError, ValueError):
+        return 0
+
+
 async def fetch_recent(limit: int = 50) -> list[dict[str, Any]]:
     pool = await get_pool()
     async with pool.acquire() as conn:

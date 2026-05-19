@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { updateBanner, updateBugReport } from "./actions";
 import { backendUrl } from "@/app/lib/api";
+import ClearAnalysesButton from "./ClearAnalysesButton";
 
 const adminSecret = process.env.ADMIN_SECRET ?? "";
 
@@ -143,6 +144,20 @@ export default async function AdminPage() {
               Save banner
             </button>
           </form>
+        </div>
+      </section>
+
+      {/* Danger zone */}
+      <section>
+        <h2 className="section-label mb-4">Danger Zone</h2>
+        <div className="border border-[var(--danger)] rounded-lg p-4 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-[var(--foreground)]">Clear all analyses</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">
+              Soft-deletes every public analysis. Slugs become tombstones. Irreversible via UI.
+            </p>
+          </div>
+          <ClearAnalysesButton />
         </div>
       </section>
 

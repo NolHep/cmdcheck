@@ -29,7 +29,7 @@ from .db import (
     create_api_key, create_bug_report,
     create_password_reset_token, create_threat_group, create_user,
     create_verification_token, create_workspace,
-    create_workspace_invite, delete_analysis, delete_threat_group, delete_workspace,
+    create_workspace_invite, delete_all_analyses, delete_analysis, delete_threat_group, delete_workspace,
     fetch_admin_stats, fetch_analyses_for_user, fetch_analysis, fetch_api_keys_for_user,
     fetch_bug_reports, fetch_invite, fetch_recent, fetch_subscription_status,
     fetch_threat_groups, fetch_user_by_api_key, fetch_user_by_email, fetch_workspace,
@@ -899,6 +899,12 @@ async def admin_update_bug_report(report_id: str, body: BugReportUpdate) -> dict
     if not ok:
         raise HTTPException(status_code=404, detail={"code": "not_found", "detail": "Report not found"})
     return {"ok": True}
+
+
+@app.delete("/admin/analyses", dependencies=[Depends(_require_admin)])
+async def admin_clear_all_analyses() -> dict[str, Any]:
+    count = await delete_all_analyses()
+    return {"ok": True, "deleted": count}
 
 
 # ── Threat groups ────────────────────────────────────────────────────────────────
