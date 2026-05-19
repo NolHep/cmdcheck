@@ -409,8 +409,15 @@ _CLASSES: list[_ClassDef] = [
         _r(r"tar\s+.*-[czjJ]*f\b.*\.(tar|tgz|gz|bz2|xz)",
            "Creates compressed tar archive (data staging)", "low", "T1560"),
         # HTTP POST exfiltration
-        _r(r"(Invoke-WebRequest|curl|wget)\b.*?(-Method\s+POST|--post-data|-d\s|-F\s)",
-           "Uploads data via HTTP POST request (potential exfiltration)", "medium", "T1048", "T1041"),
+        # Uploading a *local file* to a URL (curl -F name=@path / -T / --upload-file
+        # / --data-binary @file / IWR -InFile) is a strong standalone exfil tell.
+        _r(r"(?:curl|wget|Invoke-WebRequest|Invoke-RestMethod)\b.*?(?:-F\s+\S*=@|-T\s|--upload-file\b|--data-binary\s+@|-InFile\b)",
+           "Uploads a local file over HTTP (data exfiltration)", "medium", "T1048", "T1041"),
+        # A bare POST (`-d '{...}'`, `-Method POST`) is the everyday way to call
+        # an API — only an exfil signal alongside a stronger staging hit.
+        _r(r"(Invoke-WebRequest|curl|wget)\b.*?(-Method\s+POST|--post-data|-d\s)",
+           "Sends data via HTTP POST request (potential exfiltration)", "medium", "T1048", "T1041",
+           corroborate=True),
         # Cloud storage exfiltration
         _r(r"\bazcopy\b",
            "Azure data transfer tool (potential cloud exfiltration)", "medium", "T1537"),
@@ -444,7 +451,9 @@ _CLASS_WEIGHTS: dict[str, float] = {
     "c2_persistence": 1.4,
     "lateral_movement": 1.3,
     "data_staging": 1.2,
-    "defense_evasion": 1.2,
+    # High-confidence evasion (AMSI patch, Defender disable, log wiping) is
+    # near-certain malicious; weighted so a lone high-conf hit reaches malicious.
+    "defense_evasion": 1.5,
     "recon": 0.6,             # noisy, low-severity on its own
 }
 for _c in _CLASSES:
@@ -460,7 +469,9 @@ _MAX_SCAN_CHARS = 100_000
 # `--help` after a real payload, so we also require the absence of anything
 # that makes a command *do* something: chaining/operators, a URL, or a long
 # base64-ish blob. Suppression is still limited to low recon/defense_evasion.
-_BENIGN_FLAGS = re.compile(r"\s(--help|-h\b|--version|-V\b|/\?|/help)\b", re.IGNORECASE)
+# `\b` only on the word-ending forms; `/?` has no word boundary after `?`
+# (a global trailing `\b` silently never matched `cmd /?`-style queries).
+_BENIGN_FLAGS = re.compile(r"\s(?:--help\b|-h\b|--version\b|-V\b|/\?|/help\b)", re.IGNORECASE)
 _ACTIVE_TOKENS = re.compile(
     r"[;&|`\n]|\$\(|&&|\|\||://|[A-Za-z0-9+/]{40,}",
 )
@@ -533,7 +544,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
 
         # Suppress low-confidence informational hits when the command looks
         # like a help or version query (e.g. `ipconfig --help`, `curl -V`).
-        if is_help_query and best_conf == "low" and cls.name in _BENIGN_SUPPRESSIBLE:
+        if is_help_query and best_conf in ("low", "medium") and cls.name in _BENIGN_SUPPRESSIBLE:
             continue
         results.append(ThreatClass(
             name=cls.name,

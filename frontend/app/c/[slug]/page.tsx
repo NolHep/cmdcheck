@@ -344,6 +344,14 @@ function ThreatBehavior({ classes }: { classes: ThreatClass[] }) {
             <span className={`text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${CONF_STYLE[tc.confidence]}`}>
               {tc.confidence}
             </span>
+            {typeof tc.precision === "number" && tc.precision < 1 && (
+              <span
+                title="Pattern-based heuristic — weighted lower in the overall verdict than a definitive tool/signature match."
+                className="text-xs font-medium uppercase tracking-wide px-1.5 py-0.5 rounded border border-[var(--border)] text-[var(--muted)]"
+              >
+                heuristic
+              </span>
+            )}
             <span className="font-semibold text-xs text-[var(--foreground)]">{tc.label}</span>
           </div>
           <ul className="px-3 py-2 flex flex-col gap-1">

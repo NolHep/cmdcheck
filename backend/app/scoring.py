@@ -45,7 +45,6 @@ def compute_verdict(
     breakdown: list[dict[str, Any]] = []
     score = 0.0
 
-    classes_ge_medium = 0
     high_labels: list[str] = []
     medium_labels: list[str] = []
 
@@ -63,15 +62,17 @@ def compute_verdict(
             "precision": precision,
             "points": round(pts, 2),
         })
-        if tc.confidence in ("high", "medium"):
-            classes_ge_medium += 1
         if tc.confidence == "high":
             high_labels.append(tc.label)
         elif tc.confidence == "medium":
             medium_labels.append(tc.label)
 
-    # Multi-stage behavior: each independent medium+ class beyond the first.
-    correlation_bonus = max(0, classes_ge_medium - 1) * 5.0
+    # Multi-stage behavior is the strongest real-world malice signal, but two
+    # *medium* classes are often just benign admin work (e.g. Enter-PSSession +
+    # schtasks). Count high-confidence classes fully and medium at half, so the
+    # bonus only kicks in for genuine multi-stage chains, not admin combos.
+    corr_units = len(high_labels) + 0.5 * len(medium_labels)
+    correlation_bonus = max(0.0, corr_units - 1.0) * 5.0
     if correlation_bonus:
         score += correlation_bonus
         breakdown.append({"class": "_correlation", "points": round(correlation_bonus, 2)})
@@ -132,7 +133,7 @@ def compute_verdict(
         detail = "Only weak/low-confidence indicators were found. May be benign — use context."
     else:
         severity = "clean"
-        label = "Low signal"
+        label = "No signal"
         detail = "No known-abused binary, encoding, or threat behavior detected. May still be malicious — use context."
 
     return {"severity": severity, "label": label, "detail": detail,
