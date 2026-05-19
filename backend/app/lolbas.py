@@ -76,16 +76,23 @@ def match(binary_name: str) -> dict[str, Any] | None:
         return None
 
     needle = binary_name.lower().removesuffix(".exe")
-    best_score = 0.0
-    best_entry: dict[str, Any] | None = None
 
-    for catalog_name, entry in _catalog.items():
-        # Strip .exe from the catalog key before comparing so short names like
-        # "cmd" (score 0.6 vs "cmd.exe") don't fall below the 0.7 threshold.
-        score = difflib.SequenceMatcher(None, needle, catalog_name.removesuffix(".exe")).ratio()
-        if score > best_score:
-            best_score = score
-            best_entry = entry
+    # Exact match first — avoids false fuzzy matches like wget→winget.
+    exact = _catalog.get(needle) or _catalog.get(needle + ".exe")
+    if exact is not None:
+        best_entry = exact
+        best_score = 1.0
+    else:
+        best_score = 0.0
+        best_entry = None
+        # Short names (≤5 chars) are too ambiguous for fuzzy matching.
+        if len(needle) <= 5:
+            return None
+        for catalog_name, entry in _catalog.items():
+            score = difflib.SequenceMatcher(None, needle, catalog_name.removesuffix(".exe")).ratio()
+            if score > best_score:
+                best_score = score
+                best_entry = entry
 
     if best_entry is None or best_score < SIMILARITY_THRESHOLD:
         return None

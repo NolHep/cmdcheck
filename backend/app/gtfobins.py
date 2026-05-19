@@ -25,14 +25,17 @@ GTFOBINS_BASE_URL = "https://gtfobins.github.io/gtfobins"
 
 
 def _parse_frontmatter(text: str) -> dict[str, Any] | None:
-    """Extract and parse YAML frontmatter delimited by --- lines."""
-    if not text.startswith("---"):
-        return None
-    end = text.find("\n---", 3)
-    if end == -1:
-        return None
+    """Parse YAML from a GTFOBins file.
+
+    Files are pure YAML (optionally preceded by a bare '---' document-start marker).
+    Older versions of the submodule used Jekyll frontmatter (open+close ---); newer
+    local clones contain just the YAML body.  We handle both.
+    """
     try:
-        return yaml.safe_load(text[3:end].strip()) or {}
+        data = yaml.safe_load(text)
+        if isinstance(data, dict):
+            return data
+        return None
     except Exception:
         return None
 
@@ -48,7 +51,9 @@ def load_catalog() -> None:
         return
 
     count = 0
-    for md_file in GTFOBINS_DIR.glob("*.md"):
+    for md_file in GTFOBINS_DIR.glob("*"):
+        if not md_file.is_file():
+            continue
         try:
             fm = _parse_frontmatter(md_file.read_text(encoding="utf-8"))
             if not fm or "functions" not in fm:
