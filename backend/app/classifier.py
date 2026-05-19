@@ -130,7 +130,7 @@ _CLASSES: list[_ClassDef] = [
     # ── C2 / Persistence ──────────────────────────────────────────────────────
     _ClassDef("c2_persistence", "C2 / Persistence", [
         _r(r"schtasks\s+/create",
-           "Creates scheduled task for persistence", "high", "T1053.005"),
+           "Creates scheduled task for persistence", "medium", "T1053.005"),
         _r(r"\bat(?:\.exe)?\s+\d{1,2}:\d{2}",
            "Uses legacy at.exe job scheduler to execute commands on a schedule (T1053.002)", "high", "T1053.002"),
         _r(r"reg\s+add.*\\(Run|RunOnce)\b",
@@ -164,7 +164,7 @@ _CLASSES: list[_ClassDef] = [
     # ── Credential Theft ──────────────────────────────────────────────────────
     _ClassDef("credential_theft", "Credential Theft", [
         _r(r"\blsass\b",
-           "References LSASS process (Windows credential store)", "high", "T1003.001"),
+           "References LSASS process (Windows credential store)", "medium", "T1003.001"),
         _r(r"\bmimikatz\b",
            "Mimikatz credential theft tool detected", "high", "T1003"),
         _r(r"\bsekurlsa\b",
@@ -247,8 +247,6 @@ _CLASSES: list[_ClassDef] = [
            "Bypasses PowerShell execution policy", "medium", "T1059.001"),
         _r(r"-[Ww]indow[Ss]tyle\s+[Hh]idden|-[Ww]\s+[Hh]idden",
            "Runs PowerShell with hidden window", "low", "T1564.003"),
-        _r(r"-[Nn]on[Ii]nteractive|-[Nn]o[Pp]rofile|-nop\b",
-           "Runs PowerShell without user profile (evasion pattern)", "low", "T1059.001"),
         # Event log clearing — anti-forensics (T1562.008)
         _r(r"wevtutil\s+(cl|clear-log)\b",
            "Clears Windows event log to destroy forensic evidence", "high", "T1562.008"),
@@ -270,12 +268,6 @@ _CLASSES: list[_ClassDef] = [
         # Timestomping
         _r(r"\[IO\.File\]::Set(LastWrite|LastAccess|Creation)Time|Touch\s+-t\b",
            "Modifies file timestamps to evade forensic timeline analysis", "medium", "T1070.006"),
-        # $env: variable substitution to obscure binary paths
-        _r(r"\$env:[A-Za-z_][A-Za-z0-9_()]*",
-           "Uses environment variable substitution ($env:) to obfuscate binary paths or arguments", "medium", "T1027"),
-        # String format / concatenation to construct command names at runtime
-        _r(r"['\"].*?['\"].*?-f\s*['\"]|['\"].*?\{0\}.*?['\"]",
-           "Uses string format operator (-f) to construct command names at runtime, evading static detection", "medium", "T1027"),
         # FromBase64String explicit .NET decode call
         _r(r"\[System\.Convert\]::FromBase64String|\[Convert\]::FromBase64String",
            "Decodes base64 payload via .NET Convert class (common in fileless PS loaders)", "high", "T1027.010"),
