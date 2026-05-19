@@ -14,10 +14,11 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+from slowapi.util import get_remote_address as _get_remote_address
 
 from .classifier import classify
 from . import mitre as mitre_catalog
@@ -343,7 +344,20 @@ _RATE_REGISTER = os.getenv("RATE_REGISTER", "20/hour")
 _RATE_FEEDBACK = os.getenv("RATE_FEEDBACK", "20/hour")
 _RATE_RESEND = os.getenv("RATE_RESEND", "10/hour")
 
-limiter = Limiter(key_func=get_remote_address)
+def _real_ip(request: Request) -> str:
+    """Return the rightmost IP in X-Forwarded-For (set by the trusted proxy).
+
+    Railway/Vercel append the genuine client IP as the last entry.
+    Using the rightmost value prevents spoofing via a crafted first-hop header.
+    Falls back to the TCP connection IP when the header is absent.
+    """
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return _get_remote_address(request)
+
+
+limiter = Limiter(key_func=_real_ip)
 
 # ── Per-tier rate limiting ────────────────────────────────────────────────────
 _TIER_RPM: dict[str, int] = {
@@ -403,6 +417,24 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="cmdcheck", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_MAX_BODY = 512 * 1024  # 512 KB — generous for any legitimate command analysis
+
+
+class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("POST", "PUT", "PATCH"):
+            content_length = request.headers.get("content-length")
+            if content_length and int(content_length) > _MAX_BODY:
+                return __import__("starlette.responses", fromlist=["Response"]).Response(
+                    content='{"code":"payload_too_large","detail":"Request body exceeds 512 KB"}',
+                    status_code=413,
+                    media_type="application/json",
+                )
+        return await call_next(request)
+
+
+app.add_middleware(_BodySizeLimitMiddleware)
 
 _ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
 _CORS_WILDCARD = "*" in _ALLOWED_ORIGINS

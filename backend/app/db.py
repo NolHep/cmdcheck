@@ -1049,7 +1049,7 @@ async def fetch_analysis(slug: str, requesting_user_id: str | None = None) -> di
         row = await conn.fetchrow(
             """
             SELECT a.slug, a.command, a.result, a.deleted_at, a.encrypted,
-                   a.is_private, a.workspace_id,
+                   a.is_private, a.workspace_id, a.user_id AS owner_id,
                    u.email AS submitter_email
             FROM analyses a
             LEFT JOIN users u ON u.id = a.user_id
@@ -1061,20 +1061,25 @@ async def fetch_analysis(slug: str, requesting_user_id: str | None = None) -> di
             return None
         if row["deleted_at"] is not None:
             return {"slug": row["slug"], "deleted": True}
-        # Workspace-private analyses are only visible to workspace members.
-        if row["is_private"] and row["workspace_id"]:
-            if not requesting_user_id:
-                return None
-            is_member = await conn.fetchval(
-                """
-                SELECT 1 FROM workspace_members
-                WHERE workspace_id = $1 AND user_id = $2::uuid
-                """,
-                row["workspace_id"],
-                requesting_user_id,
-            )
-            if not is_member:
-                return None
+        if row["is_private"]:
+            if row["workspace_id"]:
+                # Workspace-private: must be a workspace member.
+                if not requesting_user_id:
+                    return None
+                is_member = await conn.fetchval(
+                    """
+                    SELECT 1 FROM workspace_members
+                    WHERE workspace_id = $1 AND user_id = $2::uuid
+                    """,
+                    row["workspace_id"],
+                    requesting_user_id,
+                )
+                if not is_member:
+                    return None
+            elif row["owner_id"]:
+                # Personal private: only the owner may read it.
+                if not requesting_user_id or requesting_user_id != str(row["owner_id"]):
+                    return None
         command = decrypt(row["command"], row.get("encrypted", False))
     return {
         "slug": row["slug"],
