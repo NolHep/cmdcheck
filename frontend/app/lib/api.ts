@@ -301,13 +301,12 @@ export async function postAnalyze(
   const isPrivate = options?.isPrivate ?? false;
   const skipRedaction = options?.skipRedaction ?? false;
   const workspaceId = options?.workspaceId ?? null;
-  const loggedIn = options?.loggedIn ?? false;
   const force = options?.force ?? false;
 
-  // Route through the Next.js API whenever the user is logged in so the server
-  // can attach user_email (for ownership tracking) regardless of privacy setting.
-  const needsAuth = isPrivate || skipRedaction || !!workspaceId || loggedIn || force;
-  const url = needsAuth ? "/api/analyze" : `${apiBase()}/analyze`;
+  // Always proxy through the Next.js API route — this avoids CORS preflight
+  // issues with direct browser→Railway calls, and lets the server attach
+  // user_email from the session for ownership tracking.
+  const url = "/api/analyze";
 
   const res = await fetchWithTimeout(url, {
     method: "POST",
