@@ -51,16 +51,23 @@ export default async function RecentPage() {
 }
 
 function verdictDot(item: RecentItem): { color: string; title: string } {
-  if (item.has_lolbas && item.has_encoding) {
-    return { color: "bg-[var(--danger)]", title: "Suspicious — LOLBAS binary + encoded payload" };
+  const hasThreats = item.threat_labels.length > 0;
+  // Red: classifier confirmed a threat AND it involves a known-abuse binary or encoding
+  if (hasThreats && (item.has_lolbas || item.has_encoding)) {
+    return { color: "bg-[var(--danger)]", title: `${item.threat_labels.join(", ")} — LOLbin or encoded payload` };
   }
-  if (item.has_lolbas || item.has_encoding) {
-    return { color: "bg-yellow-500", title: item.has_lolbas ? "Notable — known-abused binary" : "Notable — encoded payload" };
+  // Yellow: classifier found something, or there's an encoded payload
+  if (hasThreats || item.has_encoding) {
+    return {
+      color: "bg-yellow-500",
+      title: hasThreats ? item.threat_labels.join(", ") : "Notable — encoded payload",
+    };
   }
-  if (item.threat_labels.length > 0) {
-    return { color: "bg-yellow-500", title: item.threat_labels.join(", ") };
-  }
-  return { color: "bg-[var(--border)]", title: "Low signal" };
+  // Grey: LOLBAS match alone means the binary is known-abusable but nothing suspicious was detected
+  return {
+    color: "bg-[var(--border)]",
+    title: item.has_lolbas ? "Known-abusable binary — no suspicious pattern detected" : "Low signal",
+  };
 }
 
 function timeAgo(iso: string): string {

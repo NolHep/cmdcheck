@@ -55,6 +55,8 @@ _WIN_EXTENSIONLESS_BINARIES = frozenset({
     "icacls", "attrib", "at", "forfiles",
     # Common shells/interpreters also invoked without extension
     "cmd", "powershell", "mshta", "wscript", "cscript", "rundll32", "regsvr32",
+    # Network tools built into Windows 10+ (curl.exe) or commonly present
+    "curl", "wget",
 })
 
 # Tokens that are NOT binaries and must never appear in the binaries list.

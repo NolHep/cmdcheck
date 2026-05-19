@@ -55,12 +55,15 @@ _CLASSES: list[_ClassDef] = [
            "Downloads file via BITS using PowerShell Start-BitsTransfer", "high", "T1197"),
         _r(fr"mshta\b.*{_URL}",
            "Executes remote HTA payload via mshta", "high", "T1218.005"),
-        # Pipe-to-shell: curl/wget output piped directly into an interpreter
-        _r(r"\b(wget|curl)\b.*?\|.*?\b(bash|sh|python3?|perl|ruby)\b",
+        # Pipe-to-shell: curl/wget output piped directly into an interpreter (including PowerShell IEX)
+        _r(r"\b(wget|curl)\b.*?\|.*?\b(bash|sh|python3?|perl|ruby|iex|powershell(?:\.exe)?)\b",
            "Downloads and pipes content directly to a shell interpreter", "high", "T1059.004", "T1105"),
         # wget/curl downloading executables or scripts (flags allowed before URL)
         _r(fr"\b(wget|curl)\b.*?{_URL}\S*\.(?:exe|ps1|bat|vbs|hta|sh|py|rb|pl)\b",
            "Downloads executable or script via wget/curl", "medium", "T1105"),
+        # curl/wget fetching any URL — generic download indicator (low, escalated by context)
+        _r(fr"\b(curl|wget)\b.*?{_URL}",
+           "Fetches remote content via curl or wget", "low", "T1105"),
         # Raw TCP socket — PowerShell reverse shell C2 channel
         _r(r"Net\.Sockets\.TcpClient|Net\.Sockets\.TcpListener",
            "Opens raw TCP socket (reverse shell or C2 beacon pattern)", "high", "T1095"),
@@ -70,7 +73,7 @@ _CLASSES: list[_ClassDef] = [
     _ClassDef("loader", "Loader", [
         _r(r"(?:-EncodedCommand|-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?|-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+[A-Za-z0-9+/]{20,}",
            "Executes base64-encoded PowerShell command", "high", "T1059.001", "T1027.010"),
-        _r(r"(Invoke-Expression|IEX)\s*[\(\$]",
+        _r(r"(Invoke-Expression|IEX)\s*[\(\$]|\|\s*(?:iex|Invoke-Expression)\b",
            "Executes string as code via Invoke-Expression", "high", "T1059.001"),
         # mshta with javascript: scheme (FIN7, ClickFix lures)
         _r(r"mshta\b.*?javascript:",
@@ -383,12 +386,19 @@ _CLASSES: list[_ClassDef] = [
 
 _CONF_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2}
 
+# Commands with these flags are almost always help/version queries — suppress
+# low-confidence informational hits so `ipconfig --help` doesn't look suspicious.
+_BENIGN_FLAGS = re.compile(r"\s(--help|-h\b|--version|-V\b|/\?|/help)\b", re.IGNORECASE)
+_BENIGN_SUPPRESSIBLE = frozenset({"recon", "defense_evasion"})
+
 
 def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatClass]:
     """Return detected threat classes for a command and its decoded layers."""
     corpus = command
     for layer in decoded_layers:
         corpus += "\n" + layer.get("value", "")
+
+    is_help_query = bool(_BENIGN_FLAGS.search(command))
 
     results: list[ThreatClass] = []
     for cls in _CLASSES:
@@ -406,6 +416,10 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
                         matched_technique_ids.append(tid)
 
         if matched_signals:
+            # Suppress low-confidence informational hits when the command looks
+            # like a help or version query (e.g. `ipconfig --help`, `curl -V`).
+            if is_help_query and best_conf == "low" and cls.name in _BENIGN_SUPPRESSIBLE:
+                continue
             results.append(ThreatClass(
                 name=cls.name,
                 label=cls.label,
