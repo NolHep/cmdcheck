@@ -629,7 +629,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     lolbas_by_name: dict[str, dict[str, Any]] = {}
     seen_lolbas: set[str] = set()
     for binary in all_binaries:
-        hit = lolbas_match(binary)
+        hit = lolbas_match(binary, command)
         if hit is not None and hit["name"] not in seen_lolbas:
             seen_lolbas.add(hit["name"])
             lolbas_matches.append(hit)

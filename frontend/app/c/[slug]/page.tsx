@@ -487,6 +487,21 @@ function LolbasCard({ match }: { match: NonNullable<LolbasMatch> }) {
                 {fn}
               </span>
             ))}
+            {match.arg_match ? (
+              <span
+                title={`Argument pattern resembles a known LOLBAS abuse example (similarity ${match.arg_similarity?.toFixed(2)}).`}
+                className="text-xs font-medium uppercase tracking-wide px-1.5 py-0.5 rounded border border-[var(--danger)] border-opacity-50 text-[var(--danger)]"
+              >
+                abuse-pattern
+              </span>
+            ) : typeof match.arg_similarity === "number" && (
+              <span
+                title={`Binary is catalogued in LOLBAS, but the observed arguments don't strongly match a known abuse example (similarity ${match.arg_similarity.toFixed(2)}). May be legitimate dual-use.`}
+                className="text-xs font-medium uppercase tracking-wide px-1.5 py-0.5 rounded border border-[var(--border)] text-[var(--muted)]"
+              >
+                dual-use
+              </span>
+            )}
           </div>
           {match.description && <p className="text-[var(--muted)] text-xs">{match.description}</p>}
         </div>

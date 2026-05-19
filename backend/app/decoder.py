@@ -8,6 +8,10 @@ Handles (in order of attempt per layer):
 - Pure hex strings      (4142434445...) — UTF-8 and UTF-16LE
 - URL-encoded strings   (%41%42%43)
 - PowerShell [char] concatenation  ([char]0x41+[char]66)
+- PowerShell string concatenation  ('p'+'ow'+'er'+'shell')
+- PowerShell format operator       ('{0}{1}' -f 'po','wershell')
+- Literal .replace() / -replace    ('i?e?x'.replace('?',''))
+- Array reverse of char literal    ([array]::Reverse([char[]]'xei'))
 Recurses up to MAX_LAYERS deep.
 """
 
@@ -280,6 +284,99 @@ def _try_env_resolve(text: str) -> list[tuple[str, str]]:
     return [(resolved, "env-variable-substitution")]
 
 
+# ── String obfuscation (PowerShell layer-0) ───────────────────────────────────
+# Lumma, Latrodectus, and ClickFix payloads routinely hide commands in
+# string concatenation, format-operator, and .replace() expressions that survive
+# encoding decoders. These resolve those literal-string expressions only — we
+# never evaluate variables or unknown function calls.
+
+# 'p'+'o'+'w' …  (≥3 quoted literals joined with +)
+_CONCAT_RE = re.compile(r"(?:['\"][^'\"]*['\"]\s*\+\s*){2,}['\"][^'\"]*['\"]")
+_STR_LIT_RE = re.compile(r"['\"]([^'\"]*)['\"]")
+
+
+def _try_string_concat(text: str) -> list[tuple[str, str]]:
+    """Resolve 'a' + 'b' + 'c' chains of three or more quoted string literals."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _CONCAT_RE.finditer(text):
+        parts = _STR_LIT_RE.findall(m.group(0))
+        if len(parts) < 3:
+            continue
+        decoded = "".join(parts)
+        if decoded and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "string-concat"))
+    return results
+
+
+# ('{0}{1}…' -f 'a','b',…)  — PowerShell format operator with literal args only
+_FORMAT_RE = re.compile(
+    r"\(\s*['\"]([^'\"]*\{\d+(?::[^{}]*)?\}[^'\"]*)['\"]\s*-f\s+([^)]+)\)",
+    re.IGNORECASE,
+)
+
+
+def _try_format_op(text: str) -> list[tuple[str, str]]:
+    """Resolve ('{0}{1}' -f 'a','b'). Only fires when all args are literals."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _FORMAT_RE.finditer(text):
+        fmt, args_blob = m.group(1), m.group(2)
+        args = _STR_LIT_RE.findall(args_blob)
+        if not args:
+            continue
+        try:
+            decoded = fmt.format(*args)
+        except (IndexError, KeyError, ValueError):
+            continue
+        if decoded and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "format-op"))
+    return results
+
+
+# 'string'.replace('x','y')  — literal-only .replace() chains (common: strip a char)
+_REPLACE_RE = re.compile(
+    r"['\"]([^'\"]*)['\"]\s*\.\s*replace\s*\(\s*['\"]([^'\"]*)['\"]\s*,\s*['\"]([^'\"]*)['\"]\s*\)",
+    re.IGNORECASE,
+)
+
+
+def _try_dot_replace(text: str) -> list[tuple[str, str]]:
+    """Resolve 'haystack'.replace('needle','rep') when all three are literals."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _REPLACE_RE.finditer(text):
+        s, old, new = m.group(1), m.group(2), m.group(3)
+        if not old:
+            continue
+        decoded = s.replace(old, new)
+        if decoded != s and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "dot-replace"))
+    return results
+
+
+# [array]::Reverse([char[]]'literal')  /  -join 'literal'[-1..-N]
+_ARRAY_REVERSE_RE = re.compile(
+    r"\[\s*array\s*\]\s*::\s*reverse\s*\(\s*\[\s*char\s*\[\s*\]\s*\]\s*['\"]([^'\"]+)['\"]",
+    re.IGNORECASE,
+)
+
+
+def _try_array_reverse(text: str) -> list[tuple[str, str]]:
+    """Resolve [array]::Reverse([char[]]'literal') by reversing the literal."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _ARRAY_REVERSE_RE.finditer(text):
+        decoded = m.group(1)[::-1]
+        if decoded and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "array-reverse"))
+    return results
+
+
 def _all_candidates(text: str) -> list[tuple[str, str]]:
     """Return all (decoded_text, encoding_label) candidates from all strategies."""
     results: list[tuple[str, str]] = []
@@ -306,6 +403,12 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
 
     # $env: variable substitution
     results.extend(_try_env_resolve(text))
+
+    # String obfuscation (PowerShell layer-0)
+    results.extend(_try_string_concat(text))
+    results.extend(_try_format_op(text))
+    results.extend(_try_dot_replace(text))
+    results.extend(_try_array_reverse(text))
 
     return results
 

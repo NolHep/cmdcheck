@@ -20,6 +20,8 @@ const LolbasMatchItemSchema = z.object({
   technique_details: z.array(TechniqueDetailSchema).optional(),
   functions: z.array(z.string()).optional(),
   similarity: z.number().optional(),
+  arg_similarity: z.number().optional(),
+  arg_match: z.boolean().optional(),
 });
 
 const LolbasMatchSchema = LolbasMatchItemSchema.nullable();

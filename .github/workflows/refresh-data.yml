@@ -52,7 +52,9 @@ jobs:
           set -e
 
           LOLBAS_COUNT=$(find backend/data/LOLBAS/yml -name "*.yml" | wc -l)
-          GTFO_COUNT=$(find backend/data/GTFOBins/_gtfobins -name "*.md" 2>/dev/null | wc -l || echo 0)
+          # GTFOBins entries are extensionless YAML files (no .md), so count
+          # all regular files — matches how gtfobins.py loads the catalog.
+          GTFO_COUNT=$(find backend/data/GTFOBins/_gtfobins -type f 2>/dev/null | wc -l)
           echo "LOLBAS entries  : $LOLBAS_COUNT"
           echo "GTFOBins entries: $GTFO_COUNT"
           [ "$LOLBAS_COUNT" -ge 50 ]  || { echo "FAIL: LOLBAS too small ($LOLBAS_COUNT)";  exit 1; }
