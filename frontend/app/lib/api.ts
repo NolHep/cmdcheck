@@ -296,16 +296,17 @@ function extractDetail(body: unknown): string | null {
 export async function postAnalyze(
   command: string,
   parentProcess?: string,
-  options?: { isPrivate?: boolean; skipRedaction?: boolean; workspaceId?: string; loggedIn?: boolean },
+  options?: { isPrivate?: boolean; skipRedaction?: boolean; workspaceId?: string; loggedIn?: boolean; force?: boolean },
 ): Promise<AnalyzeResponse> {
   const isPrivate = options?.isPrivate ?? false;
   const skipRedaction = options?.skipRedaction ?? false;
   const workspaceId = options?.workspaceId ?? null;
   const loggedIn = options?.loggedIn ?? false;
+  const force = options?.force ?? false;
 
   // Route through the Next.js API whenever the user is logged in so the server
   // can attach user_email (for ownership tracking) regardless of privacy setting.
-  const needsAuth = isPrivate || skipRedaction || !!workspaceId || loggedIn;
+  const needsAuth = isPrivate || skipRedaction || !!workspaceId || loggedIn || force;
   const url = needsAuth ? "/api/analyze" : `${apiBase()}/analyze`;
 
   const res = await fetchWithTimeout(url, {
@@ -317,6 +318,7 @@ export async function postAnalyze(
       is_private: isPrivate,
       skip_redaction: skipRedaction,
       workspace_id: workspaceId,
+      force,
     }),
   });
   if (!res.ok) {

@@ -517,6 +517,7 @@ class AnalyzeRequest(BaseModel):
     user_email: str | None = None
     skip_redaction: bool = False
     workspace_id: str | None = None
+    force: bool = False
 
 
 class ErrorResponse(BaseModel):
@@ -535,6 +536,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     command = body.command
     parent_process = body.parent_process
     is_private = body.is_private
+    force_reanalyze = body.force
     user_id: str | None = None
 
     # API key auth — overrides user_email if a valid key is provided
@@ -600,13 +602,13 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     else:
         slug = make_slug(command)
         existing = await fetch_analysis(slug)
-        if existing is not None and not existing.get("deleted"):
+        if existing is not None and not existing.get("deleted") and not force_reanalyze:
             if parent_process and not existing.get("parent_verdict"):
                 verdict = score_parent(parent_process, command)
                 if verdict:
                     existing["parent_verdict"] = asdict(verdict)
             return existing
-        # If deleted (or None), fall through to re-analyze and restore the row
+        # If deleted, force-reanalyzed, or None — fall through to re-analyze and restore the row
 
     ast, parse_error = parse_command(command)
     layers = decode_layers(command)

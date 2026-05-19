@@ -15,6 +15,7 @@ import CopyLinkButton from "@/app/components/CopyLinkButton";
 import DeleteButton from "@/app/components/DeleteButton";
 import ExportPanel from "@/app/components/ExportPanel";
 import ReanalyzeForm from "@/app/components/ReanalyzeForm";
+import RerunButton from "@/app/components/RerunButton";
 
 export async function generateMetadata({
   params,
@@ -182,6 +183,7 @@ export default async function AnalysisPage({
                     ? <><span className="opacity-60">by</span> {a.submitter_email}</>
                     : <span className="opacity-60">anonymous</span>}
                 </span>
+                {a.command && <RerunButton command={a.command} slug={slug} />}
                 <DeleteButton slug={slug} canDelete={canDelete} />
               </div>
             </div>

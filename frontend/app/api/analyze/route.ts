@@ -9,6 +9,7 @@ const AnalyzeBodySchema = z.object({
   is_private: z.boolean().optional(),
   skip_redaction: z.boolean().optional(),
   workspace_id: z.string().uuid().nullable().optional(),
+  force: z.boolean().optional(),
 });
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -19,7 +20,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ code: "invalid_input", detail: parsed.error.issues }, { status: 400 });
   }
 
-  const { command, parent_process, is_private, skip_redaction, workspace_id } = parsed.data;
+  const { command, parent_process, is_private, skip_redaction, workspace_id, force } = parsed.data;
 
   if (is_private && !session?.user?.email) {
     return NextResponse.json(
@@ -42,6 +43,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       skip_redaction: effective_skip_redaction,
       workspace_id: workspace_id ?? null,
       user_email: session?.user?.email ?? null,
+      force: !!force,
     }),
   });
 
