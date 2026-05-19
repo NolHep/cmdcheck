@@ -44,7 +44,14 @@ _WIN_BINARY_RE = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 
-_UNIX_BINARY_RE = re.compile(r"(?:^|[;&|`\s])(/usr/bin/|/bin/|/sbin/)?([a-z][a-z0-9_\-]+)")
+# A binary only appears at a *command position*: the start of the string, or
+# immediately after a shell separator (; | & && || ` newline) or command
+# substitution ($( ). A token after a plain space is an ARGUMENT, not a binary
+# — without this, `npm install --save-dev typescript` would extract
+# `install`/`typescript` and then fuzzy-match them to InstallUtil/Gpscript.
+_UNIX_BINARY_RE = re.compile(
+    r"(?:^|[;&|`\n]\s*|\$\(\s*)(/usr/bin/|/bin/|/sbin/)?([a-z][a-z0-9_\-]+)"
+)
 
 # Known Windows system binaries commonly invoked without a .exe extension in command chains.
 # This supplements _WIN_BINARY_RE which requires an explicit extension.

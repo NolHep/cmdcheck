@@ -78,8 +78,15 @@ class _ClassDef:
 _CLASSES: list[_ClassDef] = [
     # ── Dropper ──────────────────────────────────────────────────────────────────
     _ClassDef("dropper", "Dropper", [
-        _r(r"(Invoke-WebRequest|iwr\s|\.DownloadFile\s*\(|\.DownloadString\s*\()",
-           "Downloads content via WebClient/Invoke-WebRequest", "high", "T1105"),
+        # .DownloadString( is the IEX-cradle hallmark — almost never benign.
+        _r(r"\.DownloadString\s*\(",
+           "Downloads a string for in-memory execution (.DownloadString — IEX cradle)", "high", "T1105"),
+        # Invoke-WebRequest / iwr / .DownloadFile( is the standard PowerShell HTTP
+        # client — routinely benign (downloading a PDF, an installer, an API
+        # response). Only counts alongside a stronger dropper signal.
+        _r(r"Invoke-WebRequest|\biwr\b|\.DownloadFile\s*\(",
+           "Downloads a file via Invoke-WebRequest/WebClient", "medium", "T1105",
+           corroborate=True),
         _r(r"certutil\b.*-urlcache",
            "Downloads file via certutil -urlcache (LOLbin)", "high", "T1105", "T1218.001"),
         _r(r"bitsadmin\s+/transfer",
@@ -91,9 +98,10 @@ _CLASSES: list[_ClassDef] = [
         # Pipe-to-shell: curl/wget output piped directly into an interpreter (including PowerShell IEX)
         _r(r"\b(wget|curl)\b.*?\|.*?\b(bash|sh|python3?|perl|ruby|iex|powershell(?:\.exe)?)\b",
            "Downloads and pipes content directly to a shell interpreter", "high", "T1059.004", "T1105"),
-        # wget/curl downloading executables or scripts (flags allowed before URL)
-        _r(fr"\b(wget|curl)\b.*?{_URL}\S*\.(?:exe|ps1|bat|vbs|hta|sh|py|rb|pl)\b",
-           "Downloads executable or script via wget/curl", "medium", "T1105"),
+        # Any HTTP client pulling a raw executable/script payload from a URL is a
+        # strong standalone dropper signal (and corroborates the IWR rule above).
+        _r(fr"(?:\b(?:wget|curl|iwr|Invoke-WebRequest|DownloadFile|DownloadData|DownloadString)\b|Net\.WebClient).*?{_URL}\S*\.(?:exe|ps1|bat|vbs|hta|sh|py|rb|pl|dll|scr)\b",
+           "Downloads an executable or script payload over HTTP", "high", "T1105"),
         # curl/wget fetching any URL — only counts alongside a stronger dropper
         # signal (pipe-to-shell, malicious extension). Alone it is just a download.
         _r(fr"\b(curl|wget)\b.*?{_URL}",
