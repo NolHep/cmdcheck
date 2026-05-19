@@ -545,12 +545,15 @@ const SOURCE_BADGE: Record<BinaryInCommand["source"], { label: string; style: st
   gtfobins:    { label: "GTFOBins",       style: "bg-[#3d1a1a] text-[var(--danger)] border-[var(--danger)]" },
   system:      { label: "System binary",  style: "bg-[#2a1e00] text-yellow-400 border-yellow-600" },
   threat_tool: { label: "Attack tool",    style: "bg-[#3d1a1a] text-[var(--danger)] border-[var(--danger)]" },
+  masquerade:  { label: "Masquerade",     style: "bg-[#3d1a1a] text-[var(--danger)] border-[var(--danger)]" },
   unknown:     { label: "Unknown",        style: "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)]" },
 };
 
 function BinaryInCommandCard({ binary }: { binary: BinaryInCommand }) {
   const badge = SOURCE_BADGE[binary.source];
-  const isDangerous = binary.source === "lolbas" || binary.source === "gtfobins" || binary.source === "threat_tool";
+  const isDangerous =
+    binary.source === "lolbas" || binary.source === "gtfobins" ||
+    binary.source === "threat_tool" || binary.source === "masquerade";
 
   return (
     <div className="border border-[var(--border)] rounded-lg overflow-hidden">

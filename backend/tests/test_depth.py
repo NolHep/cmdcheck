@@ -205,3 +205,33 @@ def test_parent_unknown_pair_returns_none():
 def test_parent_no_binary_in_command():
     verdict = score_parent("winword.exe", "")
     assert verdict is None
+
+
+# ── Masquerade detection (T1036.005) ──────────────────────────────────────────
+
+from app.main import _detect_masquerade
+
+
+def test_masquerade_detects_svchost_variants():
+    for name in ("svchost32", "scvhost", "svch0st", "svhost"):
+        assert _detect_masquerade(name) == "svchost", name
+
+
+def test_masquerade_detects_other_protected_procs():
+    assert _detect_masquerade("lsass1") == "lsass"
+    assert _detect_masquerade("csrss32") == "csrss"
+    assert _detect_masquerade("winlogon1") == "winlogon"
+
+
+def test_masquerade_ignores_exact_and_legit_names():
+    assert _detect_masquerade("svchost") is None      # the real process name
+    assert _detect_masquerade("services") is None      # exact protected name
+    assert _detect_masquerade("iexplore") is None      # distinct legit binary
+    assert _detect_masquerade("explorer") is None
+
+
+def test_masquerade_no_false_positive_on_short_or_unrelated():
+    assert _detect_masquerade("host") is None          # too short
+    assert _detect_masquerade("notepad") is None
+    assert _detect_masquerade("myapp") is None
+    assert _detect_masquerade("certutil") is None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import os
 import secrets
@@ -120,6 +121,44 @@ _THREAT_TOOL_INFO: dict[str, dict[str, Any]] = {
         "techniques": ["T1071", "T1055", "T1027"],
     },
 }
+
+# Protected Windows processes that malware most often impersonates by name
+# (T1036.005). A real one lives in System32 and is the exact name; a payload
+# named close-but-not-exactly (svchost32, scvhost, svch0st, lsass1) is a
+# masquerade. Names are without the .exe suffix.
+_PROTECTED_PROC_NAMES: frozenset[str] = frozenset({
+    "svchost", "lsass", "services", "csrss", "winlogon", "smss", "wininit",
+    "explorer", "spoolsv", "taskhostw", "taskhost", "dllhost", "conhost",
+    "dwm", "sihost", "ctfmon", "lsm", "runtimebroker", "searchindexer",
+    "fontdrvhost", "audiodg", "wlanext", "msdtc", "wuauclt",
+})
+# Real, distinct Windows binaries that are *legitimately* similar to a
+# protected name — must not be flagged as masquerades.
+_LEGIT_LOOKALIKES: frozenset[str] = frozenset({"iexplore", "explorer"})
+_MASQUERADE_SIMILARITY = 0.78
+
+
+def _detect_masquerade(name_noext: str) -> str | None:
+    """Return the impersonated process name if *name_noext* looks like a
+    masquerade of a protected Windows process, else None."""
+    if name_noext in _PROTECTED_PROC_NAMES or name_noext in _LEGIT_LOOKALIKES:
+        return None  # exact protected name (legit) or known distinct binary
+    if len(name_noext) < 5:
+        return None  # too short to be a confident look-alike (e.g. "host")
+    best: str | None = None
+    best_ratio = 0.0
+    for proc in _PROTECTED_PROC_NAMES:
+        ratio = difflib.SequenceMatcher(None, name_noext, proc).ratio()
+        # A payload that *contains* the protected name plus extra chars
+        # (svchost32, svchostsvc) is a strong masquerade signal.
+        if proc in name_noext and name_noext != proc:
+            ratio = max(ratio, 0.9)
+        if ratio > best_ratio:
+            best_ratio, best = ratio, proc
+    if best is not None and best_ratio >= _MASQUERADE_SIMILARITY:
+        return best
+    return None
+
 
 _SYSTEM_BINARY_INFO: dict[str, dict[str, Any]] = {
     "powershell.exe": {
@@ -323,6 +362,27 @@ def _build_binaries_in_command(
                 "abuse_note": threat_tool.get("abuse_note"),
                 "functions": [],
                 "techniques": mitre_catalog.enrich(threat_tool.get("techniques", [])),
+                "url": None,
+            })
+            continue
+
+        impersonated = _detect_masquerade(name_noext)
+        if impersonated:
+            result.append({
+                "name": name,
+                "source": "masquerade",
+                "description": (
+                    f"Not a real Windows binary — name closely impersonates the "
+                    f"protected system process {impersonated}.exe."
+                ),
+                "abuse_note": (
+                    f"'{name}' mimics the legitimate Windows process "
+                    f"{impersonated}.exe (which lives in System32). Malware "
+                    f"renames payloads this way to blend into process lists and "
+                    f"evade casual inspection."
+                ),
+                "functions": [],
+                "techniques": mitre_catalog.enrich(["T1036.005"]),
                 "url": None,
             })
             continue

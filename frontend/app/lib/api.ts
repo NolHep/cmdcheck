@@ -118,7 +118,7 @@ export type ThreatIntelResult = z.infer<typeof ThreatIntelResultSchema>;
 
 export const BinaryInCommandSchema = z.object({
   name: z.string(),
-  source: z.enum(["lolbas", "gtfobins", "system", "threat_tool", "unknown"]),
+  source: z.enum(["lolbas", "gtfobins", "system", "threat_tool", "masquerade", "unknown"]),
   description: z.string().nullable().optional(),
   abuse_note: z.string().nullable().optional(),
   functions: z.array(z.string()).default([]),
