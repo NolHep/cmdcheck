@@ -195,6 +195,71 @@ def test_decode_two_string_literals_does_not_fire():
     assert "string-concat" not in [l["encoding"] for l in layers]
 
 
+def test_decode_benign_long_literals_does_not_fire():
+    # 3 long literals — looks like benign string-building, not obfuscation.
+    layers = _decode("$x = 'hello' + 'world' + 'goodbye'")
+    assert "string-concat" not in [l["encoding"] for l in layers]
+
+
+# ── PowerShell backtick obfuscation (screenshot regression) ──────────────────
+
+def test_decode_powershell_backtick_obfuscation():
+    cmd = 'p`o`w`e`r`s`h`e`l`l.exe -Command "G`e`t-P`r`o`c`e`s`s"'
+    layers = _decode(cmd)
+    encodings = [l["encoding"] for l in layers]
+    assert "powershell-backtick" in encodings
+    assert any("powershell.exe" in l["value"] for l in layers)
+    assert any("Get-Process" in l["value"] for l in layers)
+
+
+def test_decode_backtick_line_continuation_preserved():
+    # Line-continuation backticks (followed by newline) are legit PS syntax.
+    # The decoder must NOT strip these — only in-token backticks.
+    cmd = "Get-Process `\n  | Select-Object Name `\n  | Format-Table"
+    layers = _decode(cmd)
+    assert "powershell-backtick" not in [l["encoding"] for l in layers]
+
+
+def test_decode_single_backtick_does_not_fire():
+    # A lone `n escape (newline) is not obfuscation; need ≥3 in-token backticks.
+    layers = _decode('Write-Host "hello`nworld"')
+    assert "powershell-backtick" not in [l["encoding"] for l in layers]
+
+
+# ── GAP P0 #2 + P1 #3 (audit fixes) ──────────────────────────────────────────
+
+from app.redactor import is_internal_url
+
+
+def test_is_internal_url_private_ip():
+    assert is_internal_url("https://192.168.1.10/path")
+    assert is_internal_url("http://10.0.0.5/")
+    assert is_internal_url("https://127.0.0.1/")
+
+
+def test_is_internal_url_internal_dns_suffix():
+    assert is_internal_url("https://server.corp.local/")
+    assert is_internal_url("https://db01.lan/")
+    assert is_internal_url("http://kerberos.ad/")
+
+
+def test_is_internal_url_single_label_hostname():
+    assert is_internal_url("http://fileserver/share")
+    assert is_internal_url("http://localhost/")
+
+
+def test_is_internal_url_public_hostname():
+    assert not is_internal_url("https://example.com/")
+    assert not is_internal_url("https://github.com/owner/repo")
+    assert not is_internal_url("http://8.8.8.8/")
+
+
+def test_redact_curl_h_header_not_treated_as_host():
+    out, changed = redact('curl -h "Content-Type: application/json" https://api.example.com')
+    # The header value must survive — -h is not a host flag.
+    assert "Content-Type" in out
+
+
 # ---------------------------------------------------------------------------
 # classifier
 # ---------------------------------------------------------------------------

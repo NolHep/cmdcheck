@@ -1,9 +1,17 @@
-"""Extract URLs and other indicators from command strings and decoded layers."""
+"""Extract URLs and other indicators from command strings and decoded layers.
+
+Internal-host URLs (private IPs, .corp/.local/.lan/… suffixes, single-label
+NetBIOS names) are filtered out — they must NOT be stored in the public
+corpus or sent to third-party lookups (VT, AbuseIPDB, OTX). CLAUDE.md
+invariant #4 — privacy is load-bearing.
+"""
 
 from __future__ import annotations
 
 import re
 from typing import Any
+
+from .redactor import is_internal_url
 
 # Matches both live (http/https) and analyst-defanged (hxxp/hxxps) URLs.
 # Brackets and parens are allowed inside the URL to capture [.] and (.) defanging;
@@ -33,7 +41,8 @@ def extract_urls_from_analysis(command: str, decoded_layers: list[dict[str, Any]
     out: list[str] = []
     for source in sources:
         for url in extract_urls(source):
-            if url not in seen:
-                seen.add(url)
-                out.append(url)
+            if url in seen or is_internal_url(url):
+                continue
+            seen.add(url)
+            out.append(url)
     return out

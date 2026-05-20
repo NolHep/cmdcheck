@@ -8,6 +8,7 @@ Handles (in order of attempt per layer):
 - Pure hex strings      (4142434445...) — UTF-8 and UTF-16LE
 - URL-encoded strings   (%41%42%43)
 - PowerShell [char] concatenation  ([char]0x41+[char]66)
+- PowerShell backtick obfuscation  (`p`o`w`e`r`s`h`e`l`l → powershell)
 - PowerShell string concatenation  ('p'+'ow'+'er'+'shell')
 - PowerShell format operator       ('{0}{1}' -f 'po','wershell')
 - Literal .replace() / -replace    ('i?e?x'.replace('?',''))
@@ -296,12 +297,20 @@ _STR_LIT_RE = re.compile(r"['\"]([^'\"]*)['\"]")
 
 
 def _try_string_concat(text: str) -> list[tuple[str, str]]:
-    """Resolve 'a' + 'b' + 'c' chains of three or more quoted string literals."""
+    """Resolve 'a' + 'b' + 'c' chains of three or more quoted string literals.
+
+    Real PowerShell obfuscation splits identifiers into very short fragments
+    ('p'+'ow'+'er'+'shell'); benign string-building joins whole words
+    ('hello' + 'world' + '!'). Capping max piece length at 6 cleanly
+    separates the two without losing real obfuscation patterns.
+    """
     results: list[tuple[str, str]] = []
     seen: set[str] = set()
     for m in _CONCAT_RE.finditer(text):
         parts = _STR_LIT_RE.findall(m.group(0))
         if len(parts) < 3:
+            continue
+        if any(len(p) > 6 for p in parts):
             continue
         decoded = "".join(parts)
         if decoded and decoded not in seen and _is_readable(decoded):
@@ -358,6 +367,26 @@ def _try_dot_replace(text: str) -> list[tuple[str, str]]:
     return results
 
 
+# PowerShell backtick obfuscation: `p`o`w`e`r`s`h`e`l`l → powershell
+# The PS engine treats `` ` `` as an escape that's a no-op before normal letters,
+# so attackers sprinkle backticks inside tokens to hide them from naive string
+# matching (and break `bashlex` parsing too). The lookahead `(?=[A-Za-z0-9])`
+# only matches backticks that precede an alphanumeric, so line-continuation
+# backticks (`` ` `` followed by a newline / whitespace) are preserved.
+_BACKTICK_OBFUSC = re.compile(r"`(?=[A-Za-z0-9])")
+
+
+def _try_backtick_strip(text: str) -> list[tuple[str, str]]:
+    """Strip PowerShell backtick obfuscation. Requires 3+ in-token backticks
+    so a single legitimate backtick-escape doesn't trigger a decode layer."""
+    if len(_BACKTICK_OBFUSC.findall(text)) < 3:
+        return []
+    decoded = _BACKTICK_OBFUSC.sub("", text)
+    if decoded == text or not _is_readable(decoded):
+        return []
+    return [(decoded, "powershell-backtick")]
+
+
 # [array]::Reverse([char[]]'literal')  /  -join 'literal'[-1..-N]
 _ARRAY_REVERSE_RE = re.compile(
     r"\[\s*array\s*\]\s*::\s*reverse\s*\(\s*\[\s*char\s*\[\s*\]\s*\]\s*['\"]([^'\"]+)['\"]",
@@ -405,6 +434,7 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     results.extend(_try_env_resolve(text))
 
     # String obfuscation (PowerShell layer-0)
+    results.extend(_try_backtick_strip(text))
     results.extend(_try_string_concat(text))
     results.extend(_try_format_op(text))
     results.extend(_try_dot_replace(text))

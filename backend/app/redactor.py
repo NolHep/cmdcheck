@@ -11,7 +11,9 @@ so the heuristics never see — or double-mask — an already-redacted value.
 
 from __future__ import annotations
 
+import ipaddress
 import re
+from urllib.parse import urlparse
 
 # ── Private / internal IPv4 ───────────────────────────────────────────────────
 _PRIVATE_IP = re.compile(
@@ -69,10 +71,52 @@ _INTERNAL_DNS = re.compile(
     re.IGNORECASE,
 )
 # Explicit remote-target flags whose value is a hostname.
+# Explicit remote-target flags whose value is a hostname. `-h` was previously
+# in the alternation but it collides with curl/wget header semantics
+# (`curl -h Content-Type` is a header, not a host) and has no real remote-target
+# usage in the wild — removed.
 _HOST_FLAG = re.compile(
-    r"(?i)((?:-ComputerName|-CN|-Server|/node:|-r:|-h\s|--host\s|-ComputerName:)\s*)"
+    r"(?i)((?:-ComputerName|-CN|-Server|/node:|-r:|--host\s|-ComputerName:)\s*)"
     r"([A-Za-z_][A-Za-z0-9_.\-]*)"
 )
+
+
+# Same DNS-suffix set as _INTERNAL_DNS, but as a search anchor against a
+# hostname (no surrounding word-boundary, since `urlparse().hostname` is
+# already a clean host token).
+_INTERNAL_DNS_SUFFIX = re.compile(
+    r"\.(?:corp|local|internal|intranet|intra|lan|ad|domain|home|lab|test|dmz|priv|private)$",
+    re.IGNORECASE,
+)
+
+
+def is_internal_url(url: str) -> bool:
+    """Predicate: does this URL point at a non-public host?
+
+    Used to keep internal infrastructure out of the public corpus and out of
+    third-party lookups (VT, AbuseIPDB, OTX). Returns True for private IPs
+    (any of v4/v6 private/loopback/link-local/reserved), internal DNS
+    suffixes (.corp/.local/.internal/…), and single-label NetBIOS-style
+    hostnames (no dot — `\\\\SERVER01` and `http://fileserver` shapes).
+    """
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except (ValueError, AttributeError):
+        return False
+    if not host:
+        return False
+    # IPv4 / IPv6 — stdlib handles every reserved range correctly.
+    try:
+        ip = ipaddress.ip_address(host)
+        return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+    except ValueError:
+        pass
+    if _INTERNAL_DNS_SUFFIX.search(host):
+        return True
+    # Single-label hostname (no dot) — almost always internal NetBIOS naming.
+    if "." not in host:
+        return True
+    return False
 
 
 def redact(command: str) -> tuple[str, bool]:

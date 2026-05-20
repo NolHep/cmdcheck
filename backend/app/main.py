@@ -659,12 +659,21 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     binaries_in_command = _build_binaries_in_command(all_binaries, lolbas_by_name, gtfobins_by_name)
 
     threat_classes = classify(command, layers)
+    # Only count "real" obfuscation layers toward the verdict-side encoding
+    # bonus. Trivial normalizations (env-var expansion, the limit-reached
+    # marker) and ambiguous string templating (format-op / dot-replace can
+    # fire on benign string-building) don't reliably indicate hiding intent.
+    # string-concat is gated by a per-piece length cap in the decoder, so it
+    # IS reliable when it fires. Backtick, base64/gzip/hex/url, [array]::Reverse,
+    # and [char]N concatenation are all unambiguous obfuscation.
+    _NON_ENCODING = {"env-variable-substitution", "limit-reached", "format-op", "dot-replace"}
+    encoding_depth = sum(1 for l in layers if l.get("encoding") not in _NON_ENCODING)
     verdict = compute_verdict(
         threat_classes,
         has_lolbas=bool(lolbas_matches),
         has_gtfobins=bool(gtfobins_matches),
         has_loldrivers=loldrivers is not None,
-        encoding_depth=len(layers),
+        encoding_depth=encoding_depth,
     )
     parent_verdict = score_parent(parent_process, command) if parent_process else None
     # Redaction opt-out — subscribers only; silently redact if not subscribed
@@ -673,10 +682,23 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         sub = await fetch_subscription_status(body.user_email or "")
         skip_redact = sub.get("status") in ("active", "trialing")
 
+    # Outer command and *every* decoded layer go through the redactor before
+    # storage — a base64-wrapped command can hide creds/internal hosts that
+    # only surface in the decoded form. Detection (classify/decode/extract)
+    # already ran on the originals, so redaction here is storage-only and
+    # never affects the verdict (CLAUDE.md invariant #4).
     if skip_redact:
         stored_command, was_redacted = command, False
+        stored_layers = layers
     else:
         stored_command, was_redacted = redact(command)
+        stored_layers = []
+        for layer in layers:
+            value = str(layer.get("value", ""))
+            red_value, layer_changed = redact(value)
+            stored_layers.append({**layer, "value": red_value})
+            if layer_changed:
+                was_redacted = True
 
     # URL + IP extraction then multi-source threat intel enrichment
     extracted_urls = extract_urls_from_analysis(command, layers)
@@ -689,7 +711,7 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         "command": stored_command,
         "parsed": ast,
         "parsed_error": parse_error,
-        "decoded_layers": layers,
+        "decoded_layers": stored_layers,
         "lolbas_match": lolbas_matches[0] if lolbas_matches else None,
         "lolbas_matches": lolbas_matches,
         "gtfobins_match": gtfobins_matches[0] if gtfobins_matches else None,
