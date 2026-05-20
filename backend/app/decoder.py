@@ -12,7 +12,10 @@ Handles (in order of attempt per layer):
 - PowerShell string concatenation  ('p'+'ow'+'er'+'shell')
 - PowerShell format operator       ('{0}{1}' -f 'po','wershell')
 - Literal .replace() / -replace    ('i?e?x'.replace('?',''))
+- -replace operator                ('iEX' -replace 'X','x')
 - Array reverse of char literal    ([array]::Reverse([char[]]'xei'))
+- Char-slice reverse / reorder     ('llehsrewop'[-1..-10] -join '')
+- Hex byte array                   ((0x41,0x42,0x43))
 Recurses up to MAX_LAYERS deep.
 """
 
@@ -387,6 +390,86 @@ def _try_backtick_strip(text: str) -> list[tuple[str, str]]:
     return [(decoded, "powershell-backtick")]
 
 
+# 'string' -replace 'pat','rep'  (operator form, sibling of .replace() method)
+# -replace is regex by default; we try regex first and fall back to literal
+# replacement so a pattern containing a regex metachar still resolves.
+_REPLACE_OP_RE = re.compile(
+    r"['\"]([^'\"]+)['\"]\s*-c?replace\s+['\"]([^'\"]+)['\"]\s*(?:,\s*['\"]([^'\"]*)['\"])?",
+    re.IGNORECASE,
+)
+
+
+def _try_replace_op(text: str) -> list[tuple[str, str]]:
+    """Resolve 'haystack' -replace 'pat','rep' / 'haystack' -creplace 'pat'."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _REPLACE_OP_RE.finditer(text):
+        s, old, new = m.group(1), m.group(2), m.group(3) or ""
+        if not old:
+            continue
+        try:
+            decoded = re.sub(old, new, s)
+        except re.error:
+            decoded = s.replace(old, new)
+        if decoded != s and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "replace-op"))
+    return results
+
+
+# Hex byte array: (0x41,0x42,0x43,…) — common shellcode/payload representation.
+# Require ≥4 bytes to suppress benign 2-tuple usage like (0x1F,0x8B) for magic
+# bytes; an actual hidden payload is always many bytes.
+_HEX_ARRAY_RE = re.compile(r"(?:0x[0-9a-fA-F]{1,2}\s*,\s*){3,}0x[0-9a-fA-F]{1,2}")
+
+
+def _try_hex_array(text: str) -> list[tuple[str, str]]:
+    """Decode (0x41,0x42,0x43,…) byte arrays as UTF-8 text where readable."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _HEX_ARRAY_RE.finditer(text):
+        try:
+            byte_vals = [int(b.strip(), 16) for b in m.group(0).split(",")]
+            if any(b > 0xFF for b in byte_vals):
+                continue
+            decoded = bytes(byte_vals).decode("utf-8", errors="ignore")
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if decoded and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "hex-array"))
+    return results
+
+
+# 'literal'[-1..-N] -join '' (PowerShell character-slice obfuscation).
+# When start > end, the slice walks the string backwards — the canonical
+# string-reverse idiom that doesn't need [array]::Reverse.
+_SLICE_JOIN_RE = re.compile(
+    r"['\"]([^'\"]{3,})['\"]\s*\[\s*(-?\d+)\s*\.\.\s*(-?\d+)\s*\]\s*-join\s*['\"]['\"]"
+)
+
+
+def _try_slice_join(text: str) -> list[tuple[str, str]]:
+    """Resolve 'literal'[start..end] -join '' — covers reverse and reorder."""
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for m in _SLICE_JOIN_RE.finditer(text):
+        s = m.group(1)
+        start, end = int(m.group(2)), int(m.group(3))
+        n = len(s)
+        # PowerShell: negative index = from end (-1 == last char)
+        a = n + start if start < 0 else start
+        b = n + end if end < 0 else end
+        if not (0 <= a < n and 0 <= b < n):
+            continue
+        step = 1 if a <= b else -1
+        decoded = "".join(s[i] for i in range(a, b + step, step))
+        if decoded and decoded != s and decoded not in seen and _is_readable(decoded):
+            seen.add(decoded)
+            results.append((decoded, "slice-join"))
+    return results
+
+
 # [array]::Reverse([char[]]'literal')  /  -join 'literal'[-1..-N]
 _ARRAY_REVERSE_RE = re.compile(
     r"\[\s*array\s*\]\s*::\s*reverse\s*\(\s*\[\s*char\s*\[\s*\]\s*\]\s*['\"]([^'\"]+)['\"]",
@@ -438,7 +521,10 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     results.extend(_try_string_concat(text))
     results.extend(_try_format_op(text))
     results.extend(_try_dot_replace(text))
+    results.extend(_try_replace_op(text))
     results.extend(_try_array_reverse(text))
+    results.extend(_try_slice_join(text))
+    results.extend(_try_hex_array(text))
 
     return results
 

@@ -265,6 +265,98 @@ def test_redact_curl_h_header_not_treated_as_host():
 from app.story import generate_story
 
 
+# ── New decoder coverage: -replace operator, hex array, slice-join ───────────
+
+def test_decode_replace_operator():
+    # 'i?e?x' -replace '?','' : pattern is regex-invalid (lone ?), so we fall
+    # back to literal replace → 'iex'.
+    layers = _decode("$x = 'i?e?x' -replace '?',''")
+    encodings = [l["encoding"] for l in layers]
+    assert "replace-op" in encodings
+    assert any("iex" in l["value"] for l in layers)
+
+
+def test_decode_hex_byte_array():
+    # "powershell" = 0x70,0x6f,0x77,0x65,0x72,0x73,0x68,0x65,0x6c,0x6c
+    layers = _decode("[byte[]](0x70,0x6f,0x77,0x65,0x72,0x73,0x68,0x65,0x6c,0x6c)")
+    encodings = [l["encoding"] for l in layers]
+    assert "hex-array" in encodings
+    assert any("powershell" in l["value"] for l in layers)
+
+
+def test_decode_slice_reverse():
+    # 'llehsrewop'[-1..-10] -join '' → 'powershell'
+    layers = _decode("'llehsrewop'[-1..-10] -join ''")
+    encodings = [l["encoding"] for l in layers]
+    assert "slice-join" in encodings
+    assert any("powershell" in l["value"] for l in layers)
+
+
+def test_decode_two_hex_does_not_fire():
+    # Magic-byte 2-tuple — not obfuscation.
+    layers = _decode("$gzip = [byte[]](0x1F,0x8B)")
+    assert "hex-array" not in [l["encoding"] for l in layers]
+
+
+# ── New classifier coverage ──────────────────────────────────────────────────
+
+def test_classify_reflection_assembly_load():
+    cmd = "$b = [Convert]::FromBase64String($e); [Reflection.Assembly]::Load($b).EntryPoint.Invoke($null,$null)"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "loader" in names
+
+
+def test_classify_add_type_inline_csharp():
+    cmd = "Add-Type -TypeDefinition @\"using System; public class P { public static void M(){} }\"@"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "loader" in names
+
+
+def test_classify_call_op_with_concat():
+    cmd = "&('Inv'+'oke-Expression') $payload"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "loader" in names
+
+
+def test_classify_wmi_cmdlet_recon():
+    cmd = "Get-WmiObject -Class Win32_Process"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "recon" in names
+
+
+def test_classify_net_stop_security_service():
+    cmd = "net stop WinDefend & net stop MSSQLSERVER"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "impact" in names
+
+
+def test_classify_taskkill_edr():
+    cmd = "taskkill /F /IM CSFalconService.exe"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "impact" in names
+
+
+def test_classify_variable_interpolation_obfuscation():
+    cmd = "${i}${e}${x} $cmd"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "defense_evasion" in names
+
+
+def test_classify_single_var_interpolation_does_not_fire():
+    # `${env:PATH}` is legitimate single-variable usage, not obfuscation.
+    cmd = "Write-Host ${env:PATH}"
+    classes = classify(cmd, [])
+    names = {c.name for c in classes}
+    assert "defense_evasion" not in names
+
+
 def test_story_acknowledges_obfuscation_when_no_threats():
     # Backtick-obfuscated benign command — no threat classes, no LOLBAS hit,
     # but a decoded layer exists. Paragraph 1 must NOT say "no malicious

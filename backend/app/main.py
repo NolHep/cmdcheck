@@ -710,6 +710,11 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
     # only surface in the decoded form. Detection (classify/decode/extract)
     # already ran on the originals, so redaction here is storage-only and
     # never affects the verdict (CLAUDE.md invariant #4).
+    #
+    # Each stored layer is capped to MAX_LAYER_BYTES to bound row size for
+    # pathological recursive decodes (a gzip-of-gzip-of-… could in principle
+    # produce megabytes), and to keep the redactor's regex scan bounded.
+    MAX_LAYER_BYTES = 8 * 1024
     if skip_redact:
         stored_command, was_redacted = command, False
         stored_layers = layers
@@ -718,7 +723,13 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         stored_layers = []
         for layer in layers:
             value = str(layer.get("value", ""))
+            original_len = len(value)
+            truncated = original_len > MAX_LAYER_BYTES
+            if truncated:
+                value = value[:MAX_LAYER_BYTES]
             red_value, layer_changed = redact(value)
+            if truncated:
+                red_value += f"\n…[truncated — original {original_len} bytes]"
             stored_layers.append({**layer, "value": red_value})
             if layer_changed:
                 was_redacted = True

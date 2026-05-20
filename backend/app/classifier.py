@@ -175,6 +175,21 @@ _CLASSES: list[_ClassDef] = [
            "Windows Subsystem for Linux used for indirect command execution", "medium", "T1202"),
         _r(r"\bpwsh\b",
            "PowerShell Core execution via pwsh (may bypass policies targeting powershell.exe)", "low", "T1059.001"),
+        # Fileless .NET loaders — the canonical Cobalt Strike / Empire / Sliver
+        # pattern of pushing assembly bytes into the current process and
+        # invoking a method, never touching disk.
+        _r(r"\[(?:System\.)?Reflection\.Assembly\]::Load\s*\(",
+           "Loads .NET assembly via Reflection.Assembly.Load (fileless loader)", "high", "T1620", "T1059.001"),
+        _r(r"\[(?:System\.)?AppDomain\]::CurrentDomain\.Load\s*\(",
+           "Loads .NET assembly into the current AppDomain (fileless loader)", "high", "T1620"),
+        # Inline C# compilation — used to drop shellcode runners (e.g.
+        # P/Invoke wrappers calling VirtualAlloc/CreateRemoteThread).
+        _r(r"\bAdd-Type\s+(?:-TypeDefinition|-Path|-LiteralPath|@'|@\")",
+           "Compiles inline .NET source via Add-Type (commonly a shellcode runner)", "high", "T1059.001"),
+        # Call operator invoking a constructed function name — defeats simple
+        # string-match detection of IEX/Invoke-Expression by splitting the name.
+        _r(r"&\s*\(\s*['\"][^'\"]*['\"]\s*\+\s*['\"]",
+           "Call operator invoking a concatenated function name (string-split execution)", "medium", "T1027"),
     ]),
 
     # ── C2 / Persistence ──────────────────────────────────────────────────────
@@ -326,6 +341,11 @@ _CLASSES: list[_ClassDef] = [
         # FromBase64String explicit .NET decode call
         _r(r"\[System\.Convert\]::FromBase64String|\[Convert\]::FromBase64String",
            "Decodes base64 payload via .NET Convert class (common in fileless PS loaders)", "high", "T1027.010"),
+        # ${var}${var}${var} chains — heavy variable-name interpolation is an
+        # invoke-obfuscation tell. Single ${PATH} usage or two-var templates
+        # like ${user}${val} are fine; three or more in a row is deliberate.
+        _r(r"(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}){3,}",
+           "Heavy variable-name interpolation (Invoke-Obfuscation token-split pattern)", "medium", "T1027"),
     ]),
 
     # ── Reconnaissance ────────────────────────────────────────────────────────
@@ -366,6 +386,10 @@ _CLASSES: list[_ClassDef] = [
            "Lists active network connections and listening ports", "low", "T1049"),
         _r(r"\barp\s+-[aA]\b",
            "Enumerates ARP table (local network host discovery)", "low", "T1016"),
+        # Modern PowerShell-native equivalents of `wmic.exe` — same process /
+        # service / user enumeration, no .exe.
+        _r(r"\b(?:Get-WmiObject|Get-CimInstance|gwmi|gcim)\b\s+(?:[^|;]*?-(?:Class|Query|Namespace)|\s*Win32_)",
+           "Enumerates system state via WMI/CIM cmdlets (modern wmic equivalent)", "low", "T1047"),
     ]),
 
     # ── Ransomware / Impact ───────────────────────────────────────────────────
@@ -395,6 +419,18 @@ _CLASSES: list[_ClassDef] = [
         # Disk/partition wipe
         _r(r"\bdiskpart\b.*(?:clean|format)",
            "Formats or wipes disk partitions via diskpart", "high", "T1561.002"),
+        # Stopping security / backup services — the universal ransomware
+        # pre-encryption step. Matches `net stop`, `sc stop`, and
+        # `taskkill /im` against well-known AV / EDR / DB / backup services.
+        _r(r"(?:net\s+stop|sc\s+stop|sc\.exe\s+stop|taskkill\s+(?:/[fF]\s+)?/im)\s+\"?\b("
+           r"WinDefend|MsSecFlt|Sense|SecurityHealthService|WSearch|"
+           r"MSSQL\w*|SQLAgent\w*|SQLBrowser|SQLWriter|"
+           r"Veeam\w*|BackupExec\w*|Acronis\w*|VMTools|VBoxService|"
+           r"Sophos\w*|SAVService|SophosAgent|"
+           r"CrowdStrike|CSFalconService|CSAgent|"
+           r"Carbon\w*|cbsensor|cb\w*"
+           r")",
+           "Stops a known security / EDR / backup / database service (ransomware kill-chain precursor)", "high", "T1489"),
     ]),
 
     # ── Data Staging / Exfiltration ───────────────────────────────────────────
