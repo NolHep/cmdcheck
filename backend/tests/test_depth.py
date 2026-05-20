@@ -292,6 +292,34 @@ def test_decode_slice_reverse():
     assert any("powershell" in l["value"] for l in layers)
 
 
+def test_decode_clean_gzip_uses_strict_label():
+    import base64 as _b64
+    import gzip as _gz
+    payload = b"Write-Host 'hello from gzip'"
+    cmd = f"powershell -enc {_b64.b64encode(_gz.compress(payload)).decode()}"
+    layers = _decode(cmd)
+    # Clean gzip stream → strict path → label stays "base64-gzip"
+    assert "base64-gzip" in [l["encoding"] for l in layers]
+    assert "base64-gzip (recovered)" not in [l["encoding"] for l in layers]
+
+
+def test_decode_corrupt_crc_gzip_falls_back_to_recovery():
+    # User-reported sample: valid gzip header + deflate body but the CRC32
+    # trailer is busted. gzip.decompress() rejects on CRC; the lenient path
+    # extracts the body anyway and labels the layer "(recovered)" so an
+    # analyst knows the trailer was untrusted.
+    cmd = (
+        'powershell -c "$b=[System.Convert]::FromBase64String('
+        "'H4sIAAAAAAAA/6tWKkktLlGyUlIqS40vLUpVslIqLU4tykvMTQUA6nU3RDEAAAA='"
+        ');..."'
+    )
+    layers = _decode(cmd)
+    encodings = [l["encoding"] for l in layers]
+    assert "base64-gzip (recovered)" in encodings
+    # Make sure we didn't fall all the way through to the "truncated" sentinel
+    assert "base64-gzip (truncated)" not in encodings
+
+
 def test_decode_two_hex_does_not_fire():
     # Magic-byte 2-tuple — not obfuscation.
     layers = _decode("$gzip = [byte[]](0x1F,0x8B)")

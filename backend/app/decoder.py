@@ -2,7 +2,9 @@
 
 Handles (in order of attempt per layer):
 - Standard base64 / PowerShell -EncodedCommand (UTF-16LE base64)
-- gzip-compressed payloads (H4sI prefix after decode)
+- gzip-compressed payloads (H4sI prefix after decode); lenient fallback
+  recovers content when the CRC32/ISIZE trailer is corrupt (common in
+  adversarial / truncated samples — strict `gzip.decompress` would reject)
 - zlib/deflate-compressed payloads ([IO.Compression.DeflateStream])
 - Hex escape sequences  (\x41\x42\x43)
 - Pure hex strings      (4142434445...) — UTF-8 and UTF-16LE
@@ -57,31 +59,80 @@ def _try_b64_decode(s: str) -> bytes | None:
         return None
 
 
+def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
+    """Decompress a gzip stream tolerating corrupt CRC32/ISIZE trailers.
+
+    Real-world adversarial samples (pasted from sandboxed/snipped logs) often
+    have busted gzip trailers — `gzip.decompress` rejects on CRC mismatch even
+    though the deflate body itself is intact. We try strict gzip first, then
+    fall back to parsing the header to locate the raw deflate stream and
+    decompress with zlib's raw mode (no CRC validation).
+    """
+    if raw[:2] != _GZIP_MAGIC or len(raw) < 10:
+        return None
+    try:
+        return gzip.decompress(raw)
+    except Exception:
+        pass
+    # Header parse: skip optional FEXTRA/FNAME/FCOMMENT/FHCRC fields.
+    flags = raw[3]
+    pos = 10
+    try:
+        if flags & 0x04:  # FEXTRA
+            xlen = int.from_bytes(raw[pos:pos + 2], "little")
+            pos += 2 + xlen
+        if flags & 0x08:  # FNAME (null-terminated)
+            pos = raw.index(b"\x00", pos) + 1
+        if flags & 0x10:  # FCOMMENT
+            pos = raw.index(b"\x00", pos) + 1
+        if flags & 0x02:  # FHCRC
+            pos += 2
+        # Drop the 8-byte trailer if it looks present; otherwise feed it all.
+        body = raw[pos:-8] if len(raw) - pos >= 8 else raw[pos:]
+        return zlib.decompress(body, -zlib.MAX_WBITS)
+    except Exception:
+        try:
+            return zlib.decompress(raw[pos:], -zlib.MAX_WBITS)
+        except Exception:
+            return None
+
+
+def _bytes_to_text(decompressed: bytes, encoding_label: str) -> tuple[str, str] | None:
+    """Interpret decompressed bytes as text via UTF-8 → UTF-16LE → latin-1."""
+    try:
+        return decompressed.decode("utf-8"), encoding_label
+    except UnicodeDecodeError:
+        pass
+    if len(decompressed) % 2 == 0 and len(decompressed) >= 4:
+        try:
+            text = decompressed.decode("utf-16-le")
+            printable = sum(c.isprintable() or c in "\r\n\t" for c in text)
+            if printable / len(text) > 0.85:
+                return text, encoding_label
+        except UnicodeDecodeError:
+            pass
+    return decompressed.decode("latin-1"), encoding_label
+
+
 def _decode_bytes(raw: bytes) -> tuple[str, str] | None:
     """Try to interpret *raw* as a known encoding. Returns (text, encoding_label) or None."""
-    # gzip
+    # gzip — with lenient fallback for corrupt-trailer samples
     if raw[:2] == _GZIP_MAGIC:
+        # Strict path
         try:
-            decompressed = gzip.decompress(raw)
-            # UTF-8 first — most PS/shell scripts are UTF-8
-            try:
-                return decompressed.decode("utf-8"), "base64-gzip"
-            except UnicodeDecodeError:
-                pass
-            # UTF-16LE with printability guard (PS -EncodedCommand inside gzip)
-            if len(decompressed) % 2 == 0 and len(decompressed) >= 4:
-                try:
-                    text = decompressed.decode("utf-16-le")
-                    printable = sum(c.isprintable() or c in "\r\n\t" for c in text)
-                    if printable / len(text) > 0.85:
-                        return text, "base64-gzip"
-                except UnicodeDecodeError:
-                    pass
-            return decompressed.decode("latin-1"), "base64-gzip"
+            return _bytes_to_text(gzip.decompress(raw), "base64-gzip")
         except Exception:
-            # Gzip header confirmed but decompression failed — truncated or corrupt payload.
-            hex_preview = raw[:48].hex(" ")
-            return f"[gzip header confirmed — decompression failed (truncated/corrupt payload)]\nhex: {hex_preview}...", "base64-gzip (truncated)"
+            pass
+        # Lenient path: header parse + raw deflate, ignores CRC/ISIZE
+        recovered = _lenient_gzip_decompress(raw)
+        if recovered is not None:
+            return _bytes_to_text(recovered, "base64-gzip (recovered)")
+        # Both paths failed — show the hex preview so an analyst can hand-decode.
+        hex_preview = raw[:48].hex(" ")
+        return (
+            f"[gzip header confirmed — decompression failed (truncated/corrupt payload)]\nhex: {hex_preview}...",
+            "base64-gzip (truncated)",
+        )
 
     # zlib/deflate — PowerShell [IO.Compression.DeflateStream] payloads
     if raw[:2] in _ZLIB_HEADERS:
