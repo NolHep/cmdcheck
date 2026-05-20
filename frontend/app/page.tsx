@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import HomeContent from "@/app/components/HomeContent";
 import AnalysisTicker from "@/app/components/AnalysisTicker";
+import HawkMark from "@/app/components/HawkMark";
 import { backendUrl } from "@/app/lib/api";
 
 async function getUserWorkspaces(email: string): Promise<{ id: string; name: string }[]> {
@@ -40,6 +41,10 @@ export default async function HomePage() {
   return (
     <div className="flex-1 flex flex-col items-center justify-start px-4 py-10 gap-7 max-w-3xl mx-auto w-full">
       <div className="text-center w-full">
+        <HawkMark
+          size={36}
+          className="text-[var(--accent)] mx-auto mb-4 opacity-90"
+        />
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
           Command-line analyzer
         </h1>
