@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Working name: **cmdcheck** (rename freely; placeholder).
+Project name: **ShellHawk** (domain: shellhawk.net).
 
 ## What this is
 

@@ -1,4 +1,4 @@
-"""cmdcheck FastAPI application."""
+"""ShellHawk FastAPI application."""
 
 from __future__ import annotations
 
@@ -475,7 +475,7 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
-app = FastAPI(title="cmdcheck", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="ShellHawk", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

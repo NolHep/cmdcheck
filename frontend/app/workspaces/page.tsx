@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { backendUrl } from "@/app/lib/api";
 
-export const metadata: Metadata = { title: "Workspaces — cmdcheck" };
+export const metadata: Metadata = { title: "Workspaces — ShellHawk" };
 
 async function getWorkspaces(email: string) {
   try {

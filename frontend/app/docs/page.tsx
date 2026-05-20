@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Documentation — cmdcheck",
-  description: "How cmdcheck works, what it analyzes, and how we handle your data.",
+  title: "Documentation — ShellHawk",
+  description: "How ShellHawk works, what it analyzes, and how we handle your data.",
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -32,14 +32,14 @@ export default function DocsPage() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Documentation</h1>
         <p className="text-[var(--muted)] text-sm">
-          cmdcheck is a free command-line analyzer for incident responders.
+          ShellHawk is a free command-line analyzer for incident responders.
           Paste a suspicious command, get a structured analysis and a shareable permalink.
         </p>
       </div>
 
       <Section title="What it does">
         <P>
-          cmdcheck analyzes command-line strings and returns a structured verdict covering:
+          ShellHawk analyzes command-line strings and returns a structured verdict covering:
           obfuscation decoding (base64, UTF-16LE, gzip — up to 5 layers), LOLBAS/GTFOBins binary
           matching, MITRE ATT&amp;CK technique tagging, LOLDrivers (BYOVD) detection, parent process
           plausibility scoring, and threat class classification.
@@ -56,8 +56,8 @@ export default function DocsPage() {
           {[
             "A SIEM, SOAR, or EDR. It does not ingest your logs.",
             "A generic shell explainer — explainshell.com serves Linux learners; we serve incident responders looking at hostile commands.",
-            "A CyberChef replacement — CyberChef lets you build manual recipes; cmdcheck is paste-and-go with a security verdict.",
-            "A URL scanner — urlscan.io does that. cmdcheck enriches URLs found inside decoded payloads, but URL scanning is not its primary purpose.",
+            "A CyberChef replacement — CyberChef lets you build manual recipes; ShellHawk is paste-and-go with a security verdict.",
+            "A URL scanner — urlscan.io does that. ShellHawk enriches URLs found inside decoded payloads, but URL scanning is not its primary purpose.",
             "A file sandbox — ANY.RUN does that. Paste the command you extracted; don't expect file execution.",
           ].map((item) => (
             <li key={item} className="text-[var(--muted)] text-sm flex gap-2">
@@ -73,7 +73,7 @@ export default function DocsPage() {
           {[
             ["1. Parse", "bashlex parses the shell AST. Windows commands and PowerShell are expected to fail the Linux parser — this does not affect the analysis."],
             ["2. Decode", "Recursive decoding of base64 → UTF-16LE → gzip → repeat, up to 5 layers. Stops at 'complex obfuscation, manual review needed' beyond that."],
-            ["3. LOLBAS / GTFOBins", "Fuzzy binary matching (difflib SequenceMatcher, threshold 0.7) against vendored LOLBAS and GTFOBins catalogs. Exact match misses obfuscation."],
+            ["3. LOLBAS / GTFOBins", "Binary-name match against vendored LOLBAS and GTFOBins catalogs, then an argument-similarity score (SequenceMatcher + flag-set Jaccard) against each entry's known abuse examples — distinguishes abuse patterns from benign dual-use."],
             ["4. LOLDrivers", "Filename matching against loldrivers.io catalog — flags Bring-Your-Own-Vulnerable-Driver patterns."],
             ["5. MITRE ATT&CK", "Technique IDs from LOLBAS matches are enriched with names, tactics, and links from the official STIX dataset."],
             ["6. Threat classification", "7 threat classes (dropper, loader, C2/persistence, credential theft, lateral movement, defense evasion, recon) via regex signal rules with high/medium/low confidence."],
@@ -90,7 +90,7 @@ export default function DocsPage() {
 
       <Section title="Privacy">
         <P>
-          cmdcheck is built for analysts who paste real commands from real incidents. Privacy is
+          ShellHawk is built for analysts who paste real commands from real incidents. Privacy is
           non-negotiable.
         </P>
         <ul className="flex flex-col gap-2 mt-1">

@@ -4,13 +4,29 @@ import { auth } from "@/auth";
 import SiteBanner from "@/app/components/SiteBanner";
 import UserMenu from "@/app/components/UserMenu";
 import MobileNav from "@/app/components/MobileNav";
+import HawkMark from "@/app/components/HawkMark";
 import { backendUrl } from "@/app/lib/api";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "cmdcheck — command-line analyzer for incident responders",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://shellhawk.net"),
+  title: "ShellHawk — command-line analyzer for incident responders",
   description:
     "Paste a suspicious command line and get structured analysis: deobfuscation, LOLBAS match, MITRE ATT&CK techniques, and a shareable permalink.",
+  applicationName: "ShellHawk",
+  openGraph: {
+    siteName: "ShellHawk",
+    title: "ShellHawk — command-line analyzer for incident responders",
+    description:
+      "Paste a suspicious command line and get structured analysis: deobfuscation, LOLBAS match, MITRE ATT&CK techniques, and a shareable permalink.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "ShellHawk — command-line analyzer for incident responders",
+    description:
+      "Paste a suspicious command line and get structured analysis: deobfuscation, LOLBAS match, MITRE ATT&CK techniques, and a shareable permalink.",
+  },
 };
 
 async function getBanner() {
@@ -35,8 +51,9 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <SiteBanner banner={banner} />
         <header className="sticky top-0 z-40 border-b border-[var(--border)] px-6 py-3 flex items-center gap-4 bg-[rgba(13,17,23,0.85)] backdrop-blur-md">
-          <Link href="/" className="text-[var(--accent)] font-mono font-bold text-lg tracking-tight">
-            cmdcheck
+          <Link href="/" className="flex items-center gap-2 text-[var(--accent)] font-mono font-bold text-lg tracking-tight">
+            <HawkMark size={22} />
+            <span>ShellHawk</span>
           </Link>
           <span className="text-[var(--muted)] text-sm hidden sm:inline">command-line analyzer</span>
           <nav className="ml-auto flex items-center gap-4">
@@ -75,7 +92,7 @@ export default async function RootLayout({
         </header>
         <main className="flex-1 flex flex-col">{children}</main>
         <footer className="border-t border-[var(--border)] px-6 py-3 flex items-center justify-between">
-          <span className="text-[var(--muted)] text-xs">cmdcheck</span>
+          <span className="text-[var(--muted)] text-xs">ShellHawk</span>
           <div className="flex items-center gap-4">
             <Link href="/feedback" className="text-[var(--muted)] text-xs hover:text-[var(--foreground)] transition-colors">
               Report a bug

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { backendUrl } from "@/app/lib/api";
 import type { RecentItem } from "@/app/lib/api";
 
-export const metadata: Metadata = { title: "Account — cmdcheck" };
+export const metadata: Metadata = { title: "Account — ShellHawk" };
 
 async function getAnalyses(email: string): Promise<RecentItem[]> {
   try {

@@ -1,6 +1,8 @@
-# cmdcheck
+# ShellHawk
 
 Command-line analyzer for incident responders. Paste a suspicious command, get structured deobfuscation, LOLBAS matching, and a shareable permalink.
+
+Live at **[shellhawk.net](https://shellhawk.net)**.
 
 ## Local dev setup
 
@@ -10,7 +12,7 @@ Command-line analyzer for incident responders. Paste a suspicious command, get s
 
 ```bash
 git clone --recurse-submodules <repo-url>
-cd cmdcheck
+cd shellhawk
 # If you already cloned without submodules:
 git submodule update --init --recursive
 ```

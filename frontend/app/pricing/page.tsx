@@ -5,7 +5,7 @@ import CheckoutButton from "@/app/components/CheckoutButton";
 import ManageSubscriptionButton from "@/app/components/ManageSubscriptionButton";
 
 export const metadata: Metadata = {
-  title: "Pricing — cmdcheck",
+  title: "Pricing — ShellHawk",
   description:
     "Free for public analysis. Paid plans add private submissions, higher API limits, team workspaces, and beta enrichment features.",
 };
@@ -185,7 +185,7 @@ export default async function PricingPage() {
 
             {tier.contactUs ? (
               <a
-                href="mailto:hello@cmdcheck.io"
+                href="mailto:hello@shellhawk.net"
                 className={`w-full py-2.5 rounded-lg font-semibold text-sm border transition-colors text-center block ${
                   tier.featured
                     ? "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#0d1117]"
@@ -234,7 +234,7 @@ export default async function PricingPage() {
 const FAQ = [
   {
     q: "Will the free tier ever go away?",
-    a: "No. The free public tier is a core commitment of cmdcheck — paste-and-analyze will always be free.",
+    a: "No. The free public tier is a core commitment of ShellHawk — paste-and-analyze will always be free.",
   },
   {
     q: "What does 'private submission' mean?",
@@ -246,7 +246,7 @@ const FAQ = [
   },
   {
     q: "Can I self-host instead?",
-    a: "cmdcheck is open source. You can run your own instance with no limits. Paid plans are for teams who want a managed service with SLA and support.",
+    a: "ShellHawk is open source. You can run your own instance with no limits. Paid plans are for teams who want a managed service with SLA and support.",
   },
   {
     q: "How does team billing work?",

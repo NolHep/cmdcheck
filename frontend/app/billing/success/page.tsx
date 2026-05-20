@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Subscription active — cmdcheck" };
+export const metadata: Metadata = { title: "Subscription active — ShellHawk" };
 
 export default function BillingSuccessPage() {
   return (

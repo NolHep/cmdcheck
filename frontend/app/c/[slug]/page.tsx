@@ -24,16 +24,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const analysis = await getCachedAnalysis(slug);
-  if (!analysis || "deleted" in analysis) return { title: "Analysis — cmdcheck" };
+  if (!analysis || "deleted" in analysis) return { title: "Analysis — ShellHawk" };
   const a = analysis as AnalyzeResponse;
   const verdict = resolveVerdict(a);
   const snippet = a.command ? a.command.slice(0, 120) : slug;
   const description = `${verdict.detail} | ${snippet}`;
   return {
-    title: `${verdict.label} — cmdcheck`,
+    title: `${verdict.label} — ShellHawk`,
     description,
-    openGraph: { title: `${verdict.label} — cmdcheck`, description, siteName: "cmdcheck", type: "website" },
-    twitter: { card: "summary", title: `${verdict.label} — cmdcheck`, description },
+    openGraph: { title: `${verdict.label} — ShellHawk`, description, siteName: "ShellHawk", type: "website" },
+    twitter: { card: "summary", title: `${verdict.label} — ShellHawk`, description },
   };
 }
 

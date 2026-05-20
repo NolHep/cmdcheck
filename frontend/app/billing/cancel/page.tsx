@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Checkout cancelled — cmdcheck" };
+export const metadata: Metadata = { title: "Checkout cancelled — ShellHawk" };
 
 export default function BillingCancelPage() {
   return (

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import AcceptInviteButton from "./AcceptInviteButton";
 import { backendUrl } from "@/app/lib/api";
 
-export const metadata: Metadata = { title: "Workspace invite — cmdcheck" };
+export const metadata: Metadata = { title: "Workspace invite — ShellHawk" };
 
 async function getInvite(token: string) {
   try {

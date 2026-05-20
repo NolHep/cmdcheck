@@ -6,7 +6,7 @@ import type { AnalyzeResponse } from "@/app/lib/api";
 function buildMarkdown(a: AnalyzeResponse): string {
   const lines: string[] = [];
 
-  lines.push(`# cmdcheck Analysis — ${a.slug}`);
+  lines.push(`# ShellHawk Analysis — ${a.slug}`);
   lines.push("");
 
   if (a.command) {
@@ -89,7 +89,7 @@ function buildMarkdown(a: AnalyzeResponse): string {
   }
 
   lines.push("---");
-  lines.push(`*Analyzed by cmdcheck — https://cmdcheck.io/c/${a.slug}*`);
+  lines.push(`*Analyzed by ShellHawk — https://shellhawk.net/c/${a.slug}*`);
 
   return lines.join("\n");
 }
@@ -104,7 +104,7 @@ function buildCsv(a: AnalyzeResponse): string {
   const binaries = (a.binaries_in_command ?? []).map((b) => b.name).join("; ");
   const lolbas = (a.lolbas_matches ?? []).map((m) => m.name).join("; ");
   const decoded = a.decoded_layers.length > 0 ? a.decoded_layers[a.decoded_layers.length - 1].value.slice(0, 500) : "";
-  const permalink = `https://cmdcheck.io/c/${a.slug}`;
+  const permalink = `https://shellhawk.net/c/${a.slug}`;
 
   const headers = ["slug", "command", "threat_classes", "techniques", "binaries", "lolbas_matches", "decoded_payload", "permalink"];
   const row = [a.slug, a.command ?? "", threatClasses, techniques, binaries, lolbas, decoded, permalink];
@@ -126,7 +126,7 @@ export default function ExportPanel({ analysis }: { analysis: AnalyzeResponse })
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cmdcheck-${analysis.slug}.json`;
+    a.download = `shellhawk-${analysis.slug}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -136,7 +136,7 @@ export default function ExportPanel({ analysis }: { analysis: AnalyzeResponse })
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cmdcheck-${analysis.slug}.csv`;
+    a.download = `shellhawk-${analysis.slug}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Live endpoint test script for cmdcheck backend.
+Live endpoint test script for ShellHawk backend.
 
 Loads all fixture JSON files from tests/fixtures/, POSTs each command to
 {url}/analyze, and checks threat_classes in the response against fixture
@@ -136,7 +136,7 @@ def check_case(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run fixture cases against a live cmdcheck /analyze endpoint."
+        description="Run fixture cases against a live ShellHawk /analyze endpoint."
     )
     parser.add_argument(
         "--url",

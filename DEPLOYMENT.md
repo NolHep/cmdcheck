@@ -32,15 +32,15 @@ All have free tiers. Full deployment takes ~30 minutes.
 | `DATABASE_URL` | Your Supabase Session mode URI |
 | `ADMIN_SECRET` | Same value as frontend `ADMIN_SECRET` |
 | `ADMIN_EMAIL` | Your email — grants admin role on first register |
-| `ALLOWED_ORIGINS` | Your Vercel frontend URL (e.g. `https://cmdcheck.vercel.app`) |
+| `ALLOWED_ORIGINS` | Your frontend URL — comma-separated (e.g. `https://shellhawk.net,https://shellhawk.vercel.app`) |
 | `APP_URL` | Same Vercel URL — used in verification emails |
 | `VIRUSTOTAL_API_KEY` | Optional — VirusTotal lookups skip gracefully if unset |
 | `ABUSEIPDB_API_KEY` | Optional — AbuseIPDB IP reputation lookups |
 | `OTX_API_KEY` | Optional — AlienVault OTX threat intelligence |
 | `RESEND_API_KEY` | Optional — email verification falls back to server log if unset |
-| `FROM_EMAIL` | e.g. `cmdcheck <noreply@yourdomain.com>` |
+| `FROM_EMAIL` | e.g. `ShellHawk <noreply@shellhawk.net>` |
 
-5. Deploy. Copy the Railway public URL (e.g. `https://cmdcheck-backend.up.railway.app`)
+5. Deploy. Copy the Railway public URL (e.g. `https://shellhawk-backend.up.railway.app`)
 
 ---
 
@@ -57,7 +57,7 @@ All have free tiers. Full deployment takes ~30 minutes.
 | `BACKEND_URL` | Same Railway backend URL |
 | `AUTH_SECRET` | Run `openssl rand -hex 16` to generate |
 | `ADMIN_SECRET` | Same value as backend `ADMIN_SECRET` |
-| `AUTH_URL` | Your Vercel URL (e.g. `https://cmdcheck.vercel.app`) |
+| `AUTH_URL` | Your canonical frontend URL (e.g. `https://shellhawk.net`) |
 
 5. Deploy. Vercel gives you a URL like `your-app.vercel.app`
 
@@ -97,7 +97,7 @@ VIRUSTOTAL_API_KEY=<optional>
 ABUSEIPDB_API_KEY=<optional: abuseipdb.com>
 OTX_API_KEY=<optional: otx.alienvault.com>
 RESEND_API_KEY=<optional: resend.com>
-FROM_EMAIL=cmdcheck <noreply@yourdomain.com>
+FROM_EMAIL=ShellHawk <noreply@shellhawk.net>
 ```
 
 ### Frontend (`frontend/.env.local` locally, Vercel vars in prod)

@@ -50,7 +50,7 @@ def _validate_and_encode_dsn(dsn: str) -> str:
     # ── Step 1: extract scheme ─────────────────────────────────────────────────
     if "://" not in dsn:
         raise ValueError(
-            "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+            "\n\n[ShellHawk] DATABASE_URL is malformed.\n"
             "  Problems detected:\n"
             "    scheme   : missing '://' separator\n\n"
             "  Expected format:\n"
@@ -74,7 +74,7 @@ def _validate_and_encode_dsn(dsn: str) -> str:
         )
         if errors:
             raise ValueError(
-                "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+                "\n\n[ShellHawk] DATABASE_URL is malformed.\n"
                 "  Problems detected:\n"
                 + "\n".join(errors)
                 + "\n\n"
@@ -117,7 +117,7 @@ def _validate_and_encode_dsn(dsn: str) -> str:
 
     if errors:
         raise ValueError(
-            "\n\n[cmdcheck] DATABASE_URL is malformed.\n"
+            "\n\n[ShellHawk] DATABASE_URL is malformed.\n"
             f"  Received (redacted): {scheme}://{username or '<missing>'}:<redacted>@{hostname_part or '<missing>'}/<db>\n"
             "  Problems detected:\n"
             + "\n".join(errors)
@@ -146,7 +146,7 @@ async def get_pool() -> asyncpg.Pool:
         dsn = os.environ.get("DATABASE_URL")
         if not dsn:
             print(
-                "\n[cmdcheck] DATABASE_URL is not set.\n"
+                "\n[ShellHawk] DATABASE_URL is not set.\n"
                 "  Create backend/.env with:\n"
                 "    DATABASE_URL=postgresql://user:pass@host:5432/dbname\n"
                 "  Free Postgres: https://neon.tech\n",
@@ -179,14 +179,14 @@ async def get_pool() -> asyncpg.Pool:
                     import asyncio
                     wait = 2 ** attempt
                     print(
-                        f"[cmdcheck] DB connection attempt {attempt + 1} failed, "
+                        f"[ShellHawk] DB connection attempt {attempt + 1} failed, "
                         f"retrying in {wait}s: {exc}",
                         file=sys.stderr,
                     )
                     await asyncio.sleep(wait)
         else:
             print(
-                f"\n[cmdcheck] Could not connect to database after 3 attempts.\n"
+                f"\n[ShellHawk] Could not connect to database after 3 attempts.\n"
                 f"  Last error: {last_exc}\n"
                 f"  Ensure DATABASE_URL is set correctly in Railway variables and\n"
                 f"  that your Supabase project is not paused (free tier sleeps).\n"
