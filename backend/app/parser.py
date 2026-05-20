@@ -100,31 +100,46 @@ _NON_BINARY_TOKENS = frozenset({
 
 
 def extract_binaries(command: str) -> list[str]:
-    """Return candidate binary names (without path, lowercase) from a command string."""
+    """Return candidate binary names (without path, lowercase) from a command string.
+
+    Windows and Unix extractors both run on every command — a real-world
+    pipeline like `curl ... | bash` mixes both ecosystems and we want each
+    side to be looked up in its respective LOLBAS/GTFOBins catalog.
+    Deduplication is by lowercased base name (`curl.exe` and `curl` are the
+    same binary).
+    """
     found: list[str] = []
+    seen_bases: set[str] = set()
+
+    def _add(name: str) -> None:
+        base = name.lower().removesuffix(".exe")
+        if not base or base in seen_bases:
+            return
+        seen_bases.add(base)
+        found.append(name)
+
+    # Windows: explicit-extension binaries
     for m in _WIN_BINARY_RE.finditer(command):
         name = (m.group(1) or m.group(2) or "").split("\\")[-1].lower()
-        # A name with spaces is a quoted argument string, not a binary path.
-        # This happens when a command like `"sekurlsa::pth ... /run:cmd.exe"` is
-        # matched by the quoted-path alternative — the greedy [^"]+ consumes the
-        # whole argument body because it ends in .exe.
-        if name and " " not in name and name not in found:
-            found.append(name)
+        # A name with spaces is a quoted argument string, not a binary path
+        # (e.g. `"sekurlsa::pth /run:cmd.exe"` greedily captured by the
+        # quoted-path alternative).
+        if name and " " not in name:
+            _add(name)
 
-    # Also pick up known Windows system binaries used without .exe extension
-    found_bases = {f.removesuffix(".exe") for f in found}
+    # Windows: known extensionless system binaries (bitsadmin, certutil, …)
     for token in re.split(r'[\s;&|`"]+', command):
         base = token.lower().split("\\")[-1].split("/")[-1]
-        if base in _WIN_EXTENSIONLESS_BINARIES and base not in found_bases:
-            found.append(base + ".exe")
-            found_bases.add(base)
+        if base in _WIN_EXTENSIONLESS_BINARIES:
+            _add(base + ".exe")
 
-    if not found:
-        for m in _UNIX_BINARY_RE.finditer(command):
-            name = m.group(2).lower()
-            # Reject PS aliases, URL schemes, and implausibly long tokens
-            # (base64 blobs and PS code fragments match [a-z0-9_-]+ but are not binaries)
-            if name and name not in found and name not in _NON_BINARY_TOKENS and len(name) <= 40:
-                found.append(name)
+    # Unix command-position binaries (start of string, after pipe/separator,
+    # or inside $( ). Reject PS aliases, URL schemes, and implausibly long
+    # tokens (base64 blobs and PS code fragments match [a-z0-9_-]+ but aren't
+    # binaries).
+    for m in _UNIX_BINARY_RE.finditer(command):
+        name = m.group(2).lower()
+        if name and name not in _NON_BINARY_TOKENS and len(name) <= 40:
+            _add(name)
 
     return found

