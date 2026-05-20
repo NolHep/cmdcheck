@@ -260,6 +260,28 @@ def test_redact_curl_h_header_not_treated_as_host():
     assert "Content-Type" in out
 
 
+# ── Story panel: obfuscated-but-no-threat case ───────────────────────────────
+
+from app.story import generate_story
+
+
+def test_story_acknowledges_obfuscation_when_no_threats():
+    # Backtick-obfuscated benign command — no threat classes, no LOLBAS hit,
+    # but a decoded layer exists. Paragraph 1 must NOT say "no malicious
+    # patterns detected" — that contradicts the Notable verdict.
+    result = {
+        "threat_classes": [],
+        "decoded_layers": [{"encoding": "powershell-backtick", "value": "echo hello"}],
+        "lolbas_matches": [],
+        "gtfobins_matches": [],
+        "loldrivers_match": None,
+    }
+    story = generate_story(result)
+    first_para = story.split("\n\n")[0].lower()
+    assert "obfuscat" in first_para
+    assert "no malicious behavioral patterns were detected" not in first_para
+
+
 # ---------------------------------------------------------------------------
 # classifier
 # ---------------------------------------------------------------------------

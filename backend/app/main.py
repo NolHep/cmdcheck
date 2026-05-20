@@ -530,6 +530,23 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/version")
+async def version() -> dict[str, str]:
+    """Return the deployed git commit + app version.
+
+    Railway sets RAILWAY_GIT_COMMIT_SHA on every deploy. Useful for confirming
+    a Railway redeploy actually picked up the latest push without guessing at
+    behavior — `curl https://<backend>/version` is authoritative.
+    """
+    commit = (
+        os.getenv("RAILWAY_GIT_COMMIT_SHA")
+        or os.getenv("VERCEL_GIT_COMMIT_SHA")
+        or os.getenv("GIT_COMMIT_SHA")
+        or "unknown"
+    )
+    return {"commit": commit[:12], "version": "0.1.0"}
+
+
 @app.post("/analyze")
 @limiter.limit(_RATE_ANALYZE)
 async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
@@ -594,6 +611,12 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         is_private = True  # workspace analyses are always private
     elif workspace_id:
         workspace_id = None  # ignore workspace_id if user is not identified
+
+    # Anonymous force-reanalyze is silently ignored: bypassing the cache hits
+    # VT/AbuseIPDB/OTX again and burns Railway compute. Cache-bypass is a
+    # power-user action — gate it to authenticated users.
+    if force_reanalyze and user_id is None:
+        force_reanalyze = False
 
     # Private analyses get a random unguessable slug — no deduplication, no leakage.
     # Public analyses keep the deterministic hash slug for stable shareable links.

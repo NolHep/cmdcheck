@@ -34,6 +34,17 @@ def generate_story(result: dict[str, Any]) -> str:
         p1 = f"This command contains low-confidence signals that may indicate {names}."
     elif lolbas_matches or gtfobins_matches or loldrivers:
         p1 = "This command invokes known-abused system binaries without exhibiting overt malicious behavior patterns."
+    elif decoded_layers:
+        # Obfuscation alone is a deliberate evasion signal even with no
+        # behavioral rule match — saying "no malicious patterns detected"
+        # here would contradict the verdict banner above (which counts
+        # encoding as a notable signal).
+        n = len([l for l in decoded_layers if l.get("encoding") != "limit-reached"])
+        p1 = (
+            f"This command is obfuscated ({n} decode layer{'s' if n != 1 else ''}) "
+            "but does not match any current behavioral threat rule. "
+            "Obfuscation is itself an evasion technique — review the decoded content."
+        )
     else:
         p1 = "No malicious behavioral patterns were detected in this command."
 
