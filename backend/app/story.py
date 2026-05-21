@@ -904,6 +904,83 @@ _BINARY_ALIASES: dict[str, str] = {
 _CHAIN_SPLIT = re.compile(r"(?<![|&])\s*(&&|\|\||;|&)\s*(?![&])")
 _CHAIN_LABEL = {"&": "then", "&&": "and, if that succeeds,", ";": "then", "||": "or, if that fails,"}
 
+# Patterns matched against the *content* of a PowerShell -c / -Command argument.
+# All matching patterns contribute action strings; order matters — most specific first.
+_PS_INLINE_ACTIONS: list[tuple[str, str]] = [
+    # Defense evasion (name these explicitly so they lead the sentence)
+    (r"AmsiUtils|amsiInitFailed|amsiContext|amsiSession|AmsiScanBuffer",
+     "disable AMSI (the antimalware scan interface)"),
+    (r"EtwEventWrite|EtwpCreateEtwThread|\bPatchEtw\b",
+     "patch ETW (Event Tracing for Windows) to suppress logging"),
+    (r"Set-MpPreference\b|Add-MpPreference\b|DisableRealtimeMonitoring|DisableBehaviorMonitoring|DisableIOAVProtection",
+     "disable Windows Defender real-time protection"),
+    # Download cradles
+    (r"DownloadString\s*\(|DownloadFile\s*\(|DownloadData\s*\(|OpenRead\s*\(",
+     "download content from a remote URL"),
+    (r"\bInvoke-WebRequest\b|\biwr\b",
+     "download content from a remote URL"),
+    # Execution of downloaded content
+    (r"\biex\b|\bInvoke-Expression\b",
+     "execute it as PowerShell code"),
+    # Reflective / in-memory execution
+    (r"\[(?:System\.)?Reflection\.Assembly\]::Load",
+     "load a .NET assembly reflectively (fileless execution)"),
+    (r"\[(?:System\.)?Convert\]::FromBase64String",
+     "decode a base64-encoded payload"),
+    (r"\bGZipStream\b|\bDeflateStream\b",
+     "decompress a gzip/deflate payload"),
+    # Persistence
+    (r"\bRegister-ScheduledTask\b|\bNew-ScheduledTask\b",
+     "create a scheduled task (persistence)"),
+    (r"CurrentVersion\\\\Run\b|CurrentVersion/Run\b",
+     "write a startup registry key (persistence)"),
+    (r"\bNew-Service\b",
+     "create a Windows service (persistence)"),
+    # Credential access
+    (r"\bsekurlsa\b|\blsass\b",
+     "access LSASS for credential extraction"),
+    (r"\bConvertFrom-SecureString\b",
+     "extract a plaintext credential from a SecureString"),
+    # Code injection primitives
+    (r"\bVirtualAlloc(?:Ex)?\b",
+     "allocate executable memory (shellcode injection)"),
+    (r"\bWriteProcessMemory\b",
+     "write into another process's memory (code injection)"),
+    (r"\bCreate(?:Remote)?Thread\b|\bNtCreateThread\b",
+     "create a remote thread (code injection)"),
+    # Privilege escalation / UAC bypass
+    (r"\bImpersonateLoggedOnUser\b|\bAdjustTokenPrivileges\b",
+     "manipulate process tokens (privilege escalation)"),
+    (r"\beventvwr(?:\.exe)?\b|\bfodhelper(?:\.exe)?\b|\bsdclt(?:\.exe)?\b",
+     "attempt a UAC bypass"),
+    # Lateral movement
+    (r"\bInvoke-Command\b.*-ComputerName\b|\bEnter-PSSession\b",
+     "execute commands on a remote host"),
+    (r"\bWin32_Process\b.*\bCreate\b|\bInvoke-WmiMethod\b",
+     "spawn a process via WMI"),
+    # C2 / networking
+    (r"\bTcpClient\b|\bUdpClient\b|\bNet\.Sockets\b",
+     "open a raw network socket (C2 channel)"),
+    (r"\bNamedPipeClientStream\b|\bNamedPipeServerStream\b",
+     "communicate via a named pipe"),
+    # File drops
+    (r"\[(?:System\.)?IO\.File\]::WriteAllBytes\b",
+     "write a binary payload to disk"),
+]
+
+
+def _analyze_powershell_inline(inline: str) -> list[str]:
+    """Return plain-language action strings for the security-notable things
+    found inside a PowerShell inline command. Empty list if nothing matches."""
+    actions: list[str] = []
+    seen: set[str] = set()
+    for pattern, label in _PS_INLINE_ACTIONS:
+        if re.search(pattern, inline, re.IGNORECASE) and label not in seen:
+            actions.append(label)
+            seen.add(label)
+    return actions
+
+
 _URL_RE = re.compile(r"h(?:tt|xx)ps?://([^\s'\"<>;|&\\)]+)", re.IGNORECASE)
 _WIN_PATH_RE = re.compile(r"[A-Za-z]:\\[^\s'\"<>|&]+\.(?:exe|dll|bat|cmd|ps1|vbs|hta|js)\b", re.IGNORECASE)
 
@@ -1002,6 +1079,39 @@ def _describe_mechanics(result: dict[str, Any]) -> str | None:
     binaries = [b.get("name") for b in (result.get("binaries_in_command") or []) if b.get("name")]
     if not binaries:
         return None
+
+    # ── PowerShell / pwsh inline analysis (full-command pass) ────────────────
+    # The chain splitter treats `;` as a segment separator, which fragments
+    # the content of -c "amsi_bypass; download; iex" across multiple segments
+    # and loses the parts that come after the first semicolon. We detect the
+    # PowerShell inline case here — before splitting — so we can analyse the
+    # entire quoted payload at once against the full command string.
+    for raw_name in binaries:
+        norm = _normalize_binary(raw_name)
+        if norm in ("powershell", "pwsh"):
+            if re.search(r"-(?:c|command)\b", command, re.IGNORECASE):
+                inline_m = re.search(
+                    r"-(?:c|command)\b\s+(.*)", command, re.IGNORECASE | re.DOTALL
+                )
+                if inline_m:
+                    raw_inline = inline_m.group(1).strip()
+                    # Strip an outer matched quote pair.
+                    if len(raw_inline) >= 2 and raw_inline[0] in ('"', "'") and raw_inline[-1] == raw_inline[0]:
+                        inline_content = raw_inline[1:-1]
+                    else:
+                        inline_content = raw_inline
+                    actions = _analyze_powershell_inline(inline_content)
+                    if actions:
+                        url_m = _URL_RE.search(inline_content) or _URL_RE.search(command)
+                        if url_m:
+                            host = url_m.group(1).split("/")[0].replace("[.]", ".")
+                            actions = [
+                                a.replace("from a remote URL", f"from `{host}`")
+                                for a in actions
+                            ]
+                        purpose = _BINARY_PURPOSE.get(norm, "PowerShell")
+                        return f"Uses {purpose} to {_join(actions)}."
+            break
 
     sentences: list[str] = []
     for idx, (segment, op) in enumerate(_split_chain(command)):
