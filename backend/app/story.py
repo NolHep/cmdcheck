@@ -919,16 +919,17 @@ _PS_INLINE_ACTIONS: list[tuple[str, str]] = [
      "download content from a remote URL"),
     (r"\bInvoke-WebRequest\b|\biwr\b",
      "download content from a remote URL"),
-    # Execution of downloaded content
-    (r"\biex\b|\bInvoke-Expression\b",
-     "execute it as PowerShell code"),
-    # Reflective / in-memory execution
-    (r"\[(?:System\.)?Reflection\.Assembly\]::Load",
-     "load a .NET assembly reflectively (fileless execution)"),
+    # Decode / decompress — must precede iex so the sequence reads decode → execute
     (r"\[(?:System\.)?Convert\]::FromBase64String",
      "decode a base64-encoded payload"),
     (r"\bGZipStream\b|\bDeflateStream\b",
      "decompress a gzip/deflate payload"),
+    # Reflective / in-memory execution
+    (r"\[(?:System\.)?Reflection\.Assembly\]::Load",
+     "load a .NET assembly reflectively (fileless execution)"),
+    # Execution — always the terminal step; must come after decode/download entries
+    (r"\biex\b|\bInvoke-Expression\b",
+     "execute it as PowerShell code"),
     # Persistence
     (r"\bRegister-ScheduledTask\b|\bNew-ScheduledTask\b",
      "create a scheduled task (persistence)"),
