@@ -46,7 +46,7 @@ from .lolbas import load_catalog as load_lolbas, match as lolbas_match
 from .loldrivers import load_catalog as load_loldrivers, match as loldrivers_match
 from .parent_score import score_parent
 from .parser import extract_binaries, parse_command
-from .redactor import redact
+from .redactor import has_unclosed_pem, redact
 from .slug import make_slug, make_private_slug
 from .ip_extractor import extract_ips
 from . import threat_intel as threat_intel_mod
@@ -726,6 +726,10 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
             original_len = len(value)
             truncated = original_len > MAX_LAYER_BYTES
             if truncated:
+                # Redact any PEM block that straddles the truncation point before
+                # we cut the string — otherwise partial key material is stored.
+                if has_unclosed_pem(value[:MAX_LAYER_BYTES]):
+                    value, _ = redact(value)
                 value = value[:MAX_LAYER_BYTES]
             red_value, layer_changed = redact(value)
             if truncated:
@@ -1152,7 +1156,21 @@ async def billing_portal(body: PortalRequest) -> dict[str, str]:
 
 
 @app.get("/billing/status")
-async def billing_status(email: str) -> dict[str, str]:
+async def billing_status(
+    request: Request,
+    email: str,
+    x_user_email: str | None = Header(default=None, alias="X-User-Email"),
+) -> dict[str, str]:
+    # Require the requesting user to match the queried email, or hold a valid
+    # API key. Without this check anyone can enumerate subscription status for
+    # any email address (privacy violation).
+    api_key_user = await _resolve_api_key_user(request)
+    requester = (api_key_user or {}).get("email") or x_user_email or ""
+    if requester.lower() != email.lower():
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "forbidden", "detail": "You can only view your own billing status."},
+        )
     return await fetch_subscription_status(email)
 
 

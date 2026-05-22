@@ -1,4 +1,4 @@
-"""Generate a human-readable analyst narrative from a structured analysis result.
+﻿"""Generate a human-readable analyst narrative from a structured analysis result.
 
 Paragraph 1 is a **mechanics-first** plain-language description ("what this
 command actually does") synthesized from the parsed binaries + flag tables
@@ -58,7 +58,17 @@ _BINARY_PURPOSE: dict[str, str] = {
     "scp":       "scp",
     "bash":      "bash",
     "iex":       "Invoke-Expression",
-    "rubeus":    "Rubeus (Kerberos attack toolkit)",
+    "rubeus":     "Rubeus (Kerberos attack toolkit)",
+    "regasm":    "RegAsm (the .NET assembly registration utility)",
+    "regsvcs":   "RegSvcs (the .NET component services registrar)",
+    "wsl":       "WSL (Windows Subsystem for Linux)",
+    "msdt":      "msdt.exe (the Microsoft Support Diagnostic Tool)",
+    "mavinject": "mavinject.exe (the process-injection utility)",
+    "hh":        "hh.exe (the HTML Help host)",
+    "control":   "control.exe (the Control Panel host)",
+    "dotnet":    "the .NET CLI",
+    "7z":        "7-Zip",
+    "7za":       "7-Zip (standalone)",
     # ── Standard Windows commands ────────────────────────────────────────────
     "cmd":        "the Windows Command Prompt",
     "cscript":    "the Windows Script Host (cscript)",
@@ -370,7 +380,11 @@ _BINARY_VERBS: dict[str, list[tuple[str, str]]] = {
         (r"lsadump::",                "dump credentials from LSA"),
     ],
     "ntdsutil": [
-        (r"",  "access the Active Directory credential database"),
+        (r"\bsnapshot\b",                    "create a VSS snapshot of Active Directory (NTDS.dit extraction prep)"),
+        (r"activate\s+instance\s+ntds\b",    "activate the NTDS instance for direct database access"),
+        (r"\bifm\b|install\s+from\s+media",  "create an Install-From-Media set (contains NTDS.dit and SYSTEM hive)"),
+        (r"\bcreate\s+full\b",               "export a full Active Directory database backup"),
+        (r"",                                "access the Active Directory database (often used for NTDS.dit extraction)"),
     ],
     "curl": [
         (r"\|\s*(?:bash|sh|python3?|perl|ruby|iex|powershell)\b", "download content and pipe it directly to a shell interpreter"),
@@ -395,6 +409,60 @@ _BINARY_VERBS: dict[str, list[tuple[str, str]]] = {
     ],
     "iex": [
         (r"",  "execute a string as PowerShell code"),
+    ],
+    "rubeus": [
+        (r"\basktgt\b",        "request a Kerberos TGT for the specified account"),
+        (r"\bdump\b",          "extract Kerberos tickets from LSASS memory"),
+        (r"\bkerberoast\b",    "perform Kerberoasting (extract service ticket hashes for offline cracking)"),
+        (r"\basreproast\b",    "perform AS-REP roasting (extract hashes from accounts without pre-auth)"),
+        (r"\bgolden\b",        "forge a Kerberos Golden Ticket"),
+        (r"\bsilver\b",        "forge a Kerberos Silver Ticket"),
+        (r"\bptt\b",           "inject a Kerberos ticket (pass-the-ticket)"),
+        (r"\bs4u\b",           "abuse S4U Kerberos delegation"),
+        (r"\brenew\b",         "renew a Kerberos ticket"),
+        (r"",                  "perform Kerberos-based attacks"),
+    ],
+    "regasm": [
+        (r"/u\b",              "unregister a .NET assembly COM object"),
+        (r"",                  "register a .NET assembly (LOLBin: executes code via COM registration)"),
+    ],
+    "regsvcs": [
+        (r"",                  "register a .NET component service (LOLBin: executes code via COM registration)"),
+    ],
+    "wsl": [
+        (r"-u\s+root\b",       "run a command as root inside the Windows Subsystem for Linux"),
+        (r"-e\b|--exec\b",     "execute a Linux binary via the Windows Subsystem for Linux"),
+        (r"",                  "launch a Linux shell via the Windows Subsystem for Linux"),
+    ],
+    "msdt": [
+        (r"",                  "invoke the Microsoft Support Diagnostic Tool (Follina / CVE-2022-30190 execution vector)"),
+    ],
+    "mavinject": [
+        (r"/injectrunning\b",  "inject a DLL into a running process"),
+        (r"",                  "inject code into a process via the Windows process injection utility"),
+    ],
+    "hh": [
+        (r"",                  "open an HTML Help file (LOLBin: can execute scripts embedded in .chm files)"),
+    ],
+    "control": [
+        (r"\.cpl\b",           "execute a Control Panel applet (.cpl file, LOLBin execution vector)"),
+        (r"",                  "invoke the Windows Control Panel"),
+    ],
+    "dotnet": [
+        (r"build\b",           "build a .NET project (can execute arbitrary code via MSBuild tasks)"),
+        (r"run\b",             "run a .NET application"),
+        (r"",                  "run the .NET CLI"),
+    ],
+    "7z": [
+        (r"a\b",               "create a compressed archive"),
+        (r"e\b|x\b",           "extract files from an archive"),
+        (r"-p\S+",             "extract a password-protected archive"),
+        (r"",                  "manage an archive with 7-Zip"),
+    ],
+    "7za": [
+        (r"a\b",               "create a compressed archive"),
+        (r"e\b|x\b",           "extract files from a password-protected archive"),
+        (r"",                  "manage an archive with 7-Zip"),
     ],
     # ── Standard Windows commands ────────────────────────────────────────────
     "cmd": [
@@ -886,7 +954,17 @@ _BINARY_ALIASES: dict[str, str] = {
     "nmap.exe":            "nmap",
     "apt-get":             "apt-get",  # kept distinct — see separate verb table
     "netcat":              "nc",
-    "ip6tables":           "iptables", # share the same verb table
+    "ip6tables":           "iptables",  # share the same verb table
+    "regasm.exe":          "regasm",
+    "regsvcs.exe":         "regsvcs",
+    "wsl.exe":             "wsl",
+    "msdt.exe":            "msdt",
+    "mavinject.exe":       "mavinject",
+    "hh.exe":              "hh",
+    "control.exe":         "control",
+    "7za.exe":             "7za",
+    "7z.exe":              "7z",
+    "dotnet.exe":          "dotnet",
     "traceroute":          "traceroute",
     "ping6":               "ping",
     "wget2":               "wget",
@@ -898,10 +976,6 @@ _BINARY_ALIASES: dict[str, str] = {
     "docker.exe":          "docker",
 }
 
-# Split on sequential operators only — `|` keeps a pipeline as one logical
-# segment ("curl … | bash …" is one action, not two) so a binary's own
-# pipe-aware verb rule (e.g. curl's "pipes to shell interpreter") can fire.
-_CHAIN_SPLIT = re.compile(r"(?<![|&])\s*(&&|\|\||;|&)\s*(?![&])")
 _CHAIN_LABEL = {"&": "then", "&&": "and, if that succeeds,", ";": "then", "||": "or, if that fails,"}
 
 # Patterns matched against the *content* of a PowerShell -c / -Command argument.
@@ -929,11 +1003,11 @@ _PS_INLINE_ACTIONS: list[tuple[str, str]] = [
      "load a .NET assembly reflectively (fileless execution)"),
     # Execution — always the terminal step; must come after decode/download entries
     (r"\biex\b|\bInvoke-Expression\b",
-     "execute it as PowerShell code"),
+     "execute the payload as PowerShell code"),
     # Persistence
     (r"\bRegister-ScheduledTask\b|\bNew-ScheduledTask\b",
      "create a scheduled task (persistence)"),
-    (r"CurrentVersion\\\\Run\b|CurrentVersion/Run\b",
+    (r"CurrentVersion\\Run\b|CurrentVersion/Run\b",
      "write a startup registry key (persistence)"),
     (r"\bNew-Service\b",
      "create a Windows service (persistence)"),
@@ -967,6 +1041,34 @@ _PS_INLINE_ACTIONS: list[tuple[str, str]] = [
     # File drops
     (r"\[(?:System\.)?IO\.File\]::WriteAllBytes\b",
      "write a binary payload to disk"),
+    (r"\bOut-File\b|\bSet-Content\b|\bAdd-Content\b|\[System\.IO\.File\]::WriteAllText\b",
+     "write content to disk"),
+    # C# compilation / runtime code loading
+    (r"\bAdd-Type\b",
+     "compile and load C# code at runtime (shellcode injection / API access)"),
+    # BITS download
+    (r"\bStart-BitsTransfer\b",
+     "download a file via BITS (Background Intelligent Transfer Service)"),
+    # TLS configuration (often a precursor to download cradles)
+    (r"\[Net\.ServicePointManager\]::SecurityProtocol|ServicePointManager",
+     "configure TLS settings (often to force an older protocol or bypass validation)"),
+    # PowerSploit / common offensive toolkit invocations
+    (r"\bInvoke-Mimikatz\b",
+     "invoke Mimikatz for credential theft"),
+    (r"\bInvoke-Kerberoast\b",
+     "perform Kerberoasting (extract service ticket hashes for offline cracking)"),
+    (r"\bInvoke-ReflectivePEInjection\b|\bInvoke-Shellcode\b|\bInvoke-DllInjection\b",
+     "inject a PE or shellcode into a running process"),
+    (r"\bGet-GPPPassword\b|\bGet-CachedGPPPassword\b",
+     "extract credentials from Group Policy Preferences"),
+    # Archive operations
+    (r"\bExpand-Archive\b",
+     "extract a ZIP archive"),
+    (r"\bCompress-Archive\b",
+     "create a ZIP archive (potential staging/exfiltration)"),
+    # WMI recon
+    (r"\bGet-WmiObject\b|\bGet-CimInstance\b",
+     "query system information via WMI"),
 ]
 
 
@@ -991,6 +1093,26 @@ def _normalize_binary(name: str) -> str:
     return _BINARY_ALIASES.get(base, base)
 
 
+# Separators that can surround a binary token in a command string.
+_TOKEN_SEP = r"(?:^|[\s/\\|&;,\"'`(])"
+_TOKEN_END = r"(?:\.exe)?(?:$|[\s/\\|&;,\"'`)])"
+
+
+def _binary_in_segment(norm: str, segment_lower: str) -> bool:
+    """Return True if *norm* appears as a standalone token in *segment_lower*.
+
+    Uses word-boundary anchors so short names like 'sc', 'at', 'id' don't
+    false-positive against substrings inside longer tokens (schtasks, attrib…).
+    """
+    return bool(re.search(_TOKEN_SEP + re.escape(norm) + _TOKEN_END, segment_lower))
+
+
+_REMOTE_VERB_RE = re.compile(
+    r"\b(?:connect|relay|reverse.?shell|tunnel|open a (?:TCP|UDP|raw)|remote)\b",
+    re.IGNORECASE,
+)
+
+
 def _describe_segment(segment: str, binary_names: list[str]) -> str | None:
     """Build one sentence describing what *segment* does, using the first
     binary in *binary_names* that we have a verb table for. Returns None when
@@ -998,20 +1120,26 @@ def _describe_segment(segment: str, binary_names: list[str]) -> str | None:
     seg = segment.strip()
     if not seg:
         return None
+    seg_lower = seg.lower()
 
     # Pick the first binary in this segment that we have rules for.
+    # Use word-boundary matching so 'sc' doesn't claim 'schtasks', 'at' claim 'attrib', etc.
     chosen: str | None = None
     for raw_name in binary_names:
         n = _normalize_binary(raw_name)
-        if n in _BINARY_VERBS or n in _BINARY_PURPOSE:
+        if (n in _BINARY_VERBS or n in _BINARY_PURPOSE) and _binary_in_segment(n, seg_lower):
             chosen = n
             break
     if chosen is None:
-        # Generic fallback when at least one binary token is in the segment.
+        # No known binary — try any binary in the list as a last resort (covers
+        # the first segment where we may not have a clean token match).
+        for raw_name in binary_names:
+            n = _normalize_binary(raw_name)
+            if n in _BINARY_VERBS or n in _BINARY_PURPOSE:
+                chosen = n
+                break
+    if chosen is None:
         if binary_names:
-            # Strip the leading invocation token (path/binary) so we report
-            # JUST the arguments — without it, the fallback duplicates the
-            # binary name inside its own args field.
             args = re.sub(r"^\S+\s*", "", seg).strip()
             if not args:
                 return f"Runs `{binary_names[0]}` with no arguments."
@@ -1031,28 +1159,31 @@ def _describe_segment(segment: str, binary_names: list[str]) -> str | None:
                 verb_phrase = template
             break
 
-    if verb_phrase is None:
-        # Binary is known but no flag pattern matched — use the noun phrase
-        # so the reader still learns the binary's purpose.
-        purpose = _BINARY_PURPOSE.get(chosen)
-        if purpose:
-            return f"Invokes {purpose}."
-        return f"Runs `{chosen}`."
-
-    # Modifiers: silently / remote URL / target path.
-    modifiers: list[str] = []
-    if re.search(r"/(?:quiet|silent|q)\b", seg, re.IGNORECASE) and "silently" not in verb_phrase:
-        modifiers.append("silently")
-    url_match = _URL_RE.search(seg)
-    if url_match and "from" not in verb_phrase and "download" in verb_phrase.lower():
-        host = url_match.group(1).split("/")[0].replace("[.]", ".")
-        modifiers.append(f"from `{host}`")
-    path_match = _WIN_PATH_RE.search(seg)
-    if path_match and "download" in verb_phrase.lower() and " to " not in verb_phrase:
-        path = path_match.group(0)
-        modifiers.append(f"to `{path}`")
-
     purpose = _BINARY_PURPOSE.get(chosen, f"`{chosen}`")
+
+    if verb_phrase is None:
+        # Binary is known but no flag pattern matched — describe the tool only.
+        return f"Uses {purpose}."
+
+    # ── Modifiers ─────────────────────────────────────────────────────────────
+    # Silent flag: prefix the verb ("silently download" not "download … silently").
+    if re.search(r"(?:^|\s)/(?:quiet|silent|q)\b", seg, re.IGNORECASE) and "silently" not in verb_phrase:
+        verb_phrase = "silently " + verb_phrase
+
+    url_match = _URL_RE.search(seg)
+    path_match = _WIN_PATH_RE.search(seg)
+    modifiers: list[str] = []
+
+    if url_match:
+        host = url_match.group(1).split("/")[0].replace("[.]", ".")
+        if "from" not in verb_phrase and "download" in verb_phrase.lower():
+            modifiers.append(f"from `{host}`")
+        elif "to" not in verb_phrase and _REMOTE_VERB_RE.search(verb_phrase):
+            modifiers.append(f"targeting `{host}`")
+
+    if path_match and "download" in verb_phrase.lower() and " to " not in verb_phrase:
+        modifiers.append(f"to `{path_match.group(0)}`")
+
     sentence = f"Uses {purpose} to {verb_phrase}"
     if modifiers:
         sentence += " " + " ".join(modifiers)
@@ -1060,14 +1191,46 @@ def _describe_segment(segment: str, binary_names: list[str]) -> str | None:
 
 
 def _split_chain(command: str) -> list[tuple[str, str]]:
-    """Split *command* on top-level chain operators. Returns
-    [(segment, leading_operator), …]. The first segment's operator is ""."""
-    parts = _CHAIN_SPLIT.split(command)
-    out: list[tuple[str, str]] = [(parts[0], "")]
-    for i in range(1, len(parts), 2):
-        op = parts[i]
-        seg = parts[i + 1] if i + 1 < len(parts) else ""
-        out.append((seg, op))
+    """Split *command* on top-level &&, ||, ;, & — respecting quoted strings.
+
+    A lone | is intentionally NOT a split point: it keeps pipelines like
+    "curl … | bash …" as a single segment so the pipe-aware verb rules fire.
+    Returns [(segment, leading_operator), …]; the first item's operator is "".
+    """
+    out: list[tuple[str, str]] = []
+    seg_start = 0
+    pending_op = ""
+    quote: str | None = None
+    i = 0
+    n = len(command)
+
+    while i < n:
+        ch = command[i]
+        # Track quote state — ignore operators inside matching paired quotes.
+        if quote is None and ch in ('"', "'", "`"):
+            quote = ch
+            i += 1
+        elif quote and ch == quote:
+            quote = None
+            i += 1
+        elif quote:
+            i += 1
+        else:
+            two = command[i : i + 2]
+            if two in ("&&", "||"):
+                out.append((command[seg_start:i].strip(), pending_op))
+                pending_op = two
+                i += 2
+                seg_start = i
+            elif ch == ";" or (ch == "&" and two != "&&"):
+                out.append((command[seg_start:i].strip(), pending_op))
+                pending_op = ch
+                i += 1
+                seg_start = i
+            else:
+                i += 1
+
+    out.append((command[seg_start:].strip(), pending_op))
     return out
 
 
@@ -1081,42 +1244,72 @@ def _describe_mechanics(result: dict[str, Any]) -> str | None:
     if not binaries:
         return None
 
-    # ── PowerShell / pwsh inline analysis (full-command pass) ────────────────
-    # The chain splitter treats `;` as a segment separator, which fragments
-    # the content of -c "amsi_bypass; download; iex" across multiple segments
-    # and loses the parts that come after the first semicolon. We detect the
-    # PowerShell inline case here — before splitting — so we can analyse the
-    # entire quoted payload at once against the full command string.
+    # Split first — the quote-aware splitter preserves semicolons inside a
+    # quoted -c "amsi; iex" argument as a single segment, so multi-statement
+    # PS payloads are still analysed together. Splitting before the PS inline
+    # check means chained commands after && or ; (e.g. certutil after the PS
+    # segment) are excluded from the inline content, fixing the prior
+    # greedy-capture bug where `(.*)` consumed the entire tail of the command.
+    segments = _split_chain(command)
+
+    # ── PowerShell / pwsh inline analysis (segment-bounded) ──────────────────
+    ps_inline_result: str | None = None
     for raw_name in binaries:
         norm = _normalize_binary(raw_name)
-        if norm in ("powershell", "pwsh"):
-            if re.search(r"-(?:c|command)\b", command, re.IGNORECASE):
-                inline_m = re.search(
-                    r"-(?:c|command)\b\s+(.*)", command, re.IGNORECASE | re.DOTALL
-                )
-                if inline_m:
-                    raw_inline = inline_m.group(1).strip()
-                    # Strip an outer matched quote pair.
-                    if len(raw_inline) >= 2 and raw_inline[0] in ('"', "'") and raw_inline[-1] == raw_inline[0]:
-                        inline_content = raw_inline[1:-1]
-                    else:
-                        inline_content = raw_inline
-                    actions = _analyze_powershell_inline(inline_content)
-                    if actions:
-                        url_m = _URL_RE.search(inline_content) or _URL_RE.search(command)
-                        if url_m:
-                            host = url_m.group(1).split("/")[0].replace("[.]", ".")
-                            actions = [
-                                a.replace("from a remote URL", f"from `{host}`")
-                                for a in actions
-                            ]
-                        purpose = _BINARY_PURPOSE.get(norm, "PowerShell")
-                        return f"Uses {purpose} to {_join(actions)}."
-            break
-
+        if norm not in ("powershell", "pwsh"):
+            continue  # scan forward until we find a PS binary
+        # Find the first segment that contains this PS binary.
+        for seg_text, _ in segments:
+            if not _binary_in_segment(norm, seg_text.lower()):
+                continue
+            if not re.search(r"-(?:c|command)\b", seg_text, re.IGNORECASE):
+                break  # PS binary found but no -c flag — fall through
+            inline_m = re.search(
+                r"-(?:c|command)\b\s+(.*)", seg_text, re.IGNORECASE | re.DOTALL
+            )
+            if not inline_m:
+                break
+            raw_inline = inline_m.group(1).strip()
+            # Strip an outer matched quote pair.
+            if len(raw_inline) >= 2 and raw_inline[0] in ('"', "'") and raw_inline[-1] == raw_inline[0]:
+                inline_content = raw_inline[1:-1]
+            else:
+                inline_content = raw_inline
+            actions = _analyze_powershell_inline(inline_content)
+            if actions:
+                # Fall back to the full command for URL extraction — the URL may
+                # sit in a different segment (e.g. certutil fetches, PS executes).
+                url_m = _URL_RE.search(inline_content) or _URL_RE.search(command)
+                if url_m:
+                    host = url_m.group(1).split("/")[0].replace("[.]", ".")
+                    actions = [
+                        a.replace("from a remote URL", f"from `{host}`")
+                        for a in actions
+                    ]
+                purpose = _BINARY_PURPOSE.get(norm, "PowerShell")
+                out = f"Uses {purpose} to {_join(actions)}."
+                layers = [
+                    l for l in (result.get("decoded_layers") or [])
+                    if l.get("encoding") not in ("limit-reached", "env-variable-substitution")
+                ]
+                if layers:
+                    out += (
+                        f" The payload is obfuscated"
+                        f" ({len(layers)} decode layer{'s' if len(layers) != 1 else ''});"
+                        f" see the decoded content below."
+                    )
+                ps_inline_result = out
+            break  # found the PS segment — stop scanning segments
+        if ps_inline_result is not None:
+            return ps_inline_result
+        break  # stop after the first PS/pwsh binary
     sentences: list[str] = []
-    for idx, (segment, op) in enumerate(_split_chain(command)):
-        seg_binaries = [b for b in binaries if _normalize_binary(b) in segment.lower()]
+    for idx, (segment, op) in enumerate(segments):
+        seg_lower = segment.lower()
+        seg_binaries = [
+            b for b in binaries
+            if _binary_in_segment(_normalize_binary(b), seg_lower)
+        ]
         if not seg_binaries:
             # Fall back to global binary list for the first segment (covers
             # commands we couldn't split cleanly).
@@ -1152,6 +1345,22 @@ def _describe_mechanics(result: dict[str, Any]) -> str | None:
     if layers:
         out += f" The payload is obfuscated ({len(layers)} decode layer{'s' if len(layers) != 1 else ''}); see the decoded content below."
     return out
+
+
+def _compress_encoding_chain(encodings: list[str]) -> str:
+    """Collapse adjacent identical labels: ['base64','base64','gzip'] → 'base64 (×2) → gzip'."""
+    if not encodings:
+        return "unknown"
+    parts: list[str] = []
+    i = 0
+    while i < len(encodings):
+        label = encodings[i]
+        count = 1
+        while i + count < len(encodings) and encodings[i + count] == label:
+            count += 1
+        parts.append(f"{label} (×{count})" if count > 1 else label)
+        i += count
+    return " → ".join(parts)
 
 
 def generate_story(result: dict[str, Any]) -> str:
@@ -1250,9 +1459,12 @@ def generate_story(result: dict[str, Any]) -> str:
     if decoded_layers:
         n = len(decoded_layers)
         encodings = [layer.get("encoding", "unknown") for layer in decoded_layers]
-        # Drop the limit-reached marker from the display chain
-        display_encodings = [e for e in encodings if e != "limit-reached"]
-        chain = " → ".join(display_encodings) if display_encodings else "unknown"
+        # Strip non-obfuscation markers from the display chain — matches the same
+        # set excluded from encoding_depth in main.py so the depth number and the
+        # chain label are always computed over the same set of layers.
+        _DISPLAY_SKIP = {"limit-reached", "env-variable-substitution", "format-op", "dot-replace"}
+        display_encodings = [e for e in encodings if e not in _DISPLAY_SKIP]
+        chain = _compress_encoding_chain(display_encodings)
         hit_limit = any(layer.get("encoding") == "limit-reached" for layer in decoded_layers)
 
         if n == 1 or (n == 2 and hit_limit):
@@ -1387,9 +1599,8 @@ def generate_story(result: dict[str, Any]) -> str:
         )
     elif not threat_classes:
         verdict = (
-            "No malicious patterns were matched. The command may be benign, or it may use "
-            "techniques not yet covered by current detection rules. "
-            "Always review commands in the context of the broader incident timeline."
+            "No malicious patterns were matched. Review this command in the context of "
+            "the broader incident timeline before drawing conclusions."
         )
 
     if verdict:

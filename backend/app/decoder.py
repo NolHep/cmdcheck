@@ -59,6 +59,20 @@ def _try_b64_decode(s: str) -> bytes | None:
         return None
 
 
+def _try_urlsafe_b64_decode(s: str) -> bytes | None:
+    """Return decoded bytes if *s* is URL-safe base64 (uses - and _), else None."""
+    s = re.sub(r"\s+", "", s)
+    if not s or not re.search(r"[-_]", s):
+        return None
+    padding = 4 - len(s) % 4
+    if padding != 4:
+        s += "=" * padding
+    try:
+        return base64.urlsafe_b64decode(s)
+    except Exception:
+        return None
+
+
 def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
     """Decompress a gzip stream tolerating corrupt CRC32/ISIZE trailers.
 
@@ -87,8 +101,11 @@ def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
             pos = raw.index(b"\x00", pos) + 1
         if flags & 0x02:  # FHCRC
             pos += 2
-        # Drop the 8-byte trailer if it looks present; otherwise feed it all.
-        body = raw[pos:-8] if len(raw) - pos >= 8 else raw[pos:]
+        # Drop the 8-byte trailer (CRC32 + ISIZE) if the remaining body is long
+        # enough that stripping it won't eat actual deflate content. A minimal
+        # non-compressed deflate block is 5 bytes, so we need at least 13 bytes
+        # total; 18 gives a safe margin for the smallest compressed blocks.
+        body = raw[pos:-8] if len(raw) - pos >= 18 else raw[pos:]
         return zlib.decompress(body, -zlib.MAX_WBITS)
     except Exception:
         try:
@@ -106,8 +123,10 @@ def _bytes_to_text(decompressed: bytes, encoding_label: str) -> tuple[str, str] 
     if len(decompressed) % 2 == 0 and len(decompressed) >= 4:
         try:
             text = decompressed.decode("utf-16-le")
-            printable = sum(c.isprintable() or c in "\r\n\t" for c in text)
-            if printable / len(text) > 0.85:
+            # Use ASCII-range check (same as no-BOM path) — Unicode isprintable()
+            # counts emoji/CJK as printable, masking garbage UTF-16LE decodes.
+            ascii_printable = sum(0x20 <= ord(c) < 0x7F or c in "\r\n\t" for c in text)
+            if ascii_printable / len(text) > 0.75:
                 return text, encoding_label
         except UnicodeDecodeError:
             pass
@@ -145,8 +164,8 @@ def _decode_bytes(raw: bytes) -> tuple[str, str] | None:
             if len(decompressed) % 2 == 0 and len(decompressed) >= 4:
                 try:
                     text = decompressed.decode("utf-16-le")
-                    printable = sum(c.isprintable() or c in "\r\n\t" for c in text)
-                    if printable / len(text) > 0.85:
+                    ascii_printable = sum(0x20 <= ord(c) < 0x7F or c in "\r\n\t" for c in text)
+                    if ascii_printable / len(text) > 0.75:
                         return text, "base64-zlib"
                 except UnicodeDecodeError:
                     pass
@@ -207,9 +226,14 @@ def _try_hex_escape(text: str) -> list[tuple[str, str]]:
 # ── Pure hex string: 4142434445... ────────────────────────────────────────────
 
 def _try_hex_string(text: str) -> list[tuple[str, str]]:
-    """Decode standalone hex strings of 20+ chars. Tries UTF-8 then UTF-16LE."""
+    """Decode standalone hex strings of 32+ chars (16+ bytes). Tries UTF-8 then UTF-16LE.
+
+    The 20-char minimum (10 bytes) was too short and caused false positives on
+    NTLM hashes, timestamps, and other structured hex values that happen to decode
+    to printable ASCII. 32 chars (16 bytes) is a more conservative threshold.
+    """
     results: list[tuple[str, str]] = []
-    for blob in re.findall(r"\b([0-9a-fA-F]{20,})\b", text):
+    for blob in re.findall(r"\b([0-9a-fA-F]{32,})\b", text):
         if len(blob) % 2 != 0:
             continue
         try:
@@ -306,6 +330,17 @@ def _extract_b64_candidates(text: str) -> list[str]:
     return candidates
 
 
+def _extract_urlsafe_b64_candidates(text: str) -> list[str]:
+    """Pull URL-safe base64 blobs (using - and _) out of a command string."""
+    candidates: list[str] = []
+    # Must contain at least one - or _ to distinguish from standard base64.
+    # Require 40+ chars so short tokens (UUIDs, flags) don't trigger decodes.
+    for blob in re.findall(r"[A-Za-z0-9\-_]{40,}={0,2}", text):
+        if re.search(r"[-_]", blob):
+            candidates.append(blob)
+    return candidates
+
+
 # ── $env: variable substitution ───────────────────────────────────────────────
 
 # Known Windows environment variables → typical resolved values.
@@ -349,6 +384,19 @@ def _try_env_resolve(text: str) -> list[tuple[str, str]]:
 _CONCAT_RE = re.compile(r"(?:['\"][^'\"]*['\"]\s*\+\s*){2,}['\"][^'\"]*['\"]")
 _STR_LIT_RE = re.compile(r"['\"]([^'\"]*)['\"]")
 
+# When the concatenated result contains one of these tokens the join is almost
+# certainly obfuscation, not benign string-building — bypass the piece-length
+# cap so `'Invoke-' + 'Expr' + 'ession'` (7-char piece) still fires.
+_CONCAT_ATTACK_KEYWORDS = frozenset({
+    "invoke-expression", "iex", "downloadstring", "downloadfile", "downloaddata",
+    "webrequest", "webclient", "net.webclient",
+    "amsi", "amsiinitfailed", "amsiscanbypass",
+    "encodedcommand", "noprofile", "bypass", "hidden",
+    "reflection.assembly", "frombase64string",
+    "shellcode", "createremotethread", "virtualalloc",
+    "mimikatz", "sekurlsa", "rubeus", "kerberoast",
+})
+
 
 def _try_string_concat(text: str) -> list[tuple[str, str]]:
     """Resolve 'a' + 'b' + 'c' chains of three or more quoted string literals.
@@ -364,10 +412,17 @@ def _try_string_concat(text: str) -> list[tuple[str, str]]:
         parts = _STR_LIT_RE.findall(m.group(0))
         if len(parts) < 3:
             continue
-        if any(len(p) > 6 for p in parts):
-            continue
         decoded = "".join(parts)
-        if decoded and decoded not in seen and _is_readable(decoded):
+        if not decoded or not _is_readable(decoded):
+            continue
+        # Bypass the piece-length cap when the result contains a known attack
+        # token — obfuscation can split 'Invoke-' (7 chars) across fragments.
+        # Apply the cap only for results that don't match any attack keyword.
+        decoded_lower = decoded.lower()
+        is_attack = any(kw in decoded_lower for kw in _CONCAT_ATTACK_KEYWORDS)
+        if not is_attack and any(len(p) > 6 for p in parts):
+            continue
+        if decoded not in seen:
             seen.add(decoded)
             results.append((decoded, "string-concat"))
     return results
@@ -483,9 +538,15 @@ def _try_hex_array(text: str) -> list[tuple[str, str]]:
             byte_vals = [int(b.strip(), 16) for b in m.group(0).split(",")]
             if any(b > 0xFF for b in byte_vals):
                 continue
-            decoded = bytes(byte_vals).decode("utf-8", errors="ignore")
-        except (ValueError, UnicodeDecodeError):
+            raw_bytes = bytes(byte_vals)
+        except ValueError:
             continue
+        try:
+            decoded = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            # Latin-1 always succeeds but produces garbage for non-text arrays;
+            # _is_readable() below will reject non-printable results.
+            decoded = raw_bytes.decode("latin-1")
         if decoded and decoded not in seen and _is_readable(decoded):
             seen.add(decoded)
             results.append((decoded, "hex-array"))
@@ -547,6 +608,14 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     # Base64 (highest priority — most common in real malware)
     for blob in _extract_b64_candidates(text):
         raw = _try_b64_decode(blob)
+        if raw is not None:
+            decoded = _decode_bytes(raw)
+            if decoded:
+                results.append(decoded)
+
+    # URL-safe base64 (JWTs, some C2 frameworks use - and _ alphabet)
+    for blob in _extract_urlsafe_b64_candidates(text):
+        raw = _try_urlsafe_b64_decode(blob)
         if raw is not None:
             decoded = _decode_bytes(raw)
             if decoded:

@@ -93,11 +93,11 @@ def compute_verdict(
         score += 2.0
         breakdown.append({"class": "_lolbin", "points": 2.0})
 
-    score = round(score, 2)
+    score = round(min(score, 100.0), 2)
 
     if has_loldrivers:
         severity: Severity = "malicious" if score >= _MALICIOUS else "suspicious"
-        label = "Suspicious — known-vulnerable driver (BYOVD)"
+        label = f"{'Malicious' if severity == 'malicious' else 'Suspicious'} — known-vulnerable driver (BYOVD)"
         detail = (
             "A Bring-Your-Own-Vulnerable-Driver pattern was detected — a "
             "kernel-level privilege-escalation technique."
@@ -109,14 +109,17 @@ def compute_verdict(
         severity = "malicious"
         sigs = high_labels or medium_labels
         label = "Malicious — high-confidence attack behavior"
-        detail = f"Multiple corroborating attack signals: {', '.join(sigs)}."
+        detail = (
+            f"Attack signal: {sigs[0]}." if len(sigs) == 1
+            else f"Multiple corroborating attack signals: {', '.join(sigs)}."
+        )
     elif score >= _SUSPICIOUS:
         severity = "suspicious"
         sigs = high_labels or medium_labels
         label = "Suspicious — likely attack behavior"
         detail = (
             f"Threat behavior detected: {', '.join(sigs)}."
-            if sigs else "Encoded payload via a known-abused binary."
+            if sigs else "Multiple low-confidence indicators detected. Review with context."
         )
     elif score >= _NOTABLE:
         severity = "notable"

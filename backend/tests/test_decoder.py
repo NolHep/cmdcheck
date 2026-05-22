@@ -79,8 +79,8 @@ def test_hex_escape_powershell():
 # ── Pure hex string ───────────────────────────────────────────────────────────
 
 def test_hex_string_decode():
-    # 'powershell -enc' as hex
-    payload = "706f7765727368656c6c202d656e63"
+    # 'powershell -encodedcommand' as hex (52 chars, above the 32-char minimum)
+    payload = "706f7765727368656c6c202d656e636f646564636f6d6d616e64"
     layers = decode_layers(f"certutil -decodehex {payload} out.ps1")
     assert any(l["encoding"] == "hex-string" for l in layers)
     assert any("powershell" in l["value"] for l in layers if l["encoding"] == "hex-string")

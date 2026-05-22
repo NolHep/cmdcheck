@@ -201,6 +201,22 @@ def test_decode_benign_long_literals_does_not_fire():
     assert "string-concat" not in [l["encoding"] for l in layers]
 
 
+def test_decode_string_concat_long_piece_attack_keyword_fires():
+    # 'Invoke-' is 7 chars (> 6-char cap) but the result contains an attack
+    # keyword — should still decode.
+    layers = _decode("&('Invoke-' + 'Expr' + 'ession') $payload")
+    assert any(
+        "string-concat" == l["encoding"] and "Invoke-Expression" in l["value"]
+        for l in layers
+    )
+
+
+def test_decode_string_concat_long_piece_no_keyword_does_not_fire():
+    # Long pieces with no attack keyword — cap still applies.
+    layers = _decode("$msg = 'Welcome' + 'Back' + 'User'")
+    assert "string-concat" not in [l["encoding"] for l in layers]
+
+
 # ── PowerShell backtick obfuscation (screenshot regression) ──────────────────
 
 def test_decode_powershell_backtick_obfuscation():

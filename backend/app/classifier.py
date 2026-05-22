@@ -190,6 +190,17 @@ _CLASSES: list[_ClassDef] = [
         # string-match detection of IEX/Invoke-Expression by splitting the name.
         _r(r"&\s*\(\s*['\"][^'\"]*['\"]\s*\+\s*['\"]",
            "Call operator invoking a concatenated function name (string-split execution)", "medium", "T1027"),
+        # Additional LOLBins
+        _r(r"\bmavinject(?:\.exe)?\b",
+           "Injects DLL into a running process via mavinject.exe (LOLBin)", "high", "T1055.001"),
+        _r(r"\bhh(?:\.exe)?\b.*\.chm\b",
+           "Opens CHM help file for code execution via hh.exe (LOLBin)", "high", "T1218.001"),
+        _r(r"\bcontrol(?:\.exe)?\b.*\.cpl\b",
+           "Loads Control Panel applet (.cpl) for execution via control.exe (LOLBin)", "high", "T1218"),
+        _r(r"\bxwizard(?:\.exe)?\b",
+           "Proxy-executes arbitrary code via xwizard.exe (LOLBin)", "medium", "T1218"),
+        _r(r"\bappcmd(?:\.exe)?\b",
+           "Abuses IIS appcmd.exe for config manipulation or code execution (LOLBin)", "medium", "T1218"),
     ]),
 
     # ── C2 / Persistence ──────────────────────────────────────────────────────
@@ -224,6 +235,12 @@ _CLASSES: list[_ClassDef] = [
            "Abuses Active Setup registry key for per-user persistence", "medium", "T1547.001"),
         _r(r"reg\s+add.*Policies.*Scripts.*(Logon|Logoff|Startup|Shutdown)",
            "Sets Group Policy logon/startup script via registry", "high", "T1037.001"),
+        # Named pipe — used by Cobalt Strike, Meterpreter, and other C2 frameworks
+        # for inter-process communication. Alone it is suggestive (IPC has benign
+        # uses); needs corroboration from another C2 signal to be conclusive.
+        _r(r"NamedPipeClient(?:Stream)?|NamedPipeServer(?:Stream)?|\.OpenNamedPipe\b",
+           "Uses named pipes for IPC (common C2 channel pattern)", "medium", "T1559.001",
+           corroborate=True, precision=0.7),
     ]),
 
     # ── Credential Theft ──────────────────────────────────────────────────────
@@ -329,6 +346,8 @@ _CLASSES: list[_ClassDef] = [
            "Invokes known UAC bypass binary", "medium", "T1548.002"),
         _r(r"powershell\b.*-Version\s+2\b",
            "Downgrades to PowerShell v2 to evade ScriptBlock logging", "medium", "T1548.002"),
+        _r(r"Start-Process\b.*-Verb\s+RunAs\b",
+           "Launches process with elevated privileges via Start-Process -Verb RunAs (UAC elevation)", "medium", "T1548.002"),
         # Hidden file attribute
         _r(r"attrib\s+\+[Hh]\b",
            "Sets hidden attribute on file or directory", "low", "T1564.001"),
@@ -361,7 +380,7 @@ _CLASSES: list[_ClassDef] = [
         _r(r"\btasklist\b",
            "Lists running processes", "low", "T1057"),
         _r(r"\bnltest\b",
-           "Queries domain trust information via nltest", "medium", "T1482"),
+           "Queries domain trust information via nltest", "high", "T1482"),
         _r(r"Get-(LocalUser|LocalGroup|ADUser|ADGroupMember)",
            "Enumerates accounts via PowerShell", "low", "T1087"),
         _r(r"net\s+view\s+/domain",
@@ -496,9 +515,12 @@ for _c in _CLASSES:
     _c.weight = _CLASS_WEIGHTS.get(_c.name, 1.0)
 
 # Per-segment scan cap. Regex patterns here use nested `.*?` under DOTALL; on
-# adversarial multi-KB input that is a catastrophic-backtracking (ReDoS) risk.
-# Python's `re` has no timeout, so we bound the input each pattern sees instead.
-_MAX_SCAN_CHARS = 100_000
+# adversarial multi-KB input that causes linear-blowup backtracking.
+# Python's `re` has no timeout, so we bound what each pattern sees.
+# 20 000 chars is ≈ 20 KB — more than enough for any real command line or
+# decoded layer. Attack indicators appear near the beginning of payloads;
+# burying a signal past 20 KB of junk would defeat the detection anyway.
+_MAX_SCAN_CHARS = 20_000
 
 # A pure help/version query (`ipconfig --help`, `curl -V`) shouldn't look
 # suspicious. But a bare substring check is trivially bypassed by appending
@@ -511,7 +533,19 @@ _BENIGN_FLAGS = re.compile(r"\s(?:--help\b|-h\b|--version\b|-V\b|/\?|/help\b)", 
 _ACTIVE_TOKENS = re.compile(
     r"[;&|`\n]|\$\(|&&|\|\||://|[A-Za-z0-9+/]{40,}",
 )
-_BENIGN_SUPPRESSIBLE = frozenset({"recon", "defense_evasion"})
+# Classes where any-confidence hits are suppressed when the command is clearly
+# a help/version query (no active tokens, URL, or chaining operators).
+# _is_help_query() is strict enough that suppressing high-confidence hits here
+# is safe — a real attack won't pass the active-token check.
+# Covers: `nltest /?` (recon), `psexec /?` / `rubeus /?` (lateral/cred theft),
+#         `powershell -ep bypass --help` (defense_evasion).
+_BENIGN_SUPPRESSIBLE = frozenset({"recon", "defense_evasion"})  # kept for compatibility
+_BENIGN_SUPPRESSIBLE_ALLCONF = frozenset({
+    "recon", "lateral_movement", "credential_theft"
+    # defense_evasion intentionally excluded: high-confidence AMSI patches and
+    # Defender disables must not be suppressed even when --help is appended —
+    # a malicious actor could trivially bypass detection by appending a help flag.
+})
 
 
 def _is_help_query(command: str) -> bool:
@@ -581,6 +615,10 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
         # Suppress low-confidence informational hits when the command looks
         # like a help or version query (e.g. `ipconfig --help`, `curl -V`).
         if is_help_query and best_conf in ("low", "medium") and cls.name in _BENIGN_SUPPRESSIBLE:
+            continue
+        # For high-stakes tool-name classes, also suppress at any confidence when
+        # the command is purely a help invocation with no active payload tokens.
+        if is_help_query and cls.name in _BENIGN_SUPPRESSIBLE_ALLCONF:
             continue
         results.append(ThreatClass(
             name=cls.name,
