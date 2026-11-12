@@ -19,6 +19,8 @@ export type Tuning = {
   lolbin_presence_points: number;
   loldrivers_points: number;
   recon_burst: number;
+  recon_chain_bonus: number;
+  signal_stack: number;
   rules: Record<string, RuleOverride>;
 };
 

@@ -30,6 +30,8 @@ const SCORING: Knob[] = [
   { key: "lolbin_presence_points", label: "LOLBin merely present", help: "Points when a known-abusable binary appears and nothing else fires.", step: 0.5, min: 0, max: 10 },
   { key: "loldrivers_points", label: "Vulnerable driver (BYOVD)", help: "Points when a known-vulnerable driver is referenced.", step: 0.5, min: 0, max: 50 },
   { key: "recon_burst", label: "Discovery burst size", help: "Distinct enumeration commands in one paste that count as a burst.", step: 1, min: 2, max: 20 },
+  { key: "recon_chain_bonus", label: "Discovery chain bonus", help: "Added when three or more medium or high discovery steps, or a dedicated AD-mapping tool, appear in one command.", step: 0.5, min: 0, max: 20 },
+  { key: "signal_stack", label: "Signal stacking size", help: "Medium-confidence signals in one class that together count as high confidence.", step: 1, min: 2, max: 20 },
 ];
 
 const SEVERITY_ORDER: Severity[] = ["clean", "low", "notable", "suspicious", "malicious"];

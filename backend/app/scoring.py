@@ -62,6 +62,9 @@ def compute_verdict(
             "precision": precision,
             "points": round(pts, 2),
         })
+        if getattr(tc, "chain", False) and t.recon_chain_bonus:
+            score += t.recon_chain_bonus
+            breakdown.append({"class": "_recon_chain", "points": t.recon_chain_bonus})
         if tc.confidence == "high":
             high_labels.append(tc.label)
         elif tc.confidence == "medium":

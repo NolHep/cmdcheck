@@ -8,8 +8,10 @@ invariant #4 — privacy is load-bearing.
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 from .redactor import is_internal_url
 
@@ -29,6 +31,19 @@ def _normalize_url(url: str) -> str:
     return url
 
 
+def _non_global_ip_host(url: str) -> bool:
+    """True when the host is an IP literal that is not globally routable.
+
+    Covers what is_internal_url does not (carrier-grade NAT, 100.64.0.0/10),
+    so a URL is listed and looked up exactly when its bare address would be.
+    """
+    try:
+        host = urlparse(url).hostname or ""
+        return not ipaddress.ip_address(host).is_global
+    except ValueError:
+        return False
+
+
 def extract_urls(text: str) -> list[str]:
     raw = _URL_RE.findall(text)
     return [_normalize_url(u.rstrip(".,;:)[]")) for u in raw]
@@ -41,7 +56,7 @@ def extract_urls_from_analysis(command: str, decoded_layers: list[dict[str, Any]
     out: list[str] = []
     for source in sources:
         for url in extract_urls(source):
-            if url in seen or is_internal_url(url):
+            if url in seen or is_internal_url(url) or _non_global_ip_host(url):
                 continue
             seen.add(url)
             out.append(url)

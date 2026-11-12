@@ -745,7 +745,7 @@ function ThreatIntelPanel({
       </div>
       <div className="px-4 py-2 border-t border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-4 flex-wrap">
         <p className="text-xs text-[var(--muted)]">
-          {allClean ? "All indicators appear clean across queried sources." : "Malicious indicators detected — review above."}
+          {allClean ? "No hits in the queried sources. That does not mean these indicators are safe." : "Malicious indicators detected — review above."}
         </p>
         <div className="flex gap-2 flex-wrap">
           {["URLhaus", "ThreatFox", "GreyNoise"].map((s) => (

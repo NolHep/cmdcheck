@@ -1447,8 +1447,8 @@ def generate_story(result: dict[str, Any]) -> str:
         funcs = list({f for m in lolbas_matches for f in (m.get("functions") or [])})
         func_str = f" — known abuse categories: {_join(funcs[:3])}" if funcs else ""
         parts2.append(
-            f"The command leverages {_join(lolbas_names)}, a Windows "
-            f"{'binary' if len(lolbas_names) == 1 else 'set of binaries'} "
+            f"The command leverages {_join(lolbas_names)}, "
+            f"{'a Windows binary' if len(lolbas_names) == 1 else 'Windows binaries'} "
             f"catalogued in LOLBAS as commonly abused for living-off-the-land attacks{func_str}."
         )
 
@@ -1457,7 +1457,8 @@ def generate_story(result: dict[str, Any]) -> str:
         funcs = list({f for m in gtfobins_matches for f in (m.get("functions") or [])})
         func_str = f" ({_join(funcs[:3])})" if funcs else ""
         parts2.append(
-            f"It also uses {_join(gtfo_names)}, a Unix binary listed in GTFOBins"
+            f"It also uses {_join(gtfo_names)}, "
+            f"{'a Unix binary' if len(gtfo_names) == 1 else 'Unix binaries'} listed in GTFOBins"
             f" with known privilege-escalation or execution abuse vectors{func_str}."
         )
 

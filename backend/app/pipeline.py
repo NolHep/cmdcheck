@@ -9,6 +9,7 @@ what the product ships.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -34,6 +35,21 @@ class Detection:
     verdict: dict[str, Any]
     encoding_depth: int = 0
     sources: list[str] = field(default_factory=list)
+
+
+# LOLBAS documents `msiexec /quiet /i cmd.msi` as abuse, but installing a local
+# MSI silently is also exactly what the tool is for. The resemblance only
+# counts when the package is remote, a DLL is being (un)registered, or the
+# "package" is a renamed file (`/i update.png`).
+_MSIEXEC_ABUSE = re.compile(
+    r"://|\\\\[\w.]|\s/[yz]\s|\.dll\b|[/-](?:i|package)\s+\"?[^\"\s]+\.(?:png|jpg|jpeg|gif|txt|dat|log|tmp)\b",
+    re.IGNORECASE,
+)
+
+
+def _ordinary_use(lolbas_name: str, sources: list[str]) -> bool:
+    """True for a plain local msiexec install, in the command and every decoded layer."""
+    return lolbas_name.lower() == "msiexec.exe" and not any(_MSIEXEC_ABUSE.search(s) for s in sources)
 
 
 def detect(command: str, tuning: Tuning | None = None) -> Detection:
@@ -109,6 +125,7 @@ def detect(command: str, tuning: Tuning | None = None) -> Detection:
         lolbas_abuse=[
             m["name"] for m in lolbas_matches
             if m.get("arg_similarity", 0) >= tuning.lolbas_abuse_similarity
+            and not _ordinary_use(m["name"], sources)
         ],
         installer=known_installer(command, layers),
         search_only=search_query(command),

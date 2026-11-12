@@ -498,6 +498,24 @@ _FORMAT_RE = re.compile(
 )
 
 
+_PS_FORMAT_ITEM = re.compile(r"\{(\d{1,3})(?:\s*,\s*-?\d+)?(?::[^{}]*)?\}")
+
+
+def _ps_format(fmt: str, args: list[str]) -> str | None:
+    """Apply PowerShell's -f operator to literal string arguments.
+
+    Deliberately not str.format: the format string comes from the pasted
+    command, and str.format honours width specs ('{0:>999999999}' allocates a
+    gigabyte) and attribute lookups ('{0.__class__}'). Alignment and format
+    specs are dropped — they only pad, which is irrelevant to what the string
+    spells. Returns None when an index has no matching argument.
+    """
+    try:
+        return _PS_FORMAT_ITEM.sub(lambda m: args[int(m.group(1))], fmt)
+    except IndexError:
+        return None
+
+
 def _try_format_op(text: str) -> list[tuple[str, str]]:
     """Resolve ('{0}{1}' -f 'a','b'). Only fires when all args are literals."""
     results: list[tuple[str, str]] = []
@@ -507,10 +525,7 @@ def _try_format_op(text: str) -> list[tuple[str, str]]:
         args = _STR_LIT_RE.findall(args_blob)
         if not args:
             continue
-        try:
-            decoded = fmt.format(*args)
-        except (IndexError, KeyError, ValueError):
-            continue
+        decoded = _ps_format(fmt, args)
         if decoded and decoded not in seen and _is_readable(decoded):
             seen.add(decoded)
             results.append((decoded, "format-op"))
@@ -946,6 +961,127 @@ def _try_shell_rev(text: str) -> list[tuple[str, str]]:
     return results
 
 
+# bash ANSI-C quoting with octal or mixed escapes: $'\143\165\162\154'
+_ANSI_C_ANY = re.compile(r"\$'((?:\\[0-7]{1,3}|\\x[0-9a-fA-F]{2}|[A-Za-z0-9 _./:-])*)'")
+_ANSI_C_ESCAPE = re.compile(r"\\([0-7]{1,3})|\\x([0-9a-fA-F]{2})")
+
+
+def _try_ansi_c(text: str) -> list[tuple[str, str]]:
+    if "$'" not in text:
+        return []
+
+    def _sub(m: re.Match[str]) -> str:
+        body = m.group(1)
+        if "\\" not in body:
+            return m.group(0)
+        return _ANSI_C_ESCAPE.sub(
+            lambda e: chr(int(e.group(1), 8) & 0xFF) if e.group(1) else chr(int(e.group(2), 16)), body
+        )
+
+    decoded = _ANSI_C_ANY.sub(_sub, text)
+    if decoded == text or not _is_readable(decoded):
+        return []
+    return [(decoded, "ansi-c-quoting")]
+
+
+# $(echo Y3VybA== | base64 -d) — a command or argument name hidden in a tiny
+# base64 blob, too short for the general base64 extractor.
+_B64_SUBST = re.compile(
+    r"(?:\$\(|`)\s*(?:echo|printf)\s+(?:-n\s+)?[\"']?([A-Za-z0-9+/]{2,200}={0,2})[\"']?\s*\|\s*base64\s+(?:-d|-D|--decode)\s*(?:\)|`)"
+)
+
+
+def _try_b64_substitution(text: str) -> list[tuple[str, str]]:
+    if "base64" not in text:
+        return []
+
+    def _sub(m: re.Match[str]) -> str:
+        raw = _try_b64_decode(m.group(1))
+        if raw is None:
+            return m.group(0)
+        try:
+            value = raw.decode("ascii").strip()
+        except UnicodeDecodeError:
+            return m.group(0)
+        return value if value and value.isprintable() else m.group(0)
+
+    decoded = _B64_SUBST.sub(_sub, text)
+    return [(decoded, "shell-command-substitution")] if decoded != text else []
+
+
+_REV_HERESTRING_RE = re.compile(r"\brev\s*<<<\s*(['\"])(.{4,}?)\1")
+
+
+def _try_shell_rev_herestring(text: str) -> list[tuple[str, str]]:
+    """`rev <<< 'reversed text'` — the here-string form of `echo … | rev`."""
+    results: list[tuple[str, str]] = []
+    for m in _REV_HERESTRING_RE.finditer(text):
+        decoded = m.group(2)[::-1]
+        if _is_readable(decoded):
+            results.append((decoded, "shell-rev"))
+    return results
+
+
+# ── PowerShell names assembled from string pieces, rewritten in place ─────────
+# `& ('{1}{0}' -f 'ex','i') …`, `&('i'+'ex') …`, `.('Download'+'String').Invoke(…)`.
+# The fragment decoders above reveal the hidden word on its own ("iex"), which
+# loses what it is applied to. This rewrites the whole command so the rules see
+# `iex (…)` and `.DownloadString(…)` in context.
+_LITERAL_ARGS = re.compile(r"\s*(?:'[^']*'|\"[^\"]*\")(?:\s*,\s*(?:'[^']*'|\"[^\"]*\"))*\s*")
+_PS_LITERAL_JOIN = re.compile(
+    r"'([^'\n]{0,200})'\s*\+\s*'([^'\n]{0,200})'"
+    r"|\"([^\"$`\n]{0,200})\"\s*\+\s*\"([^\"$`\n]{0,200})\""
+)
+# Call / dot-source operator applied to a quoted name: & ('iex')  &'iex'  .('iex')
+_PS_CALL_QUOTED = re.compile(
+    r"(?:(?<=^)|(?<=[\s;|({=\"]))[&.]\s*(?:\(\s*(['\"])([A-Za-z][\w-]{0,60})\1\s*\)|(['\"])([A-Za-z][\w-]{0,60})\3)"
+)
+# Member access through a quoted name: .('DownloadString').Invoke(  .'DownloadString'(
+_PS_MEMBER_QUOTED = re.compile(
+    r"(?<=[\w)\]])\.\s*(?:\(\s*(['\"])([A-Za-z]\w{0,60})\1\s*\)|(['\"])([A-Za-z]\w{0,60})\3)"
+    r"(?:\s*\.\s*Invoke)?\s*\(",
+    re.IGNORECASE,
+)
+
+
+def _try_ps_assembly(text: str) -> list[tuple[str, str]]:
+    if "'" not in text and '"' not in text:
+        return []
+
+    def _format(m: re.Match[str]) -> str:
+        if not _LITERAL_ARGS.fullmatch(m.group(2)):
+            return m.group(0)
+        value = _ps_format(m.group(1), _STR_LIT_RE.findall(m.group(2)))
+        return f"'{value}'" if value is not None and "'" not in value else m.group(0)
+
+    def _join(m: re.Match[str]) -> str:
+        if m.group(1) is not None:
+            return f"'{m.group(1)}{m.group(2)}'"
+        return f'"{m.group(3)}{m.group(4)}"'
+
+    joined = _FORMAT_RE.sub(_format, text)
+    for _ in range(64):
+        step = _PS_LITERAL_JOIN.sub(_join, joined)
+        if step == joined:
+            break
+        joined = step
+
+    invoked = _PS_CALL_QUOTED.sub(lambda m: m.group(2) or m.group(4), joined)
+    invoked = _PS_MEMBER_QUOTED.sub(lambda m: f".{m.group(2) or m.group(4)}(", invoked)
+    if invoked == text:
+        return []
+    if invoked != joined:
+        # A name built from pieces and then invoked is obfuscation. A name that
+        # was merely quoted (`& 'git' status`) is only tidied.
+        return [(invoked, "powershell-string-assembly" if joined != text else "powershell-quoted-call")]
+    # Plain literal joining is ordinary string-building unless it spells out
+    # something an attacker would want to hide.
+    lowered = joined.lower()
+    if any(kw in lowered and kw not in text.lower() for kw in _CONCAT_ATTACK_KEYWORDS):
+        return [(joined, "powershell-string-assembly")]
+    return []
+
+
 def _all_candidates(text: str) -> list[tuple[str, str]]:
     """Return all (decoded_text, encoding_label) candidates from all strategies."""
     results: list[tuple[str, str]] = []
@@ -1003,6 +1139,10 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     results.extend(_try_cmd_vars(text))
     results.extend(_try_ps_index(text))
     results.extend(_try_shell_rev(text))
+    results.extend(_try_shell_rev_herestring(text))
+    results.extend(_try_ansi_c(text))
+    results.extend(_try_b64_substitution(text))
+    results.extend(_try_ps_assembly(text))
 
     return results
 
@@ -1062,7 +1202,7 @@ def decode_layers(command: str) -> list[dict[str, Any]]:
 # classified like any other layer but earn no obfuscation credit.
 NORMALIZATION_ENCODINGS = frozenset({
     "env-variable-substitution", "cmd-variable-substitution", "unicode-normalization",
-    "shell-variable-substitution",
+    "shell-variable-substitution", "powershell-quoted-call",
     "limit-reached", "format-op", "dot-replace",
 })
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from typing import Any
 
@@ -11,26 +12,17 @@ _IPV4_RE = re.compile(
 
 
 def _is_public(ip: str) -> bool:
-    """Return True if ip is a routable public address."""
+    """Return True if ip is a globally routable address.
+
+    Uses the same stdlib ranges as redactor.is_internal_url, so an address and
+    a URL on that address are always treated alike: private, loopback,
+    link-local, carrier-grade NAT, documentation and reserved ranges are never
+    listed as indicators or sent to third-party lookups.
+    """
     try:
-        a, b, c, _ = [int(p) for p in ip.split(".")]
+        return ipaddress.ip_address(ip).is_global
     except ValueError:
         return False
-    if a == 10:
-        return False
-    if a == 172 and 16 <= b <= 31:
-        return False
-    if a == 192 and b == 168:
-        return False
-    if a == 127:
-        return False  # loopback
-    if a == 169 and b == 254:
-        return False  # link-local
-    if a == 0:
-        return False
-    if a >= 224:
-        return False  # multicast + reserved
-    return True
 
 
 def extract_ips(command: str, decoded_layers: list[dict[str, Any]]) -> list[str]:

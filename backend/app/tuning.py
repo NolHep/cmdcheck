@@ -84,6 +84,10 @@ class Tuning(BaseModel):
     loldrivers_points: float = Field(default=12.0, ge=0, le=50)
     # Distinct discovery commands in one paste that count as a burst.
     recon_burst: int = Field(default=4, ge=2, le=20)
+    # Added when three or more medium/high discovery steps appear together.
+    recon_chain_bonus: float = Field(default=2.0, ge=0, le=20)
+    # Medium-confidence signals in one class that together count as high.
+    signal_stack: int = Field(default=3, ge=2, le=20)
 
     # rule id -> override. Only rules that differ from their defaults appear.
     rules: dict[str, RuleOverride] = Field(default_factory=dict)

@@ -15,7 +15,8 @@ from app.classifier import known_installer
 from app.decoder import decode_layers
 from app.pipeline import detect
 from tests.benchmark_corpus import (
-    ATTACKS, BENIGN, EDGE_ATTACKS, EDGE_BENIGN, HOLDOUT_ATTACKS, HOLDOUT_BENIGN, Case,
+    ATTACKS, BENIGN, EDGE_ATTACKS, EDGE_BENIGN, FIELD_ATTACKS, FIELD_BENIGN,
+    HOLDOUT_ATTACKS, HOLDOUT_BENIGN, Case,
 )
 from tests.benchmark_mutations import mutate
 
@@ -40,7 +41,7 @@ def _severity(case: Case) -> str:
 
 @pytest.mark.parametrize(
     ("name", "attacks"),
-    [("tuning", ATTACKS), ("holdout", HOLDOUT_ATTACKS), ("edge", EDGE_ATTACKS)],
+    [("tuning", ATTACKS), ("holdout", HOLDOUT_ATTACKS), ("edge", EDGE_ATTACKS), ("field", FIELD_ATTACKS)],
 )
 def test_recall(name: str, attacks: list[Case]) -> None:
     missed = [
@@ -54,7 +55,7 @@ def test_recall(name: str, attacks: list[Case]) -> None:
 
 @pytest.mark.parametrize(
     ("name", "benign"),
-    [("tuning", BENIGN), ("holdout", HOLDOUT_BENIGN), ("edge", EDGE_BENIGN)],
+    [("tuning", BENIGN), ("holdout", HOLDOUT_BENIGN), ("edge", EDGE_BENIGN), ("field", FIELD_BENIGN)],
 )
 def test_false_positive_rate(name: str, benign: list[Case]) -> None:
     over = [
@@ -70,7 +71,7 @@ def test_false_positive_rate(name: str, benign: list[Case]) -> None:
 
 def test_corpus_ids_unique() -> None:
     ids = [c.id for c in (*ATTACKS, *BENIGN, *HOLDOUT_ATTACKS, *HOLDOUT_BENIGN,
-                          *EDGE_ATTACKS, *EDGE_BENIGN)]
+                          *EDGE_ATTACKS, *EDGE_BENIGN, *FIELD_ATTACKS, *FIELD_BENIGN)]
     assert len(ids) == len(set(ids))
 
 
@@ -152,8 +153,8 @@ def test_appended_help_flag_does_not_suppress() -> None:
 # ── Robustness ───────────────────────────────────────────────────────────────
 
 MIN_MUTATION_SURVIVAL = 0.98
-ALL_ATTACKS = [*ATTACKS, *HOLDOUT_ATTACKS, *EDGE_ATTACKS]
-ALL_CASES = [*ALL_ATTACKS, *BENIGN, *HOLDOUT_BENIGN, *EDGE_BENIGN]
+ALL_ATTACKS = [*ATTACKS, *HOLDOUT_ATTACKS, *EDGE_ATTACKS, *FIELD_ATTACKS]
+ALL_CASES = [*ALL_ATTACKS, *BENIGN, *HOLDOUT_BENIGN, *EDGE_BENIGN, *FIELD_BENIGN]
 
 
 def test_evasion_mutations_keep_their_tier() -> None:

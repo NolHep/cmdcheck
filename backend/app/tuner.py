@@ -59,6 +59,7 @@ def _load_corpus() -> list[tuple[str, list[Any], list[Any]]] | None:
         ("Tuning set", corpus.ATTACKS, corpus.BENIGN),
         ("Hold-out set", corpus.HOLDOUT_ATTACKS, corpus.HOLDOUT_BENIGN),
         ("Edge set", corpus.EDGE_ATTACKS, corpus.EDGE_BENIGN),
+        ("Field set", corpus.FIELD_ATTACKS, corpus.FIELD_BENIGN),
     ]
 
 

