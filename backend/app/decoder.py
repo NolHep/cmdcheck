@@ -18,7 +18,14 @@ Handles (in order of attempt per layer):
 - Array reverse of char literal    ([array]::Reverse([char[]]'xei'))
 - Char-slice reverse / reorder     ('llehsrewop'[-1..-10] -join '')
 - Hex byte array                   ((0x41,0x42,0x43))
-Recurses up to MAX_LAYERS deep.
+- cmd.exe caret escapes            (p^o^w^e^r^s^h^e^l^l)
+- cmd.exe in-token quotes          (cert""util, po"w"ershell)
+- cmd.exe set-variable expansion   (set x=pow&& call %x%ershell, %COMSPEC:~-7,1%)
+- PowerShell known-variable index  ($env:ComSpec[4,24,25]-join'' -> iex)
+- Shell `echo ... | rev`
+Decoding is a breadth-first tree: every candidate found in a text becomes its
+own layer and is itself decoded, up to MAX_LAYERS deep and MAX_TOTAL_LAYERS
+in total. A command carrying two encoded blobs yields both.
 """
 
 from __future__ import annotations
@@ -31,6 +38,8 @@ from typing import Any
 from urllib.parse import unquote
 
 MAX_LAYERS = 5
+# Hard cap on layers returned, so a blob-stuffed paste cannot fan out unbounded.
+MAX_TOTAL_LAYERS = 16
 
 # Markers for known encoding types after initial b64 decode
 _GZIP_MAGIC = b"\x1f\x8b"
@@ -321,6 +330,18 @@ def _extract_b64_candidates(text: str) -> list[str]:
         if d not in candidates:
             candidates.append(d)
 
+    # Shell / scripting idioms that carry a blob too short for the standalone
+    # rule below: `echo <b64> | base64 -d`, `base64 -d <<< <b64>`,
+    # python `b64decode('<b64>')`, JS `atob('<b64>')`.
+    for pat in (
+        r"echo\s+(?:-[ne]+\s+)?['\"]?([A-Za-z0-9+/]{12,}={0,2})['\"]?\s*\|\s*base64\s+-(?:d|D|-decode)\b",
+        r"base64\s+-(?:d|D|-decode)\s*<<<\s*['\"]?([A-Za-z0-9+/]{12,}={0,2})",
+        r"(?:b64decode|atob|decode64|base64_decode)\s*\(\s*b?['\"]([A-Za-z0-9+/]{12,}={0,2})['\"]",
+    ):
+        for d in re.findall(pat, text, re.IGNORECASE):
+            if d not in candidates:
+                candidates.append(d)
+
     # Standalone large base64 blobs (not already captured)
     blobs = re.findall(r"[A-Za-z0-9+/]{40,}={0,2}", text)
     for blob in blobs:
@@ -362,13 +383,20 @@ _ENV_SUBS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 
+# `$env:ComSpec[4,24,25]` is an index trick, handled by _try_ps_index — leave it.
+_INDEX_FOLLOWS = re.compile(r"\s*\[")
+
+
 def _try_env_resolve(text: str) -> list[tuple[str, str]]:
     """Partially resolve known $env: variables. Returns [(resolved_text, label)] or []."""
     resolved = text
     for pattern, replacement in _ENV_SUBS:
         # Use a lambda so backslashes in the replacement are treated as literals,
         # not regex backreference escape sequences.
-        resolved = pattern.sub(lambda _m, r=replacement: r, resolved)
+        resolved = pattern.sub(
+            lambda m, r=replacement: m.group(0) if _INDEX_FOLLOWS.match(m.string, m.end()) else r,
+            resolved,
+        )
     if resolved == text:
         return []
     return [(resolved, "env-variable-substitution")]
@@ -601,6 +629,152 @@ def _try_array_reverse(text: str) -> list[tuple[str, str]]:
     return results
 
 
+# ── cmd.exe obfuscation ───────────────────────────────────────────────────────
+# cmd treats ^ as an escape that vanishes before ordinary characters, and
+# drops quote pairs inside a token — both are used to split a binary or flag
+# name so string matching misses it (Invoke-DOSfuscation).
+
+_CARET_IN_TOKEN = re.compile(r"(?<=[A-Za-z0-9])\^(?=[A-Za-z0-9])")
+
+
+def _try_cmd_caret(text: str) -> list[tuple[str, str]]:
+    """Strip cmd.exe caret escapes. Requires 3+ in-token carets."""
+    if len(_CARET_IN_TOKEN.findall(text)) < 3:
+        return []
+    decoded = re.sub(r"\^(?!\^)", "", text)
+    if decoded == text:
+        return []
+    return [(decoded, "cmd-caret")]
+
+
+# "" or "x" wedged between letters of one token: cert""util, po"w"ershell
+_QUOTE_IN_TOKEN = re.compile(r"(?<=[A-Za-z])\"([A-Za-z]{0,4})\"(?=[A-Za-z])")
+
+
+def _try_cmd_quote_split(text: str) -> list[tuple[str, str]]:
+    """Remove quote pairs embedded inside a token."""
+    if not _QUOTE_IN_TOKEN.search(text):
+        return []
+    decoded = _QUOTE_IN_TOKEN.sub(lambda m: m.group(1), text)
+    if decoded == text:
+        return []
+    return [(decoded, "cmd-quote-split")]
+
+
+# Values cmd.exe would expand; used only for substring (%VAR:~a,b%) tricks.
+_CMD_KNOWN_VARS: dict[str, str] = {
+    "comspec": r"C:\WINDOWS\system32\cmd.exe",
+    "systemroot": r"C:\WINDOWS",
+    "windir": r"C:\WINDOWS",
+    "programfiles": r"C:\Program Files",
+    "commonprogramfiles": r"C:\Program Files\Common Files",
+    "public": r"C:\Users\Public",
+    "allusersprofile": r"C:\ProgramData",
+    "programdata": r"C:\ProgramData",
+    "systemdrive": "C:",
+    "homedrive": "C:",
+    "pathext": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC",
+    "os": "Windows_NT",
+}
+_CMD_SET_RE = re.compile(
+    r"(?:^|[\s&|(\"])set\s+\"?([A-Za-z_][A-Za-z0-9_]*)=([^&|\"\r\n]*)", re.IGNORECASE
+)
+_CMD_VAR_RE = re.compile(r"([%!])([A-Za-z_][A-Za-z0-9_]*)(?::~(-?\d+)(?:,(-?\d+))?)?\1")
+
+
+def _cmd_substring(value: str, start: str | None, length: str | None) -> str:
+    if start is None:
+        return value
+    a = int(start)
+    if a < 0:
+        a = max(len(value) + a, 0)
+    if length is None:
+        return value[a:]
+    n = int(length)
+    return value[a:a + n] if n >= 0 else value[a:len(value) + n]
+
+
+def _try_cmd_vars(text: str) -> list[tuple[str, str]]:
+    """Expand `set x=…` variables and %VAR:~a,b% substrings of known variables."""
+    user_vars = {m.group(1).lower(): m.group(2).rstrip() for m in _CMD_SET_RE.finditer(text)}
+    used_substring = False
+
+    def _sub(m: re.Match[str]) -> str:
+        nonlocal used_substring
+        name = m.group(2).lower()
+        if name in user_vars:
+            value = user_vars[name]
+        elif m.group(3) is not None and name in _CMD_KNOWN_VARS:
+            value = _CMD_KNOWN_VARS[name]
+        else:
+            return m.group(0)
+        if m.group(3) is not None:
+            used_substring = True
+        return _cmd_substring(value, m.group(3), m.group(4))
+
+    decoded = _CMD_VAR_RE.sub(_sub, text)
+    if decoded == text:
+        return []
+    # Plain %x% expansion is ordinary batch scripting; carving characters out
+    # of a variable with :~ is deliberate obfuscation and is labelled as such.
+    return [(decoded, "cmd-substring" if used_substring else "cmd-variable-substitution")]
+
+
+# ── PowerShell known-variable indexing ────────────────────────────────────────
+# `$env:ComSpec[4,24,25]-join''` spells "Iex" out of a path every Windows box
+# has. Only variables with a fixed, well-known value are resolved.
+_PS_KNOWN_VARS: dict[str, str] = {
+    "$env:comspec": r"C:\WINDOWS\system32\cmd.exe",
+    "$pshome": r"C:\Windows\System32\WindowsPowerShell\v1.0",
+    "$shellid": "Microsoft.PowerShell",
+    "$env:public": r"C:\Users\Public",
+    "$env:systemroot": r"C:\WINDOWS",
+    "$env:windir": r"C:\WINDOWS",
+    "$env:programfiles": r"C:\Program Files",
+    "$verbosepreference.tostring()": "SilentlyContinue",
+}
+_PS_INDEX_RE = re.compile(
+    r"(" + "|".join(re.escape(k) for k in _PS_KNOWN_VARS) + r")\s*\[\s*(-?\d+(?:\s*,\s*-?\d+)*)\s*\]"
+    r"(?:\s*-join\s*['\"]['\"])?",
+    re.IGNORECASE,
+)
+_ADJACENT_LITERALS = re.compile(r"'([^']*)'\s*\+\s*'([^']*)'")
+
+
+def _try_ps_index(text: str) -> list[tuple[str, str]]:
+    """Resolve indexing into well-known PowerShell variables to a string literal."""
+
+    def _sub(m: re.Match[str]) -> str:
+        value = _PS_KNOWN_VARS[m.group(1).lower()]
+        try:
+            chars = "".join(value[int(i)] for i in m.group(2).split(","))
+        except (IndexError, ValueError):
+            return m.group(0)
+        return f"'{chars}'"
+
+    decoded = _PS_INDEX_RE.sub(_sub, text)
+    if decoded == text:
+        return []
+    prev = None
+    while prev != decoded:
+        prev = decoded
+        decoded = _ADJACENT_LITERALS.sub(lambda m: f"'{m.group(1)}{m.group(2)}'", decoded)
+    return [(decoded, "powershell-index")]
+
+
+# ── Shell `echo '…' | rev` ────────────────────────────────────────────────────
+_REV_RE = re.compile(r"echo\s+(?:-[ne]+\s+)?(['\"])(.{4,}?)\1\s*\|\s*rev\b")
+
+
+def _try_shell_rev(text: str) -> list[tuple[str, str]]:
+    results: list[tuple[str, str]] = []
+    for m in _REV_RE.finditer(text):
+        decoded = m.group(2)[::-1]
+        if _is_readable(decoded):
+            results.append((decoded, "shell-rev"))
+    return results
+
+
 def _all_candidates(text: str) -> list[tuple[str, str]]:
     """Return all (decoded_text, encoding_label) candidates from all strategies."""
     results: list[tuple[str, str]] = []
@@ -646,32 +820,48 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     results.extend(_try_slice_join(text))
     results.extend(_try_hex_array(text))
 
+    # cmd.exe / known-variable / shell tricks
+    results.extend(_try_cmd_caret(text))
+    results.extend(_try_cmd_quote_split(text))
+    results.extend(_try_cmd_vars(text))
+    results.extend(_try_ps_index(text))
+    results.extend(_try_shell_rev(text))
+
     return results
 
 
 def decode_layers(command: str) -> list[dict[str, Any]]:
-    """Return a list of decode layer dicts, up to MAX_LAYERS deep."""
+    """Return decode layers as a breadth-first tree flattened in discovery order.
+
+    `layer` is the depth at which a value was revealed (1 = decoded straight
+    from the pasted command). `parent` is the 1-based position in the returned
+    list of the layer it was decoded from, or 0 for the command itself. Every
+    candidate in a text is followed, not just the first, so two independent
+    blobs in one command both surface.
+    """
     layers: list[dict[str, Any]] = []
-    current = command
     seen: set[str] = {command}
+    frontier: list[tuple[str, int]] = [(command, 0)]
     hit_limit = False
 
-    for layer_num in range(1, MAX_LAYERS + 1):
-        decoded_this_round = False
-
-        for text, encoding in _all_candidates(current):
-            if text in seen:
-                continue
-            seen.add(text)
-            layers.append({"layer": layer_num, "encoding": encoding, "value": text})
-            current = text
-            decoded_this_round = True
-            break  # one decode per layer; recurse with the new text
-
-        if not decoded_this_round:
+    for depth in range(1, MAX_LAYERS + 1):
+        next_frontier: list[tuple[str, int]] = []
+        for source, parent in frontier:
+            for text, encoding in _all_candidates(source):
+                if text in seen or not text.strip():
+                    continue
+                if len(layers) >= MAX_TOTAL_LAYERS:
+                    hit_limit = True
+                    break
+                seen.add(text)
+                layers.append({"layer": depth, "encoding": encoding, "value": text, "parent": parent})
+                next_frontier.append((text, len(layers)))
+            if hit_limit:
+                break
+        if hit_limit or not next_frontier:
             break
-
-        if layer_num == MAX_LAYERS and decoded_this_round:
+        frontier = next_frontier
+        if depth == MAX_LAYERS:
             hit_limit = True
 
     if hit_limit:
@@ -683,6 +873,27 @@ def decode_layers(command: str) -> list[dict[str, Any]]:
                 "Complex obfuscation detected — manual review recommended. "
                 "Additional encoding layers likely remain."
             ),
+            "parent": 0,
         })
 
     return layers
+
+
+def deepest_chain(layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return the layers on the path from the command to the deepest decode.
+
+    Layers form a tree; the UI headline and the narrative want the single
+    longest unwrapping (base64 -> gzip -> ...). Ties go to the first found.
+    Rows stored before `parent` existed are a plain chain and returned as is.
+    """
+    real = [layer for layer in layers if layer.get("encoding") != "limit-reached"]
+    if not real:
+        return []
+    if any("parent" not in layer for layer in real):
+        return real
+    leaf = max(real, key=lambda layer: int(layer.get("layer", 1) or 1))
+    chain = [leaf]
+    while int(chain[-1].get("parent", 0) or 0) > 0:
+        chain.append(layers[int(chain[-1]["parent"]) - 1])
+    chain.reverse()
+    return chain

@@ -21,7 +21,7 @@
     },
     "decoded_layers": {
       "type": "array",
-      "description": "Each base64/encoding decode layer, innermost last",
+      "description": "Decode layers as a breadth-first tree in discovery order. `layer` is the depth; `parent` is the 1-based index of the layer it was decoded from (0 = the pasted command).",
       "items": {
         "type": "object",
         "required": ["layer", "encoding", "value"],
@@ -29,9 +29,10 @@
           "layer": { "type": "integer", "minimum": 1 },
           "encoding": {
             "type": "string",
-            "enum": ["base64", "base64-utf16le", "base64-gzip", "base64-utf16le-gzip"]
+            "description": "Decoder label, e.g. base64-utf16le, base64-gzip, cmd-caret, powershell-index, limit-reached"
           },
-          "value": { "type": "string" }
+          "value": { "type": "string" },
+          "parent": { "type": "integer", "minimum": 0 }
         }
       }
     },

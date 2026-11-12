@@ -12,11 +12,15 @@ logger = logging.getLogger(__name__)
 _catalog: list[dict[str, Any]] = []
 _ACTOR_FILE = Path(__file__).parent.parent / "data" / "threat_actors.json"
 
-# Minimum overlapping techniques to surface a match at all
-_MIN_OVERLAP = 1
-# Thresholds for confidence tiers
-_HIGH_OVERLAP = 4
-_MED_OVERLAP = 2
+# A technique used by more than this share of catalogued groups (PowerShell,
+# ingress tool transfer, Run keys…) says nothing about *who*; only rarer,
+# distinctive techniques count toward a match.
+_COMMON_SHARE = 0.4
+# Distinctive overlaps needed for "medium". Technique overlap alone never
+# earns "high": a command line cannot identify an actor.
+_MED_DISTINCTIVE = 3
+# How many groups use each technique, filled by load_catalog().
+_technique_df: dict[str, int] = {}
 
 
 def load_catalog() -> None:
@@ -27,42 +31,37 @@ def load_catalog() -> None:
         data = json.loads(_ACTOR_FILE.read_text(encoding="utf-8"))
         _catalog.clear()
         _catalog.extend(data)
+        _technique_df.clear()
+        for actor in _catalog:
+            for tid in set(actor.get("techniques", [])):
+                _technique_df[tid] = _technique_df.get(tid, 0) + 1
         logger.info("Threat actor catalog loaded: %d actors", len(_catalog))
     except Exception as exc:
         logger.error("Failed to load threat_actors.json: %s", exc)
 
 
 def match_actors(technique_ids: list[str]) -> list[dict[str, Any]]:
-    """Return top-5 ranked threat actor matches for the given technique IDs.
+    """Return up to five groups whose known TTPs overlap the detected techniques.
 
-    Scoring rationale: we reward actors where the detected techniques represent
-    a meaningful portion of *what was detected* (precision), not a large portion
-    of the actor's full TTP repertoire (recall). This avoids over-crediting
-    actors with very large technique lists on weak evidence.
+    Nearly every group uses PowerShell, cmd and ingress tool transfer, so raw
+    overlap counts attribute every download cradle to APT29. Only techniques
+    used by a minority of groups are treated as evidence, each weighted by its
+    rarity, and a group with no distinctive overlap is not listed at all.
     """
     if not _catalog or not technique_ids:
         return []
 
     detected = set(technique_ids)
+    common_cutoff = max(1, int(len(_catalog) * _COMMON_SHARE))
     results: list[dict[str, Any]] = []
 
     for actor in _catalog:
-        actor_techs = set(actor.get("techniques", []))
-        overlap = detected & actor_techs
-        n = len(overlap)
-
-        if n < _MIN_OVERLAP:
+        overlap = detected & set(actor.get("techniques", []))
+        distinctive = {t for t in overlap if _technique_df.get(t, 1) <= common_cutoff}
+        if not distinctive:
             continue
-
-        # Precision score: what fraction of detected techniques does this actor use?
-        precision = n / max(len(detected), 1)
-
-        if n >= _HIGH_OVERLAP and precision >= 0.30:
-            confidence = "high"
-        elif n >= _MED_OVERLAP or precision >= 0.25:
-            confidence = "medium"
-        else:
-            confidence = "low"
+        score = sum(1.0 / _technique_df.get(t, 1) for t in distinctive)
+        confidence = "medium" if len(distinctive) >= _MED_DISTINCTIVE else "low"
 
         results.append({
             "id": actor.get("id", ""),
@@ -72,13 +71,15 @@ def match_actors(technique_ids: list[str]) -> list[dict[str, Any]]:
             "motivation": actor.get("motivation", ""),
             "description": actor.get("description", ""),
             "url": f"https://attack.mitre.org/groups/{actor.get('id', '')}/",
-            "matched_techniques": sorted(overlap),
-            "overlap_count": n,
+            "matched_techniques": sorted(distinctive) + sorted(overlap - distinctive),
+            "overlap_count": len(overlap),
             "confidence": confidence,
+            "_score": score,
         })
 
-    conf_order = {"high": 0, "medium": 1, "low": 2}
-    results.sort(key=lambda r: (-r["overlap_count"], conf_order[r["confidence"]]))
+    results.sort(key=lambda r: -r["_score"])
+    for r in results:
+        del r["_score"]
     return results[:5]
 
 

@@ -21,8 +21,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address as _get_remote_address
 
-from .classifier import classify
-from .scoring import compute_verdict
+from .pipeline import detect
 from . import mitre as mitre_catalog
 from . import stripe_billing
 from .db import (
@@ -40,12 +39,11 @@ from .db import (
     set_setting, set_stripe_customer_id, update_bug_report,
     update_subscription_by_customer, update_user_password, upsert_analysis,
 )
-from .decoder import decode_layers
-from .gtfobins import load_catalog as load_gtfobins, match as gtfobins_match
-from .lolbas import load_catalog as load_lolbas, match as lolbas_match
-from .loldrivers import load_catalog as load_loldrivers, match as loldrivers_match
+from .gtfobins import load_catalog as load_gtfobins
+from .lolbas import load_catalog as load_lolbas
+from .loldrivers import load_catalog as load_loldrivers
 from .parent_score import score_parent
-from .parser import extract_binaries, parse_command
+from .parser import parse_command
 from .redactor import has_unclosed_pem, redact
 from .slug import make_slug, make_private_slug
 from .ip_extractor import extract_ips
@@ -634,69 +632,18 @@ async def analyze(request: Request, body: AnalyzeRequest) -> dict[str, Any]:
         # If deleted, force-reanalyzed, or None — fall through to re-analyze and restore the row
 
     ast, parse_error = parse_command(command)
-    layers = decode_layers(command)
 
-    # Collect all unique binaries from command + decoded layers (single pass)
-    all_binaries: list[str] = []
-    seen_all_binaries: set[str] = set()
-    for source in [command, *(layer["value"] for layer in layers)]:
-        for binary in extract_binaries(source):
-            if binary.lower() not in seen_all_binaries:
-                seen_all_binaries.add(binary.lower())
-                all_binaries.append(binary)
-
-    # LOLBAS matching — key by both command binary name and catalog name so
-    # fuzzy-matched entries (e.g. "pwsh" → "PowerShell.exe") surface correctly
-    # in _build_binaries_in_command which looks up by the command binary name.
-    lolbas_matches: list[dict[str, Any]] = []
-    lolbas_by_name: dict[str, dict[str, Any]] = {}
-    seen_lolbas: set[str] = set()
-    for binary in all_binaries:
-        hit = lolbas_match(binary, command)
-        if hit is not None and hit["name"] not in seen_lolbas:
-            seen_lolbas.add(hit["name"])
-            lolbas_matches.append(hit)
-            lolbas_by_name[binary.lower()] = hit
-            lolbas_by_name[hit["name"].lower()] = hit
-
-    # GTFOBins matching — same dual-keying for consistency
-    gtfobins_matches: list[dict[str, Any]] = []
-    gtfobins_by_name: dict[str, dict[str, Any]] = {}
-    seen_gtfobins: set[str] = set()
-    for binary in all_binaries:
-        hit = gtfobins_match(binary)
-        if hit is not None and hit["name"] not in seen_gtfobins:
-            seen_gtfobins.add(hit["name"])
-            gtfobins_matches.append(hit)
-            gtfobins_by_name[binary.lower()] = hit
-            gtfobins_by_name[hit["name"].lower()] = hit
-
-    # LOLDrivers matching — vulnerable kernel drivers (BYOVD)
-    loldrivers: dict[str, Any] | None = None
-    for source in [command, *(layer["value"] for layer in layers)]:
-        hit = loldrivers_match(source)
-        if hit is not None:
-            loldrivers = hit
-            break
-
-    binaries_in_command = _build_binaries_in_command(all_binaries, lolbas_by_name, gtfobins_by_name)
-
-    threat_classes = classify(command, layers)
-    # Only count "real" obfuscation layers toward the verdict-side encoding
-    # bonus. Trivial normalizations (env-var expansion, the limit-reached
-    # marker) and ambiguous string templating (format-op / dot-replace can
-    # fire on benign string-building) don't reliably indicate hiding intent.
-    # string-concat is gated by a per-piece length cap in the decoder, so it
-    # IS reliable when it fires. Backtick, base64/gzip/hex/url, [array]::Reverse,
-    # and [char]N concatenation are all unambiguous obfuscation.
-    _NON_ENCODING = {"env-variable-substitution", "limit-reached", "format-op", "dot-replace"}
-    encoding_depth = sum(1 for l in layers if l.get("encoding") not in _NON_ENCODING)
-    verdict = compute_verdict(
-        threat_classes,
-        has_lolbas=bool(lolbas_matches),
-        has_gtfobins=bool(gtfobins_matches),
-        has_loldrivers=loldrivers is not None,
-        encoding_depth=encoding_depth,
+    # The detection pipeline itself is a pure function of the command text —
+    # see app/pipeline.py. Everything below is storage, redaction, enrichment.
+    det = detect(command)
+    layers = det.layers
+    lolbas_matches = det.lolbas_matches
+    gtfobins_matches = det.gtfobins_matches
+    loldrivers = det.loldrivers
+    threat_classes = det.threat_classes
+    verdict = det.verdict
+    binaries_in_command = _build_binaries_in_command(
+        det.binaries, det.lolbas_by_name, det.gtfobins_by_name
     )
     parent_verdict = score_parent(parent_process, command) if parent_process else None
     # Redaction opt-out — subscribers only; silently redact if not subscribed

@@ -26,6 +26,8 @@ _CONF_BASE: dict[str, float] = {"low": 1.0, "medium": 4.0, "high": 10.0}
 _MALICIOUS = 14.0
 _SUSPICIOUS = 7.0
 _NOTABLE = 3.0
+# Points for a LOLBAS argument-pattern (abuse example) match.
+_LOLBAS_ABUSE = 5.0
 
 
 def _depth_multiplier(max_depth: int) -> float:
@@ -40,6 +42,8 @@ def compute_verdict(
     has_gtfobins: bool = False,
     has_loldrivers: bool = False,
     encoding_depth: int = 0,
+    lolbas_abuse: list[str] | None = None,
+    installer: str | None = None,
 ) -> dict[str, Any]:
     """Return {severity, label, detail, score, breakdown}."""
     breakdown: list[dict[str, Any]] = []
@@ -88,12 +92,43 @@ def compute_verdict(
         score += enc_pts
         breakdown.append({"class": "_encoding", "points": round(enc_pts, 2)})
 
+    # The arguments resemble a documented LOLBAS abuse example. This is real
+    # evidence (unlike the binary's mere presence): worth "notable" by itself
+    # and enough to lift a medium behavioural hit to "suspicious".
+    if lolbas_abuse:
+        score += _LOLBAS_ABUSE
+        breakdown.append({"class": "_lolbas_abuse", "points": _LOLBAS_ABUSE,
+                          "binaries": lolbas_abuse})
     # A known-abusable binary alone is weak signal, not an alarm.
-    if (has_lolbas or has_gtfobins) and not threat_classes:
+    elif (has_lolbas or has_gtfobins) and not threat_classes:
         score += 2.0
         breakdown.append({"class": "_lolbin", "points": 2.0})
 
     score = round(min(score, 100.0), 2)
+
+    # A documented installer one-liner (rustup, Chocolatey, …) is shaped
+    # exactly like a dropper. When the URL is an exact known-installer URL and
+    # nothing but download-and-run rules fired, say so instead of crying wolf.
+    if (
+        installer
+        and threat_classes
+        and not has_loldrivers
+        and score >= _SUSPICIOUS
+        and all(getattr(tc, "installer_only", False) for tc in threat_classes)
+    ):
+        capped = round(_SUSPICIOUS - 0.5, 2)
+        breakdown.append({"class": "_known_installer", "points": round(capped - score, 2)})
+        return {
+            "severity": "notable",
+            "label": "Notable — matches a well-known installer",
+            "detail": (
+                f"This is the download-and-run pattern attackers use, but the only URL is "
+                f"the documented installer at {installer}. Confirm the URL character by "
+                f"character — look-alike domains are a common lure."
+            ),
+            "score": capped,
+            "breakdown": breakdown,
+        }
 
     if has_loldrivers:
         severity: Severity = "malicious" if score >= _MALICIOUS else "suspicious"

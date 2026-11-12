@@ -17,7 +17,11 @@ logger = logging.getLogger(__name__)
 # Loaded once at startup
 _catalog: dict[str, dict[str, Any]] = {}
 
-SIMILARITY_THRESHOLD = 0.7
+# Fuzzy *name* matching exists to catch a lightly renamed LOLBin. At 0.7 it
+# also paired distinct real binaries (vssadmin -> Bitsadmin, ipconfig ->
+# Msconfig) and showed the wrong catalog card; 0.85 keeps one-or-two character
+# edits only.
+SIMILARITY_THRESHOLD = 0.85
 # Argument-pattern similarity: how close the *observed arguments* are to a known
 # abuse example. Lower than the name threshold because catalog examples carry
 # {PLACEHOLDER} tokens and real invocations vary — 0.6 reliably separates abuse

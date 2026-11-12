@@ -72,7 +72,8 @@ export default async function AnalysisPage({
   const hasLolbas = lolbasMatches.length > 0;
   const hasGtfobins = gtfobinsMatches.length > 0;
   const hasLoldrivers = !!a.loldrivers_match;
-  const hasEncoding = a.decoded_layers.length > 0;
+  const decodedCount = a.decoded_layers.filter((l) => l.encoding !== "limit-reached").length;
+  const hasEncoding = decodedCount > 0;
   const hasActors = a.attributed_actors && a.attributed_actors.length > 0;
   const verdict = resolveVerdict(a);
 
@@ -138,8 +139,8 @@ export default async function AnalysisPage({
           {hasEncoding && (
             <section>
               <h2 className="section-label">
-                Encoded payload — {a.decoded_layers.length}{" "}
-                {a.decoded_layers.length === 1 ? "layer" : "layers"} decoded
+                Deobfuscation — {decodedCount}{" "}
+                {decodedCount === 1 ? "layer" : "layers"} decoded
               </h2>
               <DecodeLayers layers={a.decoded_layers} />
             </section>
@@ -235,7 +236,7 @@ export default async function AnalysisPage({
             {/* Threat actor attribution */}
             {hasActors && (
               <section>
-                <h2 className="section-label">Threat actor attribution</h2>
+                <h2 className="section-label">Groups known for these techniques</h2>
                 <ThreatActorsCard actors={a.attributed_actors} />
               </section>
             )}
@@ -251,7 +252,7 @@ export default async function AnalysisPage({
 
 const SEVERITY_STYLE: Record<string, string> = {
   malicious: "border-[var(--danger)] bg-[#2d1515] text-[var(--foreground)]",
-  suspicious: "border-[var(--danger)] bg-[#2d1515] text-[var(--foreground)]",
+  suspicious: "border-orange-500 bg-[#2a1a0a] text-[var(--foreground)]",
   notable: "border-yellow-600 bg-[#2a2000] text-[var(--foreground)]",
   low: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
   clean: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
@@ -804,31 +805,55 @@ function VtResultsCard({ urls, results, vtConfigured }: { urls: string[]; result
 
 /* ── decode layers ── */
 
+// Layers are a tree flattened in discovery order: `layer` is the depth and
+// `parent` the 1-based index of the layer it came from (0 = the command).
+// The headline is the deepest unwrapping; everything else is listed below it.
 function DecodeLayers({ layers }: { layers: DecodeLayer[] }) {
-  const last = layers[layers.length - 1];
-  const intermediates = layers.slice(0, -1);
+  const limit = layers.find((l) => l.encoding === "limit-reached");
+  const real = layers
+    .map((layer, i) => ({ layer, index: i + 1 }))
+    .filter(({ layer }) => layer.encoding !== "limit-reached");
+  if (real.length === 0) return null;
+
+  const final = real.reduce((best, cur) => (cur.layer.layer > best.layer.layer ? cur : best), real[0]);
+  const others = real.filter((r) => r !== final);
+  const origin = (parent: number | undefined) =>
+    parent === undefined ? null : parent === 0 ? "from the command" : `from #${parent}`;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="border border-[var(--accent)] border-opacity-40 rounded-lg overflow-hidden">
-        <div className="bg-[var(--surface)] px-4 py-2 flex items-center gap-3 border-b border-[var(--border)]">
-          <span className="text-[var(--accent)] text-xs font-semibold uppercase tracking-wide">Final decoded content</span>
-          <span className="text-xs bg-[var(--border)] text-[var(--muted)] px-2 py-0.5 rounded font-mono">{last.encoding}</span>
+        <div className="bg-[var(--surface)] px-4 py-2 flex items-center gap-3 flex-wrap border-b border-[var(--border)]">
+          <span className="text-[var(--accent)] text-xs font-semibold uppercase tracking-wide">
+            {others.length > 0 ? "Deepest decoded content" : "Decoded content"}
+          </span>
+          <span className="text-xs bg-[var(--border)] text-[var(--muted)] px-2 py-0.5 rounded font-mono">{final.layer.encoding}</span>
+          {final.layer.layer > 1 && (
+            <span className="text-xs text-[var(--muted)]">{final.layer.layer} layers deep</span>
+          )}
         </div>
-        <pre className="font-mono text-xs px-4 py-3 whitespace-pre-wrap break-all">{last.value}</pre>
+        <pre className="font-mono text-xs px-4 py-3 whitespace-pre-wrap break-all">{final.layer.value}</pre>
       </div>
-      {intermediates.length > 0 && (
+      {limit && (
+        <p className="text-xs text-[var(--muted)] border border-[var(--border)] rounded-lg px-4 py-2">
+          Decoder limit reached — more encoding layers likely remain. Manual review recommended.
+        </p>
+      )}
+      {others.length > 0 && (
         <details className="group">
           <summary className="cursor-pointer text-[var(--muted)] text-xs hover:text-[var(--foreground)] list-none flex items-center gap-1.5">
             <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-            Show {intermediates.length} intermediate {intermediates.length === 1 ? "layer" : "layers"}
+            Show {others.length} other decoded {others.length === 1 ? "layer" : "layers"}
           </summary>
           <div className="mt-2 flex flex-col gap-2">
-            {intermediates.map((layer) => (
-              <div key={layer.layer} className="border border-[var(--border)] rounded-lg overflow-hidden">
-                <div className="bg-[var(--surface)] px-4 py-2 flex items-center gap-3 border-b border-[var(--border)]">
-                  <span className="text-[var(--muted)] text-xs font-mono">Layer {layer.layer}</span>
+            {others.map(({ layer, index }) => (
+              <div key={index} className="border border-[var(--border)] rounded-lg overflow-hidden">
+                <div className="bg-[var(--surface)] px-4 py-2 flex items-center gap-3 flex-wrap border-b border-[var(--border)]">
+                  <span className="text-[var(--muted)] text-xs font-mono">#{index}</span>
                   <span className="text-xs bg-[var(--border)] text-[var(--muted)] px-2 py-0.5 rounded font-mono">{layer.encoding}</span>
+                  <span className="text-[var(--muted)] text-xs">
+                    depth {layer.layer}{origin(layer.parent) ? ` · ${origin(layer.parent)}` : ""}
+                  </span>
                 </div>
                 <pre className="font-mono text-xs px-4 py-3 whitespace-pre-wrap break-all">{layer.value}</pre>
               </div>

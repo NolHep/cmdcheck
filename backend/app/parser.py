@@ -94,6 +94,10 @@ _NON_BINARY_TOKENS = frozenset({
     "copy", "move", "rename", "split", "join", "format", "export", "import",
     "convertto", "convertfrom", "register", "unregister", "enable", "disable",
     "suspend", "resume", "restart", "reset", "use", "enter", "exit",
+    # cmd.exe / shell builtins and keywords — not programs on disk
+    "call", "for", "if", "do", "else", "goto", "rem", "cd", "pushd", "popd",
+    "setlocal", "endlocal", "then", "fi", "done", "while", "export", "unset",
+    "exec", "eval", "source", "true", "false",
     # URL scheme prefixes — appear at token position 0 of bare URLs
     "http", "https", "ftp", "ftps", "file",
 })
@@ -129,6 +133,10 @@ def extract_binaries(command: str) -> list[str]:
 
     # Windows: known extensionless system binaries (bitsadmin, certutil, …)
     for token in re.split(r'[\s;&|`"]+', command):
+        # `/sc`, `-net` are switches, not `sc.exe` / `net.exe`. A leading slash
+        # only introduces a path when another separator follows (`/usr/bin/curl`).
+        if token[:1] in "/-" and "/" not in token[1:] and "\\" not in token[1:]:
+            continue
         base = token.lower().split("\\")[-1].split("/")[-1]
         if base in _WIN_EXTENSIONLESS_BINARIES:
             _add(base + ".exe")

@@ -4,6 +4,9 @@ const DecodeLayerSchema = z.object({
   layer: z.number().int().positive(),
   encoding: z.string(),
   value: z.string(),
+  // 1-based index of the layer this was decoded from; 0 = the pasted command.
+  // Absent on analyses stored before decoding became a tree.
+  parent: z.number().int().nonnegative().optional(),
 });
 
 const TechniqueDetailSchema = z.object({

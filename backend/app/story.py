@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .decoder import deepest_chain
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Mechanics-first paragraph-1 generator
@@ -1234,10 +1236,23 @@ def _split_chain(command: str) -> list[tuple[str, str]]:
     return out
 
 
+_WHOLE_COMMAND_LAYERS = frozenset({
+    "cmd-caret", "cmd-quote-split", "cmd-variable-substitution", "cmd-substring",
+    "powershell-backtick",
+})
+
+
 def _describe_mechanics(result: dict[str, Any]) -> str | None:
     """Plain-language description of what the command does. None when we
     couldn't synthesize anything (caller falls back to the threat-class P1)."""
     command = str(result.get("command") or "")
+    # When the first decode step is a whole-command cleanup (carets, in-token
+    # quotes, set-variable expansion, backticks), narrate the cleaned command —
+    # the raw text has the binary names deliberately broken up.
+    for layer in result.get("decoded_layers") or []:
+        if layer.get("layer") == 1 and layer.get("encoding") in _WHOLE_COMMAND_LAYERS:
+            command = str(layer.get("value") or command)
+            break
     if not command:
         return None
     binaries = [b.get("name") for b in (result.get("binaries_in_command") or []) if b.get("name")]
@@ -1457,17 +1472,23 @@ def generate_story(result: dict[str, Any]) -> str:
         )
 
     if decoded_layers:
-        n = len(decoded_layers)
-        encodings = [layer.get("encoding", "unknown") for layer in decoded_layers]
+        # Layers are a tree (one command can carry several blobs); the narrative
+        # describes the single deepest unwrapping.
+        chain_layers = deepest_chain(decoded_layers)
+        n = len(chain_layers)
+        encodings = [layer.get("encoding", "unknown") for layer in chain_layers]
         # Strip non-obfuscation markers from the display chain — matches the same
         # set excluded from encoding_depth in main.py so the depth number and the
         # chain label are always computed over the same set of layers.
-        _DISPLAY_SKIP = {"limit-reached", "env-variable-substitution", "format-op", "dot-replace"}
+        _DISPLAY_SKIP = {"limit-reached", "env-variable-substitution", "format-op", "dot-replace",
+                         "cmd-variable-substitution"}
         display_encodings = [e for e in encodings if e not in _DISPLAY_SKIP]
         chain = _compress_encoding_chain(display_encodings)
         hit_limit = any(layer.get("encoding") == "limit-reached" for layer in decoded_layers)
 
-        if n == 1 or (n == 2 and hit_limit):
+        if not display_encodings:
+            pass
+        elif len(display_encodings) == 1:
             parts2.append(
                 f"The payload uses {chain} encoding — a common obfuscation technique "
                 f"to bypass signature-based detection and inline script-block logging."
@@ -1528,7 +1549,7 @@ def generate_story(result: dict[str, Any]) -> str:
     elif extracted_ips or extracted_urls:
         n_ind = len(extracted_ips) + len(extracted_urls)
         parts3.append(
-            f"{n_ind} network indicator{'s' if n_ind != 1 else ''} were extracted "
+            f"{n_ind} network indicator{'s were' if n_ind != 1 else ' was'} extracted "
             f"({len(extracted_ips)} IP{'s' if len(extracted_ips) != 1 else ''}, "
             f"{len(extracted_urls)} URL{'s' if len(extracted_urls) != 1 else ''}) "
             f"and returned no hits across queried threat intelligence sources."
@@ -1555,12 +1576,33 @@ def generate_story(result: dict[str, Any]) -> str:
 
     # ── Paragraph 4: overall verdict ─────────────────────────────────────────
     verdict: str | None = None
+    verdict_info: dict[str, Any] = result.get("verdict") or {}
+    severity = verdict_info.get("severity")
 
     if loldrivers:
         verdict = (
             "The presence of a known-vulnerable driver is a strong indicator of targeted attack "
             "activity. BYOVD is primarily used by sophisticated threat actors — treat this host "
             "as compromised and escalate immediately."
+        )
+    # The closing line must agree with the persisted verdict banner above it.
+    elif any(b.get("class") == "_known_installer" for b in verdict_info.get("breakdown") or []):
+        verdict = (
+            "This has the shape of a download-and-run attack, but the only URL is a documented "
+            "installer. If the URL matches the vendor's published one exactly and the user meant "
+            "to install the tool, this is expected activity; a look-alike domain would not be."
+        )
+    elif severity == "suspicious" and not malicious:
+        verdict = (
+            "This matches known attack tradecraft, but administrators and installers do similar "
+            "things. Establish who ran it, from which parent process, and whether it was expected "
+            "before deciding — and treat it as hostile if any of those answers is missing."
+        )
+    elif severity in ("notable", "low") and high_classes and not malicious:
+        verdict = (
+            "The matched signals are heuristic or commonly seen in routine administration, so "
+            "they do not establish malice by themselves. Review the command in the context of "
+            "the surrounding process activity."
         )
     elif high_classes and (lolbas_matches or decoded_layers):
         verdict = (
