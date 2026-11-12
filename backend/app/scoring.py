@@ -16,23 +16,14 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from .classifier import _CLASS_WEIGHTS, ThreatClass
+from .classifier import ThreatClass
+from .tuning import Tuning, get_active
 
 Severity = Literal["malicious", "suspicious", "notable", "low", "clean"]
 
-_CONF_BASE: dict[str, float] = {"low": 1.0, "medium": 4.0, "high": 10.0}
-
-# Score -> severity tier. Tuned against backend/tests/fixtures/*.json.
-_MALICIOUS = 14.0
-_SUSPICIOUS = 7.0
-_NOTABLE = 3.0
-# Points for a LOLBAS argument-pattern (abuse example) match.
-_LOLBAS_ABUSE = 5.0
-
-
-def _depth_multiplier(max_depth: int) -> float:
-    """A signal hidden under obfuscation is far stronger evidence of malice."""
-    return 1.0 + 0.4 * min(max(max_depth, 0), 5)
+# Every number used below comes from tuning.Tuning (defaults there, overrides
+# from the admin tuner). Fixture expectations in backend/tests/ are written
+# against the defaults.
 
 
 def compute_verdict(
@@ -44,8 +35,12 @@ def compute_verdict(
     encoding_depth: int = 0,
     lolbas_abuse: list[str] | None = None,
     installer: str | None = None,
+    search_only: bool = False,
+    tuning: Tuning | None = None,
 ) -> dict[str, Any]:
     """Return {severity, label, detail, score, breakdown}."""
+    t = tuning or get_active()
+    _MALICIOUS, _SUSPICIOUS, _NOTABLE = t.threshold_malicious, t.threshold_suspicious, t.threshold_notable
     breakdown: list[dict[str, Any]] = []
     score = 0.0
 
@@ -53,9 +48,10 @@ def compute_verdict(
     medium_labels: list[str] = []
 
     for tc in threat_classes:
-        base = _CONF_BASE.get(tc.confidence, 1.0)
-        weight = _CLASS_WEIGHTS.get(tc.name, 1.0)
-        mult = _depth_multiplier(tc.max_depth)
+        base = t.confidence_points(tc.confidence)
+        weight = t.class_weights.get(tc.name, 1.0)
+        # A signal hidden under obfuscation is far stronger evidence of malice.
+        mult = 1.0 + t.depth_step * min(max(tc.max_depth, 0), 5)
         precision = getattr(tc, "precision", 1.0)
         pts = base * weight * mult * precision
         score += pts
@@ -76,19 +72,19 @@ def compute_verdict(
     # schtasks). Count high-confidence classes fully and medium at half, so the
     # bonus only kicks in for genuine multi-stage chains, not admin combos.
     corr_units = len(high_labels) + 0.5 * len(medium_labels)
-    correlation_bonus = max(0.0, corr_units - 1.0) * 5.0
+    correlation_bonus = max(0.0, corr_units - 1.0) * t.correlation_bonus
     if correlation_bonus:
         score += correlation_bonus
         breakdown.append({"class": "_correlation", "points": round(correlation_bonus, 2)})
 
     # BYOVD — kernel-level privilege escalation, severe on its own.
     if has_loldrivers:
-        score += 12.0
-        breakdown.append({"class": "_loldrivers", "points": 12.0})
+        score += t.loldrivers_points
+        breakdown.append({"class": "_loldrivers", "points": t.loldrivers_points})
 
     # An encoded payload is notable even with no behavioral detection.
     if encoding_depth >= 1:
-        enc_pts = 3.0 + 1.0 * min(encoding_depth - 1, 4)
+        enc_pts = t.encoding_base + t.encoding_step * min(encoding_depth - 1, 4)
         score += enc_pts
         breakdown.append({"class": "_encoding", "points": round(enc_pts, 2)})
 
@@ -96,13 +92,13 @@ def compute_verdict(
     # evidence (unlike the binary's mere presence): worth "notable" by itself
     # and enough to lift a medium behavioural hit to "suspicious".
     if lolbas_abuse:
-        score += _LOLBAS_ABUSE
-        breakdown.append({"class": "_lolbas_abuse", "points": _LOLBAS_ABUSE,
+        score += t.lolbas_abuse_points
+        breakdown.append({"class": "_lolbas_abuse", "points": t.lolbas_abuse_points,
                           "binaries": lolbas_abuse})
     # A known-abusable binary alone is weak signal, not an alarm.
     elif (has_lolbas or has_gtfobins) and not threat_classes:
-        score += 2.0
-        breakdown.append({"class": "_lolbin", "points": 2.0})
+        score += t.lolbin_presence_points
+        breakdown.append({"class": "_lolbin", "points": t.lolbin_presence_points})
 
     score = round(min(score, 100.0), 2)
 
@@ -125,6 +121,21 @@ def compute_verdict(
                 f"This is the download-and-run pattern attackers use, but the only URL is "
                 f"the documented installer at {installer}. Confirm the URL character by "
                 f"character — look-alike domains are a common lure."
+            ),
+            "score": capped,
+            "breakdown": breakdown,
+        }
+
+    # `grep -i mimikatz edr.log` names an attack tool without using it.
+    if search_only and threat_classes and not has_loldrivers and score >= _SUSPICIOUS:
+        capped = round(_SUSPICIOUS - 0.5, 2)
+        breakdown.append({"class": "_search_query", "points": round(capped - score, 2)})
+        return {
+            "severity": "notable",
+            "label": "Notable — indicator terms inside a search",
+            "detail": (
+                "This command searches text for attack-related terms rather than running them — "
+                "typical of an analyst or a detection script. Check what is being searched and why."
             ),
             "score": capped,
             "breakdown": breakdown,

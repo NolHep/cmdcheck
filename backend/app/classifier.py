@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from . import mitre
+from .decoder import obfuscation_depths
+from .tuning import DEFAULT_CLASS_WEIGHTS, Tuning, get_active
 
 Confidence = Literal["high", "medium", "low"]
 
@@ -30,6 +33,8 @@ class ThreatClass:
     precision: float = 1.0
     # Every matched rule is one a legitimate installer one-liner also trips.
     installer_only: bool = False
+    # Ids of the rules that matched (see tuning.Tuning.rules).
+    rule_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -52,6 +57,69 @@ class _Rule:
     # known_installer(): the verdict is only softened when *every* matched
     # rule carries this flag.
     installer_ok: bool = False
+    # Lower-cased substrings of which at least one must be present for the
+    # pattern to match (derived from the regex; see _required_literals). An
+    # empty tuple means "unknown — always run the regex".
+    literals: tuple[str, ...] = ()
+    # Stable identifier (class + signal) used by tuning overrides.
+    id: str = ""
+
+
+_UNBOUNDED_GAP = re.compile(r"(?<!\\)\.\*\??")
+_BOUNDED_GAP = ".{0,3000}?"
+
+
+def _required_literals(pattern: str) -> tuple[str, ...]:
+    """Derive substrings that any match of *pattern* must contain.
+
+    Running ~350 regexes over a 20 KB paste costs seconds; `"schtasks" in text`
+    costs microseconds. This walks the parsed regex and returns a set of
+    lower-cased literals such that every match contains at least one of them,
+    so a rule can be skipped when none is present. Anything it cannot reason
+    about (classes, lookarounds, optional parts) yields "unknown", never a
+    wrong answer — tests/test_benchmark.py checks soundness over the corpus.
+    """
+    try:
+        from re import _constants as c  # type: ignore[attr-defined]
+        from re import _parser as p  # type: ignore[attr-defined]
+        tree = p.parse(pattern, re.IGNORECASE | re.DOTALL)
+    except Exception:  # noqa: BLE001 — private API; degrade to no prefilter
+        return ()
+
+    def best(options: list[set[str] | None]) -> set[str] | None:
+        known = [o for o in options if o]
+        if not known:
+            return None
+        # Prefer the option whose weakest literal is longest (most selective).
+        return max(known, key=lambda o: min(len(x) for x in o))
+
+    def walk(seq: Any) -> set[str] | None:
+        options: list[set[str] | None] = []
+        run = ""
+        for op, arg in seq:
+            if op is c.LITERAL:
+                run += chr(arg).lower()
+                continue
+            if run:
+                options.append({run})
+                run = ""
+            if op is c.SUBPATTERN:
+                options.append(walk(arg[3]))
+            elif op is c.BRANCH:
+                parts = [walk(alt) for alt in arg[1]]
+                options.append(None if any(x is None for x in parts) else set().union(*parts))  # type: ignore[arg-type]
+            elif op in (c.MAX_REPEAT, c.MIN_REPEAT) and arg[0] >= 1:
+                options.append(walk(arg[2]))
+            elif op is c.ATOMIC_GROUP:
+                options.append(walk(arg))
+        if run:
+            options.append({run})
+        return best(options)
+
+    found = walk(tree)
+    if not found or min(len(x) for x in found) < 3:
+        return ()
+    return tuple(sorted(found))
 
 
 def _r(
@@ -63,6 +131,12 @@ def _r(
     precision: float = 1.0,
     installer_ok: bool = False,
 ) -> _Rule:
+    # An unbounded `.*` between two keywords makes a rule quadratic on a paste
+    # that repeats the first keyword thousands of times. Two signals more than
+    # a few thousand characters apart are not one behaviour anyway, so every
+    # gap is bounded. Patterns anchored with \A are evaluated once and exempt.
+    if not pattern.startswith(r"\A"):
+        pattern = _UNBOUNDED_GAP.sub(_BOUNDED_GAP, pattern)
     return _Rule(
         re.compile(pattern, re.IGNORECASE | re.DOTALL),
         signal,
@@ -71,6 +145,7 @@ def _r(
         corroborate,
         precision,
         installer_ok,
+        _required_literals(pattern),
     )
 
 
@@ -121,9 +196,9 @@ _CLASSES: list[_ClassDef] = [
         _r(r"Invoke-WebRequest|\biwr\b|\.DownloadFile\s*\(",
            "Downloads a file via Invoke-WebRequest/WebClient", "medium", "T1105",
            corroborate=True, installer_ok=True),
-        _r(r"certutil\b.*-urlcache",
+        _r(r"certutil\b.*[-/]urlcache",
            "Downloads file via certutil -urlcache (LOLbin)", "high", "T1105"),
-        _r(fr"certutil\b.*-verifyctl\b.*{_URL}",
+        _r(fr"certutil\b.*[-/]verifyctl\b.*{_URL}",
            "Downloads file via certutil -verifyctl (LOLbin)", "high", "T1105"),
         # Download straight into a staging directory, or download then mark
         # executable / run — the two halves of every commodity dropper.
@@ -203,6 +278,15 @@ _CLASSES: list[_ClassDef] = [
         _r(r"[.&]\s*\(?\s*['\"](?:iex|invoke-expression)['\"]\s*\)?",
            "Invokes Invoke-Expression through the call operator (name hidden from string matching)",
            "high", "T1059.001", "T1027"),
+        _r(r"[.&]\s*\(\s*(?:gcm|Get-Command|gal|Get-Alias)\s+['\"]?[\w*?\-]*[*?][\w*?\-]*",
+           "Resolves a command by wildcard and invokes it (hides the real name)", "high", "T1027", "T1059.001"),
+        _r(r"\b(?:sal|Set-Alias|nal|New-Alias)\s+(?:-Name\s+)?\S+\s+(?:-Value\s+)?['\"]?(?:iex|Invoke-Expression)\b",
+           "Aliases Invoke-Expression under another name", "high", "T1027", "T1059.001"),
+        _r(r"\[scriptblock\]::Create\s*\(.{0,300}?(?:\birm\b|\biwr\b|Invoke-RestMethod|Invoke-WebRequest|DownloadString|DownloadData|FromBase64String|Net\.WebClient)"
+           r"|\.InvokeCommand\.InvokeScript\s*\(|\.InvokeCommand\.NewScriptBlock\s*\(",
+           "Builds and runs a script block from downloaded or decoded content", "high", "T1059.001"),
+        _r(r"\[scriptblock\]::Create\s*\(",
+           "Creates a script block from a string at run time", "medium", "T1059.001", precision=0.8),
         # A signed proxy-execution binary pointed at a user-writable directory.
         _r(r"\b(?:rundll32|regsvr32|msbuild|installutil|mshta|wscript|cscript|regasm|regsvcs|odbcconf|cmstp|ieexec|presentationhost|msxsl|cdb|dnx|rcsi|csi|vbc|csc|jsc|bginfo|verclsid|infdefaultinstall|pcalua|forfiles|conhost)"
            r"(?:\.exe)?\b[^|&;]*?" + _DROP_FILE,
@@ -258,7 +342,7 @@ _CLASSES: list[_ClassDef] = [
            "Executes JavaScript payload via rundll32", "high", "T1218.011"),
         _r(fr"msiexec\b.*?/i\s+{_URL}",
            "Installs payload from remote MSI", "high", "T1218.007"),
-        _r(r"certutil\b.*-decode",
+        _r(r"certutil\b.*[-/]decode",
            "Decodes file using certutil", "medium", "T1140"),
         _r(r"\b(wscript|cscript)(?:\.exe)?\b.*\.(vbs|js|wsf)\b",
            "Executes script file via Windows Script Host", "medium", "T1059.005", "T1059.007"),
@@ -345,7 +429,8 @@ _CLASSES: list[_ClassDef] = [
            "Opens a network socket through bash /dev/tcp (reverse shell / C2 channel)", "high", "T1059.004", "T1095"),
         _r(r"\b(?:nc|ncat|netcat)(?:\.exe)?\b[^|;&]*?\s(?:-\w*[ec]\b|--exec\b|--sh-exec\b)\s*\S*(?:sh|cmd(?:\.exe)?|powershell(?:\.exe)?)\b",
            "Netcat bound to a shell (reverse or bind shell)", "high", "T1059", "T1095"),
-        _r(r"\b(?:mkfifo|mknod)\b.*?\b(?:nc|ncat|netcat|telnet|openssl)\b|\b(?:nc|ncat|netcat)\b[^|;&]*\|\s*(?:/bin/)?" + _SHELLS + r"\b",
+        _r(r"\b(?:mkfifo|mknod)\b.*?\b(?:nc|ncat|netcat|telnet|openssl)\b|\b(?:nc|ncat|netcat|telnet)\b[^|;&]*\|\s*(?:/bin/)?" + _SHELLS + r"\b"
+           r"|\bxxd\s+-r\b[^|]*\|\s*(?:sudo\s+)?(?:/bin/)?" + _SHELLS + r"\b|\bexec\s+\d+<>/dev/(?:tcp|udp)/",
            "Named-pipe (mkfifo) reverse shell", "high", "T1059.004", "T1095"),
         _r(r"\bsocat\b.*?\bexec:|\bopenssl\s+s_client\b.*?\|\s*(?:/bin/)?" + _SHELLS + r"\b",
            "Shell bound to a socat / openssl network stream", "high", "T1059.004", "T1573"),
@@ -373,7 +458,7 @@ _CLASSES: list[_ClassDef] = [
         # ── Linux / macOS persistence ───────────────────────────────────────
         _r(r"\|\s*crontab\s+-(?:\s|$)|>>?\s*/etc/cron\S*|>>?\s*/var/spool/cron\S*|\bcrontab\s+(?!-[lr]\b)\S+\.\S+",
            "Installs a cron job (scheduled persistence)", "medium", "T1053.003"),
-        _r(r"(?=.*(?:\|\s*crontab\s+-(?:\s|$)|>>?\s*/etc/cron|>>?\s*/var/spool/cron))"
+        _r(r"\A(?=.*(?:\|\s*crontab\s+-(?:\s|$)|>>?\s*/etc/cron|>>?\s*/var/spool/cron))"
            r"(?=.*(?:\b(?:curl|wget|base64|nc|ncat)\b|/tmp/|/dev/shm/|/var/tmp/|/dev/tcp/|\s/\S*/\.\w))",
            "Installs a cron job that downloads content or runs from a temp/hidden path", "high", "T1053.003"),
         _r(r">>?\s*\S*\.ssh/authorized_keys\b",
@@ -592,6 +677,8 @@ _CLASSES: list[_ClassDef] = [
            "Clears Windows event logs through the .NET API or by deleting the log files", "high", "T1070.001"),
         _r(_DROP_DIR + r"(?:svchost|lsass|csrss|winlogon|services|smss|explorer|spoolsv|taskhostw?|dllhost|conhost|RuntimeBroker|wininit|lsm|ctfmon|sihost|fontdrvhost|dwm|SearchIndexer|msedge|chrome|OneDrive)\.exe\b",
            "Windows system process name running from a user-writable directory (masquerading)", "high", "T1036.005"),
+        _r(r"(?:^|[;&|]\s*)/(?:[\w?*]*\?[\w?*]*/)+[\w?*]*\?[\w?*]*(?=\s|$)",
+           "Invokes a binary through a wildcard-masked path (/???/c?t)", "high", "T1027", precision=0.9),
         _r(r"\bfsutil(?:\.exe)?\s+usn\s+deletejournal\b",
            "Deletes the NTFS change journal (anti-forensics)", "high", "T1070"),
         _r(r"\bauditpol\b.*?(?:/clear\b|/remove\b|/set\b.*?(?:disable|/success:disable|/failure:disable))",
@@ -618,7 +705,7 @@ _CLASSES: list[_ClassDef] = [
            "Makes a file immutable with chattr +i (protects an implant from removal)", "medium", "T1222.002"),
         _r(r"\bicacls\b.*?/grant\s+\"?(?:Everyone|\*S-1-1-0):?\(?F|\btakeown\b.*?/f\b.*?(?:/r\b|system32)",
            "Grants Everyone full control or seizes ownership of files", "medium", "T1222.001"),
-        _r(r"\bcertutil\b.*-(?:encode|decodehex|encodehex)\b",
+        _r(r"\bcertutil\b.*[-/](?:encode|decodehex|encodehex)\b",
            "Encodes or decodes a file with certutil", "medium", "T1140", "T1027"),
         _r(r"Add-MpPreference.*Exclusion(Path|Process|Extension)",
            "Adds Windows Defender exclusion", "high", "T1562.001"),
@@ -913,6 +1000,40 @@ _KNOWN_INSTALLER_URLS = re.compile(
     r")",
     re.IGNORECASE,
 )
+# A command that only *searches text* for indicator words is an analyst hunting
+# (`grep -i mimikatz edr.log`), not an attacker acting.
+_SEARCH_TOOLS = frozenset({
+    "grep", "egrep", "fgrep", "zgrep", "rg", "ag", "ack", "findstr", "select-string", "sls",
+})
+_TEXT_FILTERS = frozenset({
+    "sort", "uniq", "head", "tail", "wc", "less", "more", "cut", "awk", "sed", "tr", "column",
+    "tee", "nl", "measure-object", "select-object", "sort-object", "format-table", "ft", "out-file",
+    "group-object", "select", "measure",
+}) | _SEARCH_TOOLS
+_SEARCH_DISQUALIFIERS = re.compile(r"[;&`\n]|\$\(|<\(|\|\|")
+
+
+_QUOTED = re.compile(r"'[^']*'|\"[^\"]*\"")
+
+
+def search_query(command: str) -> bool:
+    """True when the whole command is one text search, optionally piped to text filters."""
+    # Quoted arguments are the patterns being searched for; operators inside
+    # them (`'a\|b'`) are not shell syntax.
+    bare = _QUOTED.sub("Q", command)
+    if _SEARCH_DISQUALIFIERS.search(bare):
+        return False
+    stages = [stage.strip() for stage in bare.split("|")]
+
+    def tool(stage: str) -> str:
+        first = stage.split(None, 1)[0] if stage else ""
+        return first.strip("\"'").replace("\\", "/").rsplit("/", 1)[-1].lower().removesuffix(".exe")
+
+    if not stages or tool(stages[0]) not in _SEARCH_TOOLS:
+        return False
+    return all(tool(stage) in _TEXT_FILTERS for stage in stages[1:])
+
+
 _ANY_URL = re.compile(r"h(?:xx|tt)ps?://[^\s'\"<>)|;,]+", re.IGNORECASE)
 
 
@@ -937,25 +1058,36 @@ def known_installer(command: str, decoded_layers: list[dict[str, Any]]) -> str |
 
 _CONF_RANK: dict[str, int] = {"low": 0, "medium": 1, "high": 2}
 
-# Severity weight per class — how damaging the behavior is *if the detection is
-# true*. Consumed by scoring.compute_verdict(); kept here so weights live next to
-# the rules they describe. Independent of per-rule confidence (= likelihood true).
-_CLASS_WEIGHTS: dict[str, float] = {
-    "impact": 1.8,            # ransomware / disk wipe / recovery destruction
-    "credential_theft": 1.6,
-    "loader": 1.5,
-    "dropper": 1.4,
-    "c2_persistence": 1.4,
-    "lateral_movement": 1.3,
-    "data_staging": 1.2,
-    # High-confidence evasion (AMSI patch, Defender disable, log wiping) is
-    # near-certain malicious; weighted so a lone high-conf hit reaches malicious.
-    "defense_evasion": 1.5,
-    "privilege_escalation": 1.5,
-    "recon": 0.6,             # noisy, low-severity on its own
-}
+# Default severity weights live in tuning.py with the other adjustable numbers;
+# re-exported here because rules and their weights are read together.
+_CLASS_WEIGHTS: dict[str, float] = DEFAULT_CLASS_WEIGHTS
 for _c in _CLASSES:
     _c.weight = _CLASS_WEIGHTS.get(_c.name, 1.0)
+    for _rule in _c.rules:
+        # Stable across deploys as long as the signal text is: tuning overrides
+        # are keyed by it.
+        _rule.id = f"{_c.name}:{hashlib.sha1(_rule.signal.encode()).hexdigest()[:8]}"
+_ids = [r.id for c in _CLASSES for r in c.rules]
+assert len(_ids) == len(set(_ids)), "two rules in one class share a signal text"
+
+
+def rule_catalog() -> list[dict[str, Any]]:
+    """Every rule with its defaults, for the admin tuner."""
+    return [
+        {
+            "id": rule.id,
+            "class": cls.name,
+            "class_label": cls.label,
+            "signal": rule.signal,
+            "confidence": rule.confidence,
+            "precision": rule.precision,
+            "techniques": rule.technique_ids,
+            "requires_corroboration": rule.requires_corroboration,
+        }
+        for cls in _CLASSES
+        for rule in cls.rules
+    ]
+
 
 # Per-segment scan cap. Regex patterns here use nested `.*?` under DOTALL; on
 # adversarial multi-KB input that causes linear-blowup backtracking.
@@ -964,6 +1096,19 @@ for _c in _CLASSES:
 # decoded layer. Attack indicators appear near the beginning of payloads;
 # burying a signal past 20 KB of junk would defeat the detection anyway.
 _MAX_SCAN_CHARS = 20_000
+# A loader often reads `$blob = '<50 KB>'; IEX …` — the verb is at the very
+# end. An over-long segment is therefore scanned as its head plus its tail
+# rather than its head alone.
+_SCAN_TAIL_CHARS = 6_000
+# Total characters classified per analysis, across every decoded layer.
+# Keeps a blob-stuffed paste from multiplying the work by its layer count.
+_MAX_TOTAL_SCAN_CHARS = 80_000
+
+
+def _scan_window(text: str) -> str:
+    if len(text) <= _MAX_SCAN_CHARS:
+        return text
+    return text[: _MAX_SCAN_CHARS - _SCAN_TAIL_CHARS] + " ; " + text[-_SCAN_TAIL_CHARS:]
 
 # A pure help/version query (`ipconfig --help`, `curl -V`) shouldn't look
 # suspicious. But a bare substring check is trivially bypassed by appending
@@ -974,8 +1119,11 @@ _MAX_SCAN_CHARS = 20_000
 # (a global trailing `\b` silently never matched `cmd /?`-style queries).
 _BENIGN_FLAGS = re.compile(r"\s(?:--help|-h|--version|-V|/\?|/help|-\?)\s*$")
 # `-H` is a hash/header flag on half of all offensive tooling, so the match is
-# case-sensitive, anchored to the end, and limited to short invocations.
-_HELP_MAX_TOKENS = 5
+# case-sensitive and anchored to the end. Appending `--help` to a real attack
+# must not hide it, so a help query is at most `tool [subcommand|flag] --help`
+# with no paths, quotes, assignments or module calls.
+_HELP_MAX_TOKENS = 3
+_HELP_DISQUALIFIERS = re.compile(r"[\\\"'=:@]|\.\w{2,4}\s")
 _ACTIVE_TOKENS = re.compile(
     r"[;&|`\n]|\$\(|&&|\|\||://|[A-Za-z0-9+/]{40,}",
 )
@@ -994,17 +1142,30 @@ _BENIGN_SUPPRESSIBLE_ALLCONF = frozenset({
 })
 
 
-# `"C:\path\tool.exe" args` / `tool.exe args` -> `tool args`. Only an .exe that
-# is followed by whitespace or end-of-text is an invocation; `http://x/p.exe'`
-# and `lsass.exe` as an argument are left for the rules that look for them.
-_EXE_INVOCATION = re.compile(
-    r"[\"']?(?:[A-Za-z]:\\|%\w+%\\|\\\\)?(?:[^\\\s\"'|&;]+\\)*([A-Za-z0-9_\-]+)\.exe[\"']?(?=\s)",
-    re.IGNORECASE,
-)
+# `tool.exe args` / `"C:\path\tool.exe" args` -> `tool args` / `"C:\path\tool args`.
+# Only the suffix (and a closing quote) goes; the path stays, so text such as
+# `Image File Execution Options\sethc.exe" /v` is not mangled. An .exe that is
+# not followed by whitespace (`http://x/p.exe'`, end of text) is left alone.
+_EXE_SUFFIX = re.compile(r"(?<=[A-Za-z0-9_\-])\.exe[\"']?(?=\s)", re.IGNORECASE)
+# Line continuations in PowerShell (`), cmd (^) and POSIX shells (\).
+_LINE_CONTINUATION = re.compile(r"[`^\\]\r?\n ?")
+_NEWLINES = re.compile(r" ?\r?\n[ \r\n]*")
+_BLANKS = re.compile(r"[ \t\f\v]+")
 
-# Distinct discovery commands chained in one paste: individually trivial,
-# together the signature of hands-on-keyboard situational awareness.
-_RECON_BURST = 4
+
+def _normalize_segment(text: str) -> str:
+    """Canonical spacing for matching: one statement separator style, one space.
+
+    Rules are written for a single line with single spaces. A pasted script
+    has newlines where a one-liner has `;`, and tabs or runs of spaces where a
+    rule expects one — `reg  add`, `net\tuser` — so those are folded first.
+    """
+    # Blanks are collapsed first so the newline pattern never has to backtrack
+    # through a long run of spaces.
+    text = _BLANKS.sub(" ", text)
+    text = _LINE_CONTINUATION.sub(" ", text)
+    text = _NEWLINES.sub(" ; ", text)
+    return _BLANKS.sub(" ", text)
 
 
 def _is_help_query(command: str) -> bool:
@@ -1012,10 +1173,15 @@ def _is_help_query(command: str) -> bool:
         bool(_BENIGN_FLAGS.search(command))
         and not _ACTIVE_TOKENS.search(command)
         and len(command.split()) <= _HELP_MAX_TOKENS
+        and not _HELP_DISQUALIFIERS.search(command)
     )
 
 
-def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatClass]:
+def classify(
+    command: str,
+    decoded_layers: list[dict[str, Any]],
+    tuning: Tuning | None = None,
+) -> list[ThreatClass]:
     """Return detected threat classes for a command and its decoded layers.
 
     Rules are matched per-segment (the command at depth 0, then each decoded
@@ -1023,21 +1189,32 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
     a regex from spanning unrelated content across layers and lets us record
     the obfuscation depth at which each class first appears.
     """
-    segments: list[tuple[int, str]] = [(0, command[:_MAX_SCAN_CHARS])]
-    for layer in decoded_layers:
+    raw: list[tuple[int, str]] = [(0, _scan_window(command))]
+    budget = _MAX_TOTAL_SCAN_CHARS - len(raw[0][1])
+    for layer, depth in zip(decoded_layers, obfuscation_depths(decoded_layers), strict=True):
         if layer.get("encoding") == "limit-reached":
             continue
-        depth = int(layer.get("layer", 1) or 1)
-        segments.append((depth, str(layer.get("value", ""))[:_MAX_SCAN_CHARS]))
-    # Rules are written against the bare tool name (`wevtutil cl`, `reg add`).
-    # Add a variant of each segment with the path and `.exe` of the invoked
-    # binary removed so `C:\Windows\System32\wevtutil.exe cl` matches too.
-    for depth, text in list(segments):
-        bare = _EXE_INVOCATION.sub(r"\1", text)
-        if bare != text:
-            segments.append((depth, bare))
+        window = _scan_window(str(layer.get("value", "")))
+        if len(window) > budget:
+            continue
+        budget -= len(window)
+        raw.append((depth, window))
+    # Each segment is matched in canonical spacing, plus a variant with the
+    # `.exe` of invoked binaries removed: rules are written against the bare
+    # tool name (`wevtutil cl`, `reg add`) and must also match
+    # `C:\Windows\System32\wevtutil.exe cl`.
+    segments: list[tuple[int, str, str]] = []
+    seen_text: set[str] = set()
+    for depth, text in raw:
+        text = _normalize_segment(text)
+        for variant in (text, _EXE_SUFFIX.sub("", text)):
+            if variant not in seen_text:
+                seen_text.add(variant)
+                segments.append((depth, variant, variant.lower()))
 
     is_help_query = _is_help_query(command)
+    tuning = tuning or get_active()
+    overrides = tuning.rules
 
     results: list[ThreatClass] = []
     for cls in _CLASSES:
@@ -1051,22 +1228,32 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
         # (confidence, precision) for each matched core rule.
         core_matches: list[tuple[Confidence, float]] = []
         installer_only = True
+        matched_ids: list[str] = []
 
         for rule in cls.rules:
+            override = overrides.get(rule.id)
+            if override is not None and not override.enabled:
+                continue
             hit_depth: int | None = None
-            for depth, text in segments:
+            for depth, text, lowered in segments:
+                if rule.literals and not any(lit in lowered for lit in rule.literals):
+                    continue
                 if rule.pattern.search(text):
                     hit_depth = depth if hit_depth is None else min(hit_depth, depth)
             if hit_depth is None:
                 continue
             if not rule.installer_ok:
                 installer_only = False
+            matched_ids.append(rule.id)
+            precision = rule.precision
+            if override is not None and override.precision is not None:
+                precision = override.precision
 
             if rule.requires_corroboration:
                 corrob_signals.append(rule.signal)
             else:
                 core_signals.append(rule.signal)
-                core_matches.append((rule.confidence, rule.precision))
+                core_matches.append((rule.confidence, precision))
             if _CONF_RANK[rule.confidence] > _CONF_RANK[best_conf]:
                 best_conf = rule.confidence
             max_depth = max(max_depth, hit_depth)
@@ -1087,7 +1274,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
 
         matched_signals = core_signals + corrob_signals
 
-        if cls.name == "recon" and len(core_signals) >= _RECON_BURST and best_conf != "high":
+        if cls.name == "recon" and len(core_signals) >= tuning.recon_burst and best_conf != "high":
             best_conf = "high"
             class_precision = 1.0
             matched_signals.insert(
@@ -1111,6 +1298,7 @@ def classify(command: str, decoded_layers: list[dict[str, Any]]) -> list[ThreatC
             max_depth=max_depth,
             precision=class_precision,
             installer_only=installer_only,
+            rule_ids=matched_ids,
         ))
 
     return results

@@ -12,28 +12,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .classifier import ThreatClass, classify, known_installer
-from .decoder import decode_layers
+from .classifier import ThreatClass, classify, known_installer, search_query
+from .decoder import NORMALIZATION_ENCODINGS, decode_layers, obfuscation_depths
 from .gtfobins import match as gtfobins_match
 from .lolbas import match as lolbas_match
 from .loldrivers import match as loldrivers_match
 from .parser import extract_binaries
 from .scoring import compute_verdict
-
-# Layers that are normalisation rather than evidence of hiding intent: env-var
-# expansion, the limit marker, and string templating that also fires on benign
-# string-building. They are still classified, they just earn no encoding bonus.
-NON_ENCODING_LAYERS = frozenset({
-    "env-variable-substitution", "limit-reached", "format-op", "dot-replace",
-    "cmd-variable-substitution",
-})
-
-
-# The UI badges an invocation as "abuse-pattern" at lolbas.ARG_SIMILARITY_THRESHOLD
-# (0.6). Points are only awarded above this stricter bar: on the benchmark
-# corpus benign dual-use tops out at 0.60 and real abuse starts around 0.64.
-LOLBAS_ABUSE_SCORE_THRESHOLD = 0.68
-
+from .tuning import Tuning, get_active
 
 @dataclass
 class Detection:
@@ -50,8 +36,13 @@ class Detection:
     sources: list[str] = field(default_factory=list)
 
 
-def detect(command: str) -> Detection:
-    """Run decode → binary extraction → catalog matching → classify → score."""
+def detect(command: str, tuning: Tuning | None = None) -> Detection:
+    """Run decode → binary extraction → catalog matching → classify → score.
+
+    `tuning` overrides the active configuration for this call only — used by
+    the admin tuner to preview a candidate without activating it.
+    """
+    tuning = tuning or get_active()
     layers = decode_layers(command)
     sources = [command, *(str(layer["value"]) for layer in layers)]
 
@@ -100,12 +91,15 @@ def detect(command: str) -> Detection:
             loldrivers = hit
             break
 
-    threat_classes = classify(command, layers)
-    encoding_depth = len({
-        int(layer.get("layer", 1) or 1)
-        for layer in layers
-        if layer.get("encoding") not in NON_ENCODING_LAYERS
-    })
+    threat_classes = classify(command, layers, tuning)
+    encoding_depth = max(
+        (
+            depth
+            for layer, depth in zip(layers, obfuscation_depths(layers), strict=True)
+            if layer.get("encoding") not in NORMALIZATION_ENCODINGS
+        ),
+        default=0,
+    )
     verdict = compute_verdict(
         threat_classes,
         has_lolbas=bool(lolbas_matches),
@@ -114,9 +108,11 @@ def detect(command: str) -> Detection:
         encoding_depth=encoding_depth,
         lolbas_abuse=[
             m["name"] for m in lolbas_matches
-            if m.get("arg_similarity", 0) >= LOLBAS_ABUSE_SCORE_THRESHOLD
+            if m.get("arg_similarity", 0) >= tuning.lolbas_abuse_similarity
         ],
         installer=known_installer(command, layers),
+        search_only=search_query(command),
+        tuning=tuning,
     )
 
     return Detection(

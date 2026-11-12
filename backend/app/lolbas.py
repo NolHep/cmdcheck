@@ -27,6 +27,8 @@ SIMILARITY_THRESHOLD = 0.85
 # {PLACEHOLDER} tokens and real invocations vary — 0.6 reliably separates abuse
 # patterns from benign dual-use of the same binary (CLAUDE.md convention).
 ARG_SIMILARITY_THRESHOLD = 0.6
+_MAX_COMPARE_CHARS = 4000
+_MAX_ARG_CHARS = 600
 LOLBAS_DIR = Path(__file__).parent.parent / "data" / "LOLBAS" / "yml"
 
 # Catalog example placeholders: {REMOTEURL:.exe}, {PATH_ABSOLUTE}, {PAYLOAD}, …
@@ -138,8 +140,11 @@ def _best_arg_similarity(command: str, entry: dict[str, Any]) -> float:
     or an obfuscated invocation match, and lets benign dual-use (args unlike any
     abuse example) score low — exactly what name-only matching cannot do."""
     name = str(entry.get("Name", ""))
-    observed = _arg_portion(_normalize_invocation(command), name)
-    observed_raw_args = _arg_portion(command.lower(), name)  # preserve flag tokens
+    # An abuse example is a line or two; comparing it against megabytes of
+    # trailing payload is pure cost (SequenceMatcher is quadratic).
+    command = command[:_MAX_COMPARE_CHARS]
+    observed = _arg_portion(_normalize_invocation(command), name)[:_MAX_ARG_CHARS]
+    observed_raw_args = _arg_portion(command.lower(), name)[:_MAX_ARG_CHARS]  # preserve flag tokens
     if not observed:
         return 0.0
     best = 0.0

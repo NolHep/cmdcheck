@@ -31,8 +31,8 @@ in total. A command carrying two encoded blobs yields both.
 from __future__ import annotations
 
 import base64
-import gzip
 import re
+import unicodedata
 import zlib
 from typing import Any
 from urllib.parse import unquote
@@ -82,6 +82,26 @@ def _try_urlsafe_b64_decode(s: str) -> bytes | None:
         return None
 
 
+# Ceiling on decompressed output. A few kilobytes of gzip can inflate to
+# hundreds of megabytes; nothing an analyst pastes legitimately needs more
+# than this, and the classifier only reads the first and last few KB anyway.
+MAX_DECOMPRESSED_BYTES = 256 * 1024
+
+
+def _inflate(raw: bytes, wbits: int) -> bytes:
+    """zlib-inflate *raw*, stopping at MAX_DECOMPRESSED_BYTES. Raises zlib.error on bad data."""
+    return zlib.decompressobj(wbits).decompress(raw, MAX_DECOMPRESSED_BYTES)
+
+
+def _gunzip(raw: bytes) -> bytes:
+    """Strict gzip decode (header + CRC checked unless output was truncated at the cap)."""
+    obj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    out = obj.decompress(raw, MAX_DECOMPRESSED_BYTES)
+    if not obj.eof and len(out) < MAX_DECOMPRESSED_BYTES:
+        raise zlib.error("incomplete or truncated gzip stream")
+    return out
+
+
 def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
     """Decompress a gzip stream tolerating corrupt CRC32/ISIZE trailers.
 
@@ -94,7 +114,7 @@ def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
     if raw[:2] != _GZIP_MAGIC or len(raw) < 10:
         return None
     try:
-        return gzip.decompress(raw)
+        return _gunzip(raw)
     except Exception:
         pass
     # Header parse: skip optional FEXTRA/FNAME/FCOMMENT/FHCRC fields.
@@ -115,10 +135,10 @@ def _lenient_gzip_decompress(raw: bytes) -> bytes | None:
         # non-compressed deflate block is 5 bytes, so we need at least 13 bytes
         # total; 18 gives a safe margin for the smallest compressed blocks.
         body = raw[pos:-8] if len(raw) - pos >= 18 else raw[pos:]
-        return zlib.decompress(body, -zlib.MAX_WBITS)
+        return _inflate(body, -zlib.MAX_WBITS)
     except Exception:
         try:
-            return zlib.decompress(raw[pos:], -zlib.MAX_WBITS)
+            return _inflate(raw[pos:], -zlib.MAX_WBITS)
         except Exception:
             return None
 
@@ -148,7 +168,7 @@ def _decode_bytes(raw: bytes) -> tuple[str, str] | None:
     if raw[:2] == _GZIP_MAGIC:
         # Strict path
         try:
-            return _bytes_to_text(gzip.decompress(raw), "base64-gzip")
+            return _bytes_to_text(_gunzip(raw), "base64-gzip")
         except Exception:
             pass
         # Lenient path: header parse + raw deflate, ignores CRC/ISIZE
@@ -165,7 +185,7 @@ def _decode_bytes(raw: bytes) -> tuple[str, str] | None:
     # zlib/deflate — PowerShell [IO.Compression.DeflateStream] payloads
     if raw[:2] in _ZLIB_HEADERS:
         try:
-            decompressed = zlib.decompress(raw)
+            decompressed = _inflate(raw, zlib.MAX_WBITS)
             try:
                 return decompressed.decode("utf-8"), "base64-zlib"
             except UnicodeDecodeError:
@@ -219,9 +239,23 @@ def _is_readable(text: str, threshold: float = 0.85) -> bool:
 
 # ── Hex escape: \x41\x42\x43 ──────────────────────────────────────────────────
 
+_HEX_RUN = re.compile(r"(?:\\x[0-9a-fA-F]{2}){3,}")
+_ANSI_C_QUOTED = re.compile(r"\$'((?:\\x[0-9a-fA-F]{2})+)'")
+
+
+def _unhex(seq: str) -> str:
+    return re.sub(r"\\x([0-9a-fA-F]{2})", lambda m: chr(int(m.group(1), 16)), seq)
+
+
 def _try_hex_escape(text: str) -> list[tuple[str, str]]:
     """Decode \\x41\\x42 sequences. Returns list of (decoded, label) tuples."""
     results: list[tuple[str, str]] = []
+    # Whole-command form first: `$'\x63\x75\x72\x6c' -s http://…` -> `curl -s http://…`
+    if _HEX_RUN.search(text):
+        whole = _ANSI_C_QUOTED.sub(lambda m: _unhex(m.group(1)), text)
+        whole = _HEX_RUN.sub(lambda m: _unhex(m.group(0)), whole)
+        if whole != text and _is_readable(whole):
+            results.append((whole, "hex-escape"))
     for seq in re.findall(r"(?:\\x[0-9a-fA-F]{2}){3,}", text):
         try:
             decoded = re.sub(r"\\x([0-9a-fA-F]{2})", lambda m: chr(int(m.group(1), 16)), seq)
@@ -336,6 +370,7 @@ def _extract_b64_candidates(text: str) -> list[str]:
     for pat in (
         r"echo\s+(?:-[ne]+\s+)?['\"]?([A-Za-z0-9+/]{12,}={0,2})['\"]?\s*\|\s*base64\s+-(?:d|D|-decode)\b",
         r"base64\s+-(?:d|D|-decode)\s*<<<\s*['\"]?([A-Za-z0-9+/]{12,}={0,2})",
+        r"echo\s+(?:-[ne]+\s+)?['\"]?([A-Za-z0-9+/]{12,}={0,2})['\"]?\s*\|\s*openssl\s+(?:base64|enc\s+-base64)\s+-d\b",
         r"(?:b64decode|atob|decode64|base64_decode)\s*\(\s*b?['\"]([A-Za-z0-9+/]{12,}={0,2})['\"]",
     ):
         for d in re.findall(pat, text, re.IGNORECASE):
@@ -637,9 +672,14 @@ def _try_array_reverse(text: str) -> list[tuple[str, str]]:
 _CARET_IN_TOKEN = re.compile(r"(?<=[A-Za-z0-9])\^(?=[A-Za-z0-9])")
 
 
+# A caret inside the token at command position (`r^eg add`, `s^c stop`) is
+# never accidental, however few there are.
+_CARET_IN_COMMAND = re.compile(r"(?:^|[&|(;]\s*)[A-Za-z]+\^[A-Za-z]")
+
+
 def _try_cmd_caret(text: str) -> list[tuple[str, str]]:
-    """Strip cmd.exe caret escapes. Requires 3+ in-token carets."""
-    if len(_CARET_IN_TOKEN.findall(text)) < 3:
+    """Strip cmd.exe caret escapes: 2+ in-token carets, or one in a command name."""
+    if len(_CARET_IN_TOKEN.findall(text)) < 2 and not _CARET_IN_COMMAND.search(text):
         return []
     decoded = re.sub(r"\^(?!\^)", "", text)
     if decoded == text:
@@ -648,14 +688,14 @@ def _try_cmd_caret(text: str) -> list[tuple[str, str]]:
 
 
 # "" or "x" wedged between letters of one token: cert""util, po"w"ershell
-_QUOTE_IN_TOKEN = re.compile(r"(?<=[A-Za-z])\"([A-Za-z]{0,4})\"(?=[A-Za-z])")
+_QUOTE_IN_TOKEN = re.compile(r"(?<=[A-Za-z])([\"'])([A-Za-z]{0,4})\1(?=[A-Za-z])")
 
 
 def _try_cmd_quote_split(text: str) -> list[tuple[str, str]]:
     """Remove quote pairs embedded inside a token."""
     if not _QUOTE_IN_TOKEN.search(text):
         return []
-    decoded = _QUOTE_IN_TOKEN.sub(lambda m: m.group(1), text)
+    decoded = _QUOTE_IN_TOKEN.sub(lambda m: m.group(2), text)
     if decoded == text:
         return []
     return [(decoded, "cmd-quote-split")]
@@ -762,6 +802,137 @@ def _try_ps_index(text: str) -> list[tuple[str, str]]:
     return [(decoded, "powershell-index")]
 
 
+# ── Unicode look-alikes ───────────────────────────────────────────────────────
+# PowerShell accepts en dash, em dash and horizontal bar as the parameter
+# prefix; word processors turn straight quotes and hyphens into typographic
+# ones; zero-width characters split a keyword invisibly; fullwidth letters
+# render like ASCII. All of it defeats naive matching, and all of it also
+# happens innocently when a command is pasted out of a document — so this is a
+# normalisation layer, never counted as obfuscation.
+_UNICODE_MAP = str.maketrans({
+    "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u2015": "-", "\u2212": "-",
+    "\u2018": "'", "\u2019": "'", "\u201a": "'", "\u201b": "'",
+    "\u201c": '"', "\u201d": '"', "\u201e": '"', "\u201f": '"',
+    "\u00a0": " ", "\u2007": " ", "\u202f": " ", "\u3000": " ",
+    "\u200b": None, "\u200c": None, "\u200d": None, "\u2060": None, "\ufeff": None, "\u00ad": None,
+})
+
+
+def _try_unicode_normalize(text: str) -> list[tuple[str, str]]:
+    """Fold typographic dashes/quotes, zero-width characters and fullwidth forms to ASCII."""
+    if text.isascii():
+        return []
+    decoded = unicodedata.normalize("NFKC", text.translate(_UNICODE_MAP)).translate(_UNICODE_MAP)
+    if decoded == text:
+        return []
+    return [(decoded, "unicode-normalization")]
+
+
+# ── POSIX shell word tricks ───────────────────────────────────────────────────
+# `w\get`, `a=cu;b=rl;$a$b`, `${IFS}` — the shell reassembles these before
+# running them; string matching sees nothing.
+_WINDOWS_PATH_HINT = re.compile(r"[A-Za-z]:\\|\\\\|%\w+%")
+_BACKSLASH_IN_COMMAND = re.compile(r"(?:^|[|;&(]\s*)[a-z]+\\[a-z]")
+_BACKSLASH_LETTER = re.compile(r"(?<=[a-z])\\(?=[a-z])")
+
+
+def _try_bash_backslash(text: str) -> list[tuple[str, str]]:
+    r"""Drop backslashes inside a command word (`w\get` -> `wget`). POSIX text only."""
+    if _WINDOWS_PATH_HINT.search(text) or not _BACKSLASH_IN_COMMAND.search(text):
+        return []
+    decoded = _BACKSLASH_LETTER.sub("", text)
+    return [(decoded, "shell-backslash")] if decoded != text else []
+
+
+_IFS_RE = re.compile(r"\$\{IFS\}|\$IFS(?![A-Za-z0-9_])|\{IFS\}")
+
+
+def _try_shell_ifs(text: str) -> list[tuple[str, str]]:
+    """Replace ${IFS} / $IFS word separators with a space."""
+    if len(_IFS_RE.findall(text)) < 2:
+        return []
+    return [(_IFS_RE.sub(" ", text), "shell-ifs")]
+
+
+_SH_ASSIGN_RE = re.compile(
+    r"(?:^|[;&|\s])([A-Za-z_][A-Za-z0-9_]{0,30})=(?:'([^']{0,60})'|\"([^\"$`]{0,60})\"|([^\s;&|'\"$`()]{1,60}))(?=[;&\s]|$)"
+)
+_SH_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+_SH_ADJACENT_REFS = re.compile(r"(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?){2,}")
+
+
+def _try_shell_vars(text: str) -> list[tuple[str, str]]:
+    """Expand `a=cu;b=rl;$a$b`. Only variables assigned a literal in the same text."""
+    if _WINDOWS_PATH_HINT.search(text):
+        return []
+    assigned = {
+        m.group(1): next(g for g in m.groups()[1:] if g is not None)
+        for m in _SH_ASSIGN_RE.finditer(text)
+    }
+    if not assigned:
+        return []
+    assembled = any(
+        all(name in assigned for name in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", m.group(0)))
+        for m in _SH_ADJACENT_REFS.finditer(text)
+    )
+
+    def _sub(m: re.Match[str]) -> str:
+        name = m.group(1) or m.group(2)
+        return assigned.get(name, m.group(0))
+
+    decoded = _SH_REF_RE.sub(_sub, text)
+    if decoded == text:
+        return []
+    # Gluing two variables into one word is assembly (obfuscation); using a
+    # variable where a word goes is just scripting.
+    return [(decoded, "shell-variable-assembly" if assembled else "shell-variable-substitution")]
+
+
+# ── PowerShell variables and char arrays ─────────────────────────────────────
+_PS_ASSIGN_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]{0,30})\s*=\s*'([^']{0,200})'")
+_PS_CONCAT_REFS = re.compile(r"\$[A-Za-z_]\w*\s*\+\s*\$[A-Za-z_]\w*|'\s*\+\s*\$[A-Za-z_]\w*|\$[A-Za-z_]\w*\s*\+\s*'")
+
+
+def _try_ps_vars(text: str) -> list[tuple[str, str]]:
+    """Substitute `$a='IE';$b='X';&($a+$b)` -> `&('IEX')`. Literal string assignments only."""
+    assigned = {m.group(1).lower(): m.group(2) for m in _PS_ASSIGN_RE.finditer(text)}
+    if not assigned or not _PS_CONCAT_REFS.search(text):
+        return []
+
+    def _sub(m: re.Match[str]) -> str:
+        value = assigned.get(m.group(1).lower())
+        return m.group(0) if value is None else f"'{value}'"
+
+    # Leave the assignments themselves (`$a=`) untouched.
+    decoded = re.sub(r"\$([A-Za-z_][A-Za-z0-9_]*)(?![A-Za-z0-9_])(?!\s*=)", _sub, text)
+    prev = None
+    while prev != decoded:
+        prev = decoded
+        decoded = _ADJACENT_LITERALS.sub(lambda m: f"'{m.group(1)}{m.group(2)}'", decoded)
+    return [(decoded, "powershell-variable-assembly")] if decoded != text else []
+
+
+_CHAR_ARRAY_RE = re.compile(
+    r"\[\s*char\s*\[\s*\]\s*\]\s*\(?\s*((?:0x[0-9a-fA-F]{1,4}|\d{1,5})(?:\s*,\s*(?:0x[0-9a-fA-F]{1,4}|\d{1,5})){2,})\s*\)?"
+    r"(?:\s*-join\s*['\"]['\"])?",
+    re.IGNORECASE,
+)
+
+
+def _try_char_array(text: str) -> list[tuple[str, str]]:
+    """Resolve `[char[]](73,69,88)-join''` to `'IEX'` in place."""
+
+    def _sub(m: re.Match[str]) -> str:
+        try:
+            chars = "".join(chr(int(v, 0)) for v in re.split(r"\s*,\s*", m.group(1)))
+        except (ValueError, OverflowError):
+            return m.group(0)
+        return f"'{chars}'" if _is_readable(chars) and "'" not in chars else m.group(0)
+
+    decoded = _CHAR_ARRAY_RE.sub(_sub, text)
+    return [(decoded, "char-array")] if decoded != text else []
+
+
 # ── Shell `echo '…' | rev` ────────────────────────────────────────────────────
 _REV_RE = re.compile(r"echo\s+(?:-[ne]+\s+)?(['\"])(.{4,}?)\1\s*\|\s*rev\b")
 
@@ -821,6 +992,12 @@ def _all_candidates(text: str) -> list[tuple[str, str]]:
     results.extend(_try_hex_array(text))
 
     # cmd.exe / known-variable / shell tricks
+    results.extend(_try_unicode_normalize(text))
+    results.extend(_try_bash_backslash(text))
+    results.extend(_try_shell_ifs(text))
+    results.extend(_try_shell_vars(text))
+    results.extend(_try_ps_vars(text))
+    results.extend(_try_char_array(text))
     results.extend(_try_cmd_caret(text))
     results.extend(_try_cmd_quote_split(text))
     results.extend(_try_cmd_vars(text))
@@ -877,6 +1054,35 @@ def decode_layers(command: str) -> list[dict[str, Any]]:
         })
 
     return layers
+
+
+# Layers that tidy the text rather than unwrap something hidden: env-var
+# expansion, plain batch-variable expansion, Unicode folding, the limit marker,
+# and string templating that also fires on benign string-building. They are
+# classified like any other layer but earn no obfuscation credit.
+NORMALIZATION_ENCODINGS = frozenset({
+    "env-variable-substitution", "cmd-variable-substitution", "unicode-normalization",
+    "shell-variable-substitution",
+    "limit-reached", "format-op", "dot-replace",
+})
+
+
+def obfuscation_depths(layers: list[dict[str, Any]]) -> list[int]:
+    """Return, per layer, how many *real* decode steps separate it from the command.
+
+    A normalisation layer inherits its parent's depth; every other layer adds
+    one. Hand-built layer lists without `parent` (older rows, unit tests) fall
+    back to the stored `layer` number.
+    """
+    depths: list[int] = []
+    for layer in layers:
+        if "parent" not in layer:
+            depths.append(int(layer.get("layer", 1) or 1))
+            continue
+        parent = int(layer.get("parent", 0) or 0)
+        base = depths[parent - 1] if 0 < parent <= len(depths) else 0
+        depths.append(base + (0 if layer.get("encoding") in NORMALIZATION_ENCODINGS else 1))
+    return depths
 
 
 def deepest_chain(layers: list[dict[str, Any]]) -> list[dict[str, Any]]:

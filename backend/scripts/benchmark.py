@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import gtfobins, lolbas, loldrivers  # noqa: E402
 from app.pipeline import detect  # noqa: E402
 from tests.benchmark_corpus import (  # noqa: E402
-    ATTACKS, BENIGN, HOLDOUT_ATTACKS, HOLDOUT_BENIGN, Case,
+    ATTACKS, BENIGN, EDGE_ATTACKS, EDGE_BENIGN, HOLDOUT_ATTACKS, HOLDOUT_BENIGN, Case,
 )
 
 SEV_RANK = {"clean": 0, "low": 1, "notable": 2, "suspicious": 3, "malicious": 4}
@@ -69,6 +69,7 @@ def run(show_all: bool = False) -> dict[str, tuple[float, float]]:
     for name, attacks, benign in (
         ("tuning set", ATTACKS, BENIGN),
         ("hold-out set", HOLDOUT_ATTACKS, HOLDOUT_BENIGN),
+        ("edge set", EDGE_ATTACKS, EDGE_BENIGN),
     ):
         recall, fp_rate, lines = score_set(attacks, benign, show_all)
         print(f"== {name} ==")

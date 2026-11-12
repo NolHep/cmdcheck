@@ -16,12 +16,18 @@ from typing import Any
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from fastapi.exceptions import RequestValidationError
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address as _get_remote_address
 
+from .classifier import rule_catalog
 from .pipeline import detect
+from . import tuner as tuner_mod
+from . import tuning as tuning_mod
 from . import mitre as mitre_catalog
 from . import stripe_billing
 from .db import (
@@ -34,7 +40,7 @@ from .db import (
     fetch_admin_stats, fetch_analyses_for_user, fetch_analysis, fetch_api_keys_for_user,
     fetch_bug_reports, fetch_invite, fetch_recent, fetch_subscription_status,
     fetch_threat_groups, fetch_user_by_api_key, fetch_user_by_email, fetch_workspace,
-    fetch_workspaces_for_user, get_banner, remove_threat_group_member,
+    fetch_workspaces_for_user, get_banner, get_setting, remove_threat_group_member,
     remove_workspace_member, revoke_api_key, run_migrations, search_analyses,
     set_setting, set_stripe_customer_id, update_bug_report,
     update_subscription_by_customer, update_user_password, upsert_analysis,
@@ -458,6 +464,15 @@ def _require_admin(x_admin_secret: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=403, detail={"code": "forbidden", "detail": "Admin access required"})
 
 
+async def _load_tuning() -> None:
+    """Activate the stored detection tuning. Any failure leaves the defaults on."""
+    try:
+        tuning_mod.set_active(tuning_mod.loads(await get_setting(tuning_mod.SETTING_KEY)))
+    except Exception as exc:  # noqa: BLE001 — detection must start without the DB
+        tuning_mod.set_active(None)
+        print(f"[tuning] could not load stored tuning, using defaults: {exc}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     mitre_catalog.load_catalog()
@@ -469,6 +484,7 @@ async def lifespan(app: FastAPI):
     if _stripe_key:
         stripe_billing.init(_stripe_key)
     await run_migrations()
+    await _load_tuning()
     yield
     await close_pool()
 
@@ -476,6 +492,22 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="ShellHawk", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Structured 422 with a stable code.
+
+    The default handler echoes the offending input back, which (a) fails to
+    serialise when that input is a lone surrogate, turning a bad request into
+    a 500, and (b) reflects a pasted command into an error body for no reason.
+    """
+    problems = [
+        {"field": ".".join(str(part) for part in err.get("loc", ()) if part != "body"),
+         "message": str(err.get("msg", "invalid value"))}
+        for err in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"code": "invalid_request", "detail": problems})
 
 _MAX_BODY = 512 * 1024  # 512 KB — generous for any legitimate command analysis
 
@@ -516,6 +548,16 @@ class AnalyzeRequest(BaseModel):
     skip_redaction: bool = False
     workspace_id: str | None = None
     force: bool = False
+
+    @field_validator("command")
+    @classmethod
+    def _clean_command(cls, value: str) -> str:
+        # NUL cannot be stored in a Postgres text column and never carries
+        # meaning in a command line; drop it rather than fail the insert.
+        value = value.replace("\x00", "")
+        if not value.strip():
+            raise ValueError("command is empty")
+        return value
 
 
 class ErrorResponse(BaseModel):
@@ -955,6 +997,67 @@ async def admin_update_banner(body: BannerSettings) -> dict[str, Any]:
     await set_setting("banner_message", body.message)
     await set_setting("banner_type", body.type)
     return {"ok": True}
+
+
+# ── Detection tuning ───────────────────────────────────────────────────────────
+
+class TuningPreviewRequest(BaseModel):
+    command: str = Field(min_length=1, max_length=65536)
+    tuning: tuning_mod.Tuning
+
+
+class TuningBenchmarkRequest(BaseModel):
+    tuning: tuning_mod.Tuning
+
+
+def _tuning_state() -> dict[str, Any]:
+    active = tuning_mod.get_active()
+    return {
+        "defaults": tuning_mod.DEFAULT.model_dump(),
+        "active": active.model_dump(),
+        "is_default": tuning_mod.is_default(active),
+        "rules": rule_catalog(),
+    }
+
+
+@app.get("/admin/tuning", dependencies=[Depends(_require_admin)])
+async def admin_get_tuning() -> dict[str, Any]:
+    return _tuning_state()
+
+
+@app.put("/admin/tuning", dependencies=[Depends(_require_admin)])
+async def admin_save_tuning(body: tuning_mod.Tuning) -> dict[str, Any]:
+    """Store and activate a tuning. Affects analyses made from now on; stored
+    verdicts on existing permalinks are not recomputed."""
+    known = {rule["id"] for rule in rule_catalog()}
+    unknown = sorted(set(body.rules) - known)
+    if unknown:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "unknown_rule", "detail": f"Unknown rule id(s): {', '.join(unknown[:5])}"},
+        )
+    await set_setting(tuning_mod.SETTING_KEY, tuning_mod.dumps(body))
+    tuning_mod.set_active(body)
+    return _tuning_state()
+
+
+@app.delete("/admin/tuning", dependencies=[Depends(_require_admin)])
+async def admin_reset_tuning() -> dict[str, Any]:
+    await set_setting(tuning_mod.SETTING_KEY, "")
+    tuning_mod.set_active(None)
+    return _tuning_state()
+
+
+@app.post("/admin/tuning/preview", dependencies=[Depends(_require_admin)])
+async def admin_preview_tuning(body: TuningPreviewRequest) -> dict[str, Any]:
+    """Score one command under the active and the candidate tuning. Nothing is stored."""
+    return await run_in_threadpool(tuner_mod.preview, body.command.replace("\x00", ""), body.tuning)
+
+
+@app.post("/admin/tuning/benchmark", dependencies=[Depends(_require_admin)])
+async def admin_benchmark_tuning(body: TuningBenchmarkRequest) -> dict[str, Any]:
+    """Run the labelled corpus under the active and the candidate tuning."""
+    return await run_in_threadpool(tuner_mod.benchmark, body.tuning)
 
 
 @app.get("/admin/bug-reports", dependencies=[Depends(_require_admin)])

@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .decoder import deepest_chain
+from .decoder import NORMALIZATION_ENCODINGS, deepest_chain
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1480,8 +1480,7 @@ def generate_story(result: dict[str, Any]) -> str:
         # Strip non-obfuscation markers from the display chain — matches the same
         # set excluded from encoding_depth in main.py so the depth number and the
         # chain label are always computed over the same set of layers.
-        _DISPLAY_SKIP = {"limit-reached", "env-variable-substitution", "format-op", "dot-replace",
-                         "cmd-variable-substitution"}
+        _DISPLAY_SKIP = NORMALIZATION_ENCODINGS
         display_encodings = [e for e in encodings if e not in _DISPLAY_SKIP]
         chain = _compress_encoding_chain(display_encodings)
         hit_limit = any(layer.get("encoding") == "limit-reached" for layer in decoded_layers)
@@ -1591,6 +1590,11 @@ def generate_story(result: dict[str, Any]) -> str:
             "This has the shape of a download-and-run attack, but the only URL is a documented "
             "installer. If the URL matches the vendor's published one exactly and the user meant "
             "to install the tool, this is expected activity; a look-alike domain would not be."
+        )
+    elif any(b.get("class") == "_search_query" for b in verdict_info.get("breakdown") or []):
+        verdict = (
+            "The attack-related terms appear as search patterns, not as commands being run. "
+            "This is what hunting queries and detection scripts look like."
         )
     elif severity == "suspicious" and not malicious:
         verdict = (
